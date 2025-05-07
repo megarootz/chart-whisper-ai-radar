@@ -34,7 +34,7 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: 'hsl(var(--primary))',
+					DEFAULT: '#3b82f6',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
@@ -74,8 +74,8 @@ export default {
 				bullish: '#22c55e',
 				bearish: '#ef4444', 
 				neutral: '#f59e0b',
-				'chart-bg': '#151923',  // Slightly darker
-				'chart-card': '#262b38',
+				'chart-bg': '#0f0f12',  // Darker background
+				'chart-card': '#1a1a1f',  // Darker card background
 				'chart-text': '#9ca3af',
 			},
 			borderRadius: {
@@ -84,7 +84,7 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			boxShadow: {
-				glow: '0 0 15px -3px rgba(156, 39, 176, 0.4)',
+				glow: '0 0 15px -3px rgba(59, 130, 246, 0.4)',
 				card: '0 4px 20px -5px rgba(0, 0, 0, 0.2)'
 			},
 			keyframes: {
