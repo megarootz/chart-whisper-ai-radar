@@ -33,13 +33,15 @@ export const useChartAnalysis = () => {
 
 Include a detailed recommended trading setup with entry price, stop loss, multiple take-profit targets, entry trigger conditions, and risk-reward ratio.
 
+For chart patterns, identify both complete patterns and potential patterns that may be forming. Include a confidence score and signal direction for each pattern.
+
 Format the response as a structured JSON with the following fields:
 - overallSentiment (string: bullish, bearish, neutral, mildly bullish, or mildly bearish)
 - confidenceScore (number 0-100)
 - marketAnalysis (string)
 - trendDirection (string: bullish, bearish, or neutral)
 - marketFactors (array of objects with name, description, sentiment)
-- chartPatterns (array of objects with name, confidence as number, signal)
+- chartPatterns (array of objects with name, confidence as number, signal, status ["complete" or "forming"])
 - priceLevels (array of at least 4-6 objects with name, price, distance, direction)
 - tradingSetup (object with: type [long, short, or neutral], description, confidence, timeframe, entryPrice, stopLoss, takeProfits [array of numeric values], riskRewardRatio, entryTrigger)
 - pairName (string)
@@ -124,7 +126,8 @@ Make the response concise but comprehensive, and ensure all numeric values are a
             signal: typeof pattern.signal === 'string' ? 
                     pattern.signal.toLowerCase().includes('bullish') ? 'bullish' : 
                     pattern.signal.toLowerCase().includes('bearish') ? 'bearish' : 'neutral' 
-                    : 'neutral'
+                    : 'neutral',
+            status: pattern.status || "complete"
           })) : [],
           priceLevels: Array.isArray(parsedResult.priceLevels) ? parsedResult.priceLevels.map(level => ({
             name: level.name,

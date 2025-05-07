@@ -16,6 +16,7 @@ interface ChartPattern {
   name: string;
   confidence: number;
   signal: 'bullish' | 'bearish' | 'neutral';
+  status?: 'complete' | 'forming';
 }
 
 interface PriceLevel {
@@ -157,9 +158,14 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                     ) : (
                       <span className="h-5 w-5 rounded-full bg-neutral"></span>
                     )}
-                    <span className={`font-medium ${getSentimentTextColor(pattern.signal)}`}>
-                      {pattern.name}
-                    </span>
+                    <div>
+                      <span className={`font-medium ${getSentimentTextColor(pattern.signal)}`}>
+                        {pattern.name}
+                      </span>
+                      {pattern.status === 'forming' && (
+                        <Badge className="ml-2 bg-blue-500/20 text-blue-300 text-xs">Forming</Badge>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-chart-text text-sm">{pattern.confidence}%</span>
