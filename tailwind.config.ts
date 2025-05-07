@@ -15,10 +15,18 @@ export default {
 			center: true,
 			padding: '2rem',
 			screens: {
+				'sm': '640px',
+				'md': '768px',
+				'lg': '1024px',
+				'xl': '1280px',
 				'2xl': '1400px'
 			}
 		},
 		extend: {
+			fontFamily: {
+				sans: ['Inter', 'system-ui', 'sans-serif'],
+				mono: ['JetBrains Mono', 'monospace'],
+			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',
@@ -66,7 +74,7 @@ export default {
 				bullish: '#22c55e',
 				bearish: '#ef4444', 
 				neutral: '#f59e0b',
-				'chart-bg': '#1a1f2c',
+				'chart-bg': '#151923',  // Slightly darker
 				'chart-card': '#262b38',
 				'chart-text': '#9ca3af',
 			},
@@ -74,6 +82,10 @@ export default {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
 				sm: 'calc(var(--radius) - 4px)'
+			},
+			boxShadow: {
+				glow: '0 0 15px -3px rgba(156, 39, 176, 0.4)',
+				card: '0 4px 20px -5px rgba(0, 0, 0, 0.2)'
 			},
 			keyframes: {
 				'accordion-down': {
@@ -101,12 +113,34 @@ export default {
 						opacity: '1',
 						transform: 'translateY(0)'
 					}
+				},
+				'fade-out': {
+					'0%': {
+						opacity: '1',
+						transform: 'translateY(0)'
+					},
+					'100%': {
+						opacity: '0',
+						transform: 'translateY(10px)'
+					}
+				},
+				'slide-in': {
+					'0%': {
+						opacity: '0',
+						transform: 'translateX(-10px)'
+					},
+					'100%': {
+						opacity: '1',
+						transform: 'translateX(0)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
-				'fade-in': 'fade-in 0.3s ease-out'
+				'fade-in': 'fade-in 0.3s ease-out',
+				'fade-out': 'fade-out 0.3s ease-out',
+				'slide-in': 'slide-in 0.3s ease-out'
 			}
 		}
 	},

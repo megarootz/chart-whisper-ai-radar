@@ -91,7 +91,15 @@
   }
 
   body {
-    @apply bg-chart-bg text-foreground;
+    @apply bg-chart-bg text-foreground font-sans;
+    background-image: 
+      radial-gradient(at 50% 0%, rgba(156, 39, 176, 0.1) 0px, transparent 50%), 
+      radial-gradient(at 100% 0%, rgba(94, 53, 177, 0.1) 0px, transparent 50%);
+    background-attachment: fixed;
+  }
+  
+  ::selection {
+    @apply bg-primary/20 text-white;
   }
 }
 
@@ -102,4 +110,115 @@
 .scrollbar-hide {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+.animate-float {
+  animation: float 5s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom glassmorphism effect */
+.glass-card {
+  background: rgba(38, 43, 56, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Card hover effects */
+.card-hover-effect {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+/* Progress bar animation */
+@keyframes fill {
+  0% {
+    width: 0%;
+  }
+}
+
+.animate-fill {
+  animation: fill 1s ease-out forwards;
+}
+
+/* Custom underline animation for links */
+.hover-underline {
+  position: relative;
+}
+
+.hover-underline::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  transform: scaleX(0);
+  height: 1px;
+  bottom: -2px;
+  left: 0;
+  background-color: currentColor;
+  transform-origin: bottom right;
+  transition: transform 0.3s ease-out;
+}
+
+.hover-underline:hover::after {
+  transform: scaleX(1);
+  transform-origin: bottom left;
+}
+
+/* Badge glow effect */
+.badge-glow {
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px -5px currentColor;
+  }
+  to {
+    box-shadow: 0 0 10px 1px currentColor;
+  }
+}
+
+/* Fade in animation for components */
+.fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
