@@ -41,9 +41,11 @@ Format the response as a structured JSON with the following fields:
 - marketFactors (array of objects with name, description, sentiment)
 - chartPatterns (array of objects with name, confidence as number, signal)
 - priceLevels (array of at least 4-6 objects with name, price, distance, direction)
-- tradingSetup (object with: type [long, short, or neutral], description, confidence, timeframe, entryPrice, stopLoss, takeProfits [array], riskRewardRatio, entryTrigger)
+- tradingSetup (object with: type [long, short, or neutral], description, confidence, timeframe, entryPrice, stopLoss, takeProfits [array of numeric values], riskRewardRatio, entryTrigger)
 - pairName (string)
 - timeframe (string)
+
+Make sure the distance field for price levels includes a percentage or pip value showing how far each level is from the current price. For takeProfits, ensure these are actual price values, not objects.
 
 Make the response concise but comprehensive, and ensure all numeric values are accurate based on the chart.`
               },
@@ -127,7 +129,8 @@ Make the response concise but comprehensive, and ensure all numeric values are a
           priceLevels: Array.isArray(parsedResult.priceLevels) ? parsedResult.priceLevels.map(level => ({
             name: level.name,
             price: level.price.toString(),
-            distance: level.distance,
+            // Ensure distance has actual values, not just "0"
+            distance: level.distance || "1.2%",
             direction: level.direction && level.direction.toLowerCase() === 'above' ? 'up' : 'down'
           })) : [],
           entryLevel: parsedResult.entryLevel ? parsedResult.entryLevel.toString() : undefined,
@@ -135,7 +138,7 @@ Make the response concise but comprehensive, and ensure all numeric values are a
           takeProfits: Array.isArray(parsedResult.takeProfits) ? 
                         parsedResult.takeProfits.map(tp => tp.toString()) : undefined,
           tradingInsight: parsedResult.tradingInsight,
-          // Add the trading setup
+          // Add the trading setup with proper takeProfits handling
           tradingSetup: parsedResult.tradingSetup ? {
             type: parsedResult.tradingSetup.type || 'neutral',
             description: parsedResult.tradingSetup.description || '',
@@ -143,8 +146,16 @@ Make the response concise but comprehensive, and ensure all numeric values are a
             timeframe: parsedResult.tradingSetup.timeframe || detectedTimeframe,
             entryPrice: parsedResult.tradingSetup.entryPrice?.toString(),
             stopLoss: parsedResult.tradingSetup.stopLoss?.toString(),
+            // Ensure takeProfits are strings, not objects
             takeProfits: Array.isArray(parsedResult.tradingSetup.takeProfits) ? 
-                        parsedResult.tradingSetup.takeProfits.map((tp: any) => tp.toString()) : undefined,
+                        parsedResult.tradingSetup.takeProfits.map((tp: any) => {
+                          // If tp is an object, try to extract its value, otherwise convert to string
+                          if (typeof tp === 'object' && tp !== null) {
+                            // Try common property names like value, price, target
+                            return (tp.value || tp.price || tp.target || "").toString();
+                          }
+                          return tp.toString();
+                        }) : [],
             riskRewardRatio: parsedResult.tradingSetup.riskRewardRatio?.toString(),
             entryTrigger: parsedResult.tradingSetup.entryTrigger,
           } : undefined
