@@ -15,8 +15,6 @@ const AnalyzePage = () => {
   } = useChartAnalysis();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [pairName, setPairName] = useState('');
-  const [timeframe, setTimeframe] = useState('');
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -34,7 +32,8 @@ const AnalyzePage = () => {
   
   const handleUpload = () => {
     if (file) {
-      analyzeChart(file, pairName || 'Unknown Pair', timeframe || 'Unknown Timeframe');
+      // Use "Auto-detect" as placeholder - the AI will detect from the image
+      analyzeChart(file, "Auto-detect", "Auto-detect");
     }
   };
   
@@ -87,26 +86,15 @@ const AnalyzePage = () => {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-white text-sm">Trading Pair</label>
-                    <input 
-                      type="text" 
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white"
-                      placeholder="e.g. EUR/USD, BTC/USD"
-                      value={pairName}
-                      onChange={(e) => setPairName(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-white text-sm">Timeframe</label>
-                    <input 
-                      type="text" 
-                      className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white"
-                      placeholder="e.g. 1H, 4H, Daily"
-                      value={timeframe}
-                      onChange={(e) => setTimeframe(e.target.value)}
-                    />
+                <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-4">
+                  <div className="flex items-start">
+                    <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-blue-400 font-medium mb-1">Auto-Detection Enabled</h4>
+                      <p className="text-gray-400 text-sm">
+                        Trading pair and timeframe will be automatically detected from your chart image. No manual entry needed.
+                      </p>
+                    </div>
                   </div>
                 </div>
                 

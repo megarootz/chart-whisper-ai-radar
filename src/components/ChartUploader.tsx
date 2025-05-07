@@ -1,7 +1,7 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ChartCandlestick, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -10,8 +10,6 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File, pairName: string, 
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [pairName, setPairName] = useState('');
-  const [timeframe, setTimeframe] = useState('');
   const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -43,28 +41,11 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File, pairName: string, 
       return;
     }
 
-    if (!pairName) {
-      toast({
-        title: "Error",
-        description: "Please enter the trading pair name",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!timeframe) {
-      toast({
-        title: "Error",
-        description: "Please enter the chart timeframe",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsUploading(true);
     
-    // Call the parent's onUpload function which will trigger the analysis
-    onUpload(file, pairName, timeframe);
+    // Call the parent's onUpload function with auto-detected placeholder values
+    // The AI will detect the actual pair and timeframe from the image
+    onUpload(file, "Auto-detect", "Auto-detect");
   };
 
   return (
@@ -112,26 +93,17 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File, pairName: string, 
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="pair-name" className="text-white">Trading Pair</Label>
-              <Input
-                id="pair-name"
-                placeholder="e.g. EUR/USD, BTC/USD, XAU/USD"
-                value={pairName}
-                onChange={(e) => setPairName(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="timeframe" className="text-white">Timeframe</Label>
-              <Input
-                id="timeframe"
-                placeholder="e.g. 1H, 4H, Daily"
-                value={timeframe}
-                onChange={(e) => setTimeframe(e.target.value)}
-                className="bg-gray-800 border-gray-700 text-white"
-              />
+          <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-4">
+            <div className="flex items-start">
+              <div className="flex-shrink-0 bg-blue-900/40 rounded-full p-1 mr-3">
+                <ChartCandlestick className="h-4 w-4 text-blue-400" />
+              </div>
+              <div>
+                <h4 className="text-blue-400 font-medium mb-1">Auto-Detection Enabled</h4>
+                <p className="text-gray-400 text-sm">
+                  Trading pair and timeframe will be automatically detected from your chart image. No manual entry needed.
+                </p>
+              </div>
             </div>
           </div>
         </form>

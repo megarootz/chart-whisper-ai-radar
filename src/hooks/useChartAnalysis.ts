@@ -29,7 +29,7 @@ export const useChartAnalysis = () => {
             role: "user",
             parts: [
               {
-                text: `Analyze this ${pairName} chart on the ${timeframe} timeframe. Provide a detailed technical analysis including trend direction, key support and resistance levels, chart patterns, and trading insights. Format the response as a structured JSON with the following fields: overallSentiment (string: bullish, bearish, or neutral), confidenceScore (number 0-100), marketAnalysis (string), trendDirection (string: bullish, bearish, or neutral), marketFactors (array of objects with name, description, sentiment), chartPatterns (array of objects with name, confidence as number, signal), priceLevels (array of objects with name, price, distance, direction), entryLevel (optional), stopLoss (optional), takeProfits (optional array), tradingInsight (optional). Make the response concise but comprehensive.`
+                text: `Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels, chart patterns, and trading insights. Format the response as a structured JSON with the following fields: overallSentiment (string: bullish, bearish, or neutral), confidenceScore (number 0-100), marketAnalysis (string), trendDirection (string: bullish, bearish, or neutral), marketFactors (array of objects with name, description, sentiment), chartPatterns (array of objects with name, confidence as number, signal), priceLevels (array of objects with name, price, distance, direction), entryLevel (optional), stopLoss (optional), takeProfits (optional array), tradingInsight (optional), pairName (string), timeframe (string). Make the response concise but comprehensive.`
               },
               {
                 inline_data: {
@@ -83,10 +83,14 @@ export const useChartAnalysis = () => {
         const parsedResult = JSON.parse(jsonStr);
         console.log("Parsed JSON result:", parsedResult);
         
+        // Use detected pair name and timeframe from the API if available, otherwise fallback to placeholders
+        const detectedPairName = parsedResult.pairName || pairName;
+        const detectedTimeframe = parsedResult.timeframe || timeframe;
+        
         // Map the parsed result to our AnalysisResultData format
         const analysisData: AnalysisResultData = {
-          pairName,
-          timeframe,
+          pairName: detectedPairName,
+          timeframe: detectedTimeframe,
           overallSentiment: parsedResult.overallSentiment || 'neutral',
           confidenceScore: parsedResult.confidenceScore || 50,
           marketAnalysis: parsedResult.marketAnalysis || 'Analysis not available.',
@@ -121,7 +125,7 @@ export const useChartAnalysis = () => {
 
         toast({
           title: "Analysis Complete",
-          description: `Successfully analyzed the ${pairName} chart on ${timeframe} timeframe`,
+          description: `Successfully analyzed the ${analysisData.pairName} chart on ${analysisData.timeframe} timeframe`,
           variant: "default",
         });
       } catch (jsonError) {
