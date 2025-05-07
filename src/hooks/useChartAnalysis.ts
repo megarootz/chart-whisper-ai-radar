@@ -29,7 +29,23 @@ export const useChartAnalysis = () => {
             role: "user",
             parts: [
               {
-                text: `Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels, chart patterns, and trading insights. Format the response as a structured JSON with the following fields: overallSentiment (string: bullish, bearish, or neutral), confidenceScore (number 0-100), marketAnalysis (string), trendDirection (string: bullish, bearish, or neutral), marketFactors (array of objects with name, description, sentiment), chartPatterns (array of objects with name, confidence as number, signal), priceLevels (array of objects with name, price, distance, direction), entryLevel (optional), stopLoss (optional), takeProfits (optional array), tradingInsight (optional), pairName (string), timeframe (string). Make the response concise but comprehensive.`
+                text: `Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels (at least 4-6 price levels), chart patterns, and trading insights.
+
+Include a detailed recommended trading setup with entry price, stop loss, multiple take-profit targets, entry trigger conditions, and risk-reward ratio.
+
+Format the response as a structured JSON with the following fields:
+- overallSentiment (string: bullish, bearish, neutral, mildly bullish, or mildly bearish)
+- confidenceScore (number 0-100)
+- marketAnalysis (string)
+- trendDirection (string: bullish, bearish, or neutral)
+- marketFactors (array of objects with name, description, sentiment)
+- chartPatterns (array of objects with name, confidence as number, signal)
+- priceLevels (array of at least 4-6 objects with name, price, distance, direction)
+- tradingSetup (object with: type [long, short, or neutral], description, confidence, timeframe, entryPrice, stopLoss, takeProfits [array], riskRewardRatio, entryTrigger)
+- pairName (string)
+- timeframe (string)
+
+Make the response concise but comprehensive, and ensure all numeric values are accurate based on the chart.`
               },
               {
                 inline_data: {
@@ -118,7 +134,20 @@ export const useChartAnalysis = () => {
           stopLoss: parsedResult.stopLoss ? parsedResult.stopLoss.toString() : undefined,
           takeProfits: Array.isArray(parsedResult.takeProfits) ? 
                         parsedResult.takeProfits.map(tp => tp.toString()) : undefined,
-          tradingInsight: parsedResult.tradingInsight
+          tradingInsight: parsedResult.tradingInsight,
+          // Add the trading setup
+          tradingSetup: parsedResult.tradingSetup ? {
+            type: parsedResult.tradingSetup.type || 'neutral',
+            description: parsedResult.tradingSetup.description || '',
+            confidence: parsedResult.tradingSetup.confidence || 50,
+            timeframe: parsedResult.tradingSetup.timeframe || detectedTimeframe,
+            entryPrice: parsedResult.tradingSetup.entryPrice?.toString(),
+            stopLoss: parsedResult.tradingSetup.stopLoss?.toString(),
+            takeProfits: Array.isArray(parsedResult.tradingSetup.takeProfits) ? 
+                        parsedResult.tradingSetup.takeProfits.map((tp: any) => tp.toString()) : undefined,
+            riskRewardRatio: parsedResult.tradingSetup.riskRewardRatio?.toString(),
+            entryTrigger: parsedResult.tradingSetup.entryTrigger,
+          } : undefined
         };
 
         setAnalysisResult(analysisData);
