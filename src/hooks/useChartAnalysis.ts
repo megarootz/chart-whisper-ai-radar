@@ -4,6 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
 import { GeminiRequest, GeminiResponse } from '@/types/gemini';
 
+// Hardcoded API key - Replace this with your actual Gemini API key
+const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
@@ -13,18 +16,9 @@ export const useChartAnalysis = () => {
     try {
       setIsAnalyzing(true);
       
-      // Get API key from local storage
-      const apiKey = localStorage.getItem('geminiApiKey');
-      if (!apiKey) {
-        toast({
-          title: "API Key Missing",
-          description: "Please set your Gemini API key in the settings",
-          variant: "destructive",
-        });
-        setIsAnalyzing(false);
-        return;
-      }
-
+      // Using the hardcoded API key
+      const apiKey = GEMINI_API_KEY;
+      
       // Convert image to base64
       const base64Image = await fileToBase64(file);
       

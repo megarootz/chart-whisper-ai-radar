@@ -1,12 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
-import { Cloud, Upload, Camera, Info, AlertCircle, Settings } from 'lucide-react';
+import React, { useState } from 'react';
+import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
 import AnalysisResult from '@/components/AnalysisResult';
-import ApiKeyModal from '@/components/ApiKeyModal';
 
 const AnalyzePage = () => {
   const {
@@ -18,16 +17,7 @@ const AnalyzePage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pairName, setPairName] = useState('');
   const [timeframe, setTimeframe] = useState('');
-  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
   
-  useEffect(() => {
-    // Check if API key exists, if not, show the modal
-    const hasApiKey = Boolean(localStorage.getItem('geminiApiKey'));
-    if (!hasApiKey) {
-      setApiKeyModalOpen(true);
-    }
-  }, []);
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
@@ -56,15 +46,6 @@ const AnalyzePage = () => {
           <div className="bg-chart-card border border-gray-700 rounded-lg p-6 mb-8">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-xl font-bold text-white">Chart Analysis</h2>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="bg-transparent border-gray-700 text-white hover:bg-gray-800"
-                onClick={() => setApiKeyModalOpen(true)}
-              >
-                <Settings className="h-4 w-4 mr-2" />
-                API Key
-              </Button>
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -131,7 +112,7 @@ const AnalyzePage = () => {
                 
                 <Button 
                   className="w-full bg-primary hover:bg-primary/90 text-white" 
-                  disabled={!file || isAnalyzing || !localStorage.getItem('geminiApiKey')} 
+                  disabled={!file || isAnalyzing} 
                   onClick={handleUpload}
                 >
                   {isAnalyzing ? 'Analyzing...' : <>
@@ -139,11 +120,6 @@ const AnalyzePage = () => {
                     Analyze Chart
                   </>}
                 </Button>
-                {!localStorage.getItem('geminiApiKey') && (
-                  <p className="text-xs text-center text-red-400">
-                    Please set your Gemini API key first
-                  </p>
-                )}
               </div>
               
               {/* Preview Section */}
@@ -213,8 +189,6 @@ const AnalyzePage = () => {
       </main>
       
       <Footer />
-      
-      <ApiKeyModal open={apiKeyModalOpen} onOpenChange={setApiKeyModalOpen} />
     </div>;
 };
 export default AnalyzePage;

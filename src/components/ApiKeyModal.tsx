@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
+// NOTE: This modal is currently unused as the API key is hardcoded in useChartAnalysis.ts
+// It's kept here for reference in case it needs to be reactivated in the future
+
 interface ApiKeyModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -13,7 +16,7 @@ interface ApiKeyModalProps {
 
 const ApiKeyModal = ({ open, onOpenChange }: ApiKeyModalProps) => {
   const { toast } = useToast();
-  const [apiKey, setApiKey] = useState<string>(localStorage.getItem('geminiApiKey') || '');
+  const [apiKey, setApiKey] = useState<string>('');
 
   const handleSave = () => {
     if (!apiKey.trim()) {
@@ -25,7 +28,6 @@ const ApiKeyModal = ({ open, onOpenChange }: ApiKeyModalProps) => {
       return;
     }
 
-    localStorage.setItem('geminiApiKey', apiKey.trim());
     toast({
       title: "Success",
       description: "API key saved successfully",
