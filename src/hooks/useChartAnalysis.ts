@@ -5,7 +5,7 @@ import { AnalysisResultData } from '@/components/AnalysisResult';
 import { GeminiRequest, GeminiResponse } from '@/types/gemini';
 
 // Hardcoded API key - Replace this with your actual Gemini API key
-const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
+const GEMINI_API_KEY = "AIzaSyCImUvlhhUP-q5exVYvh-IMnhYUhNy2bnY";
 
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
