@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +25,9 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File, pairName: string, 
         setPreviewUrl(reader.result as string);
       };
       reader.readAsDataURL(selectedFile);
+      
+      // Reset any previous error state
+      setIsUploading(false);
     }
   };
 
@@ -60,13 +62,9 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File, pairName: string, 
     }
 
     setIsUploading(true);
-    // Call the parent onUpload function
-    onUpload(file, pairName, timeframe);
     
-    // Simulate API call delay
-    setTimeout(() => {
-      setIsUploading(false);
-    }, 2000);
+    // Call the parent's onUpload function which will trigger the analysis
+    onUpload(file, pairName, timeframe);
   };
 
   return (
