@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
-import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
+
+import React, { useState, useEffect } from 'react';
+import { Cloud, Upload, Camera, Info, AlertCircle, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
+import AnalysisResult from '@/components/AnalysisResult';
+import ApiKeyModal from '@/components/ApiKeyModal';
+
 const AnalyzePage = () => {
   const {
     isAnalyzing,
@@ -14,6 +18,16 @@ const AnalyzePage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [pairName, setPairName] = useState('');
   const [timeframe, setTimeframe] = useState('');
+  const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
+  
+  useEffect(() => {
+    // Check if API key exists, if not, show the modal
+    const hasApiKey = Boolean(localStorage.getItem('geminiApiKey'));
+    if (!hasApiKey) {
+      setApiKeyModalOpen(true);
+    }
+  }, []);
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const selectedFile = e.target.files[0];
@@ -27,17 +41,32 @@ const AnalyzePage = () => {
       reader.readAsDataURL(selectedFile);
     }
   };
+  
   const handleUpload = () => {
     if (file) {
       analyzeChart(file, pairName || 'Unknown Pair', timeframe || 'Unknown Timeframe');
     }
   };
+  
   return <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
       <main className="flex-grow py-8 px-6">
         <div className="container mx-auto max-w-6xl">
           <div className="bg-chart-card border border-gray-700 rounded-lg p-6 mb-8">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-bold text-white">Chart Analysis</h2>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-transparent border-gray-700 text-white hover:bg-gray-800"
+                onClick={() => setApiKeyModalOpen(true)}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                API Key
+              </Button>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Upload Section */}
               <div className="space-y-6">
@@ -54,8 +83,6 @@ const AnalyzePage = () => {
                 </div>
                 
                 <div className="text-center">or</div>
-                
-                
                 
                 <div className="bg-gray-800/50 rounded-lg p-4 space-y-2">
                   <h3 className="text-white font-medium">Image Requirements</h3>
@@ -79,15 +106,44 @@ const AnalyzePage = () => {
                   </div>
                 </div>
                 
-                <Button className="w-full bg-primary hover:bg-primary/90 text-white" disabled={!file || isAnalyzing} onClick={handleUpload}>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-white text-sm">Trading Pair</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white"
+                      placeholder="e.g. EUR/USD, BTC/USD"
+                      value={pairName}
+                      onChange={(e) => setPairName(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-white text-sm">Timeframe</label>
+                    <input 
+                      type="text" 
+                      className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white"
+                      placeholder="e.g. 1H, 4H, Daily"
+                      value={timeframe}
+                      onChange={(e) => setTimeframe(e.target.value)}
+                    />
+                  </div>
+                </div>
+                
+                <Button 
+                  className="w-full bg-primary hover:bg-primary/90 text-white" 
+                  disabled={!file || isAnalyzing || !localStorage.getItem('geminiApiKey')} 
+                  onClick={handleUpload}
+                >
                   {isAnalyzing ? 'Analyzing...' : <>
-                      <Upload className="mr-2 h-4 w-4" /> 
-                      Analyze Chart
-                    </>}
+                    <Upload className="mr-2 h-4 w-4" /> 
+                    Analyze Chart
+                  </>}
                 </Button>
-                <p className="text-xs text-center text-gray-400">
-                  Upload a chart image to enable analysis
-                </p>
+                {!localStorage.getItem('geminiApiKey') && (
+                  <p className="text-xs text-center text-red-400">
+                    Please set your Gemini API key first
+                  </p>
+                )}
               </div>
               
               {/* Preview Section */}
@@ -139,11 +195,10 @@ const AnalyzePage = () => {
           <div className="bg-chart-card border border-gray-700 rounded-lg p-6">
             <h2 className="text-xl font-bold text-white mb-8">Analysis Results</h2>
             
-            {analysisResult ?
-          // Show analysis results here
-          <div>
-                {/* We'll utilize the existing AnalysisResult component */}
-              </div> : <div className="flex flex-col items-center justify-center py-16">
+            {analysisResult ? (
+              <AnalysisResult data={analysisResult} />
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16">
                 <div className="bg-gray-800 p-4 rounded-full mb-4">
                   <AlertCircle className="h-8 w-8 text-gray-400" />
                 </div>
@@ -151,12 +206,15 @@ const AnalyzePage = () => {
                 <p className="text-gray-400 text-center max-w-md">
                   Upload a chart image and click "Analyze Chart" to get detailed technical analysis
                 </p>
-              </div>}
+              </div>
+            )}
           </div>
         </div>
       </main>
       
       <Footer />
+      
+      <ApiKeyModal open={apiKeyModalOpen} onOpenChange={setApiKeyModalOpen} />
     </div>;
 };
 export default AnalyzePage;
