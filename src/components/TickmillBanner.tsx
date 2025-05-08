@@ -11,10 +11,10 @@ const TickmillBanner = () => {
           <div className="flex items-center gap-2">
             <Star className="text-yellow-400 h-5 w-5" fill="currentColor" />
             <h3 className="text-lg md:text-xl font-bold text-white">
-              Highly Recommended Broker
+              Powered by Tickmill
             </h3>
             <div className="ml-1 px-2 py-0.5 bg-primary/20 rounded-md text-xs text-primary font-medium">
-              Tickmill
+              Premium
             </div>
           </div>
           
