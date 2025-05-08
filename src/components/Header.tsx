@@ -18,10 +18,10 @@ const Header = () => {
   ];
 
   return (
-    <header className="w-full py-4 px-6 bg-black border-b border-gray-800 sticky top-0 z-30">
+    <header className="w-full py-3 px-4 md:py-4 md:px-6 bg-black border-b border-gray-800 sticky top-0 z-30">
       <div className="container mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2">
-          <h1 className="text-2xl font-bold text-primary">
+          <h1 className={cn("font-bold text-primary", isMobile ? "text-xl" : "text-2xl")}>
             ForexRadar7
           </h1>
         </Link>
@@ -88,3 +88,8 @@ const Header = () => {
 };
 
 export default Header;
+
+// Helper function for className conditionals - needed since we're importing it
+const cn = (...classes: (string | boolean | undefined)[]) => {
+  return classes.filter(Boolean).join(' ');
+};

@@ -4,16 +4,20 @@ import * as React from "react";
 const MOBILE_BREAKPOINT = 768;
 
 export function useIsMobile() {
-  const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined);
+  const [isMobile, setIsMobile] = React.useState<boolean>(() => {
+    // Initialize with the current window width if in browser environment
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < MOBILE_BREAKPOINT;
+    }
+    // Default to false if not in browser
+    return false;
+  });
 
   React.useEffect(() => {
     // Function to check if the screen is mobile
     const checkIsMobile = () => {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
-
-    // Set the initial value
-    checkIsMobile();
 
     // Add event listener
     const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
@@ -36,6 +40,5 @@ export function useIsMobile() {
     };
   }, []);
 
-  // Return false until the effect has run
-  return isMobile === undefined ? false : isMobile;
+  return isMobile;
 }
