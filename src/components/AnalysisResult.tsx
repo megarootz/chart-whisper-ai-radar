@@ -190,7 +190,6 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                   <tr>
                     <th className="px-4 py-3">Price Level</th>
                     <th className="px-4 py-3">Price</th>
-                    <th className="px-4 py-3">Distance</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -201,18 +200,6 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                         {level.name}
                       </td>
                       <td className="px-4 py-3 text-white">{level.price}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center">
-                          {level.direction === 'up' ? (
-                            <CircleArrowUp className="h-4 w-4 text-bearish mr-1" />
-                          ) : (
-                            <CircleArrowDown className="h-4 w-4 text-bullish mr-1" />
-                          )}
-                          <span className={level.direction === 'up' ? "text-bearish" : "text-bullish"}>
-                            {level.distance}
-                          </span>
-                        </div>
-                      </td>
                     </tr>
                   ))}
                 </tbody>
