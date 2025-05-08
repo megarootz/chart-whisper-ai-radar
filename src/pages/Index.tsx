@@ -1,21 +1,23 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import Header from '@/components/Header';
 import ChartUploader from '@/components/ChartUploader';
 import AnalysisResult from '@/components/AnalysisResult';
 import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
 import { Separator } from '@/components/ui/separator';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const { isAnalyzing, analysisResult, analyzeChart } = useChartAnalysis();
+  const isMobile = useIsMobile();
   
   const handleChartUpload = (file: File, pairName: string, timeframe: string) => {
     analyzeChart(file, pairName, timeframe);
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-chart-bg">
+    <div className={`flex flex-col min-h-screen bg-chart-bg ${isMobile ? 'pb-24' : ''}`}>
       <Header />
       <main className="flex-1 container mx-auto px-4 py-8 md:px-6">
         <div className="max-w-4xl mx-auto space-y-8">
@@ -38,7 +40,7 @@ const Index = () => {
           )}
         </div>
       </main>
-      <Footer />
+      {!isMobile && <Footer />}
     </div>
   );
 };

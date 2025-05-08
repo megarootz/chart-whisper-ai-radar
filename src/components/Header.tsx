@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { ChartCandlestick, Menu, X } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -14,6 +14,7 @@ const Header = () => {
     { label: 'Home', href: '/' },
     { label: 'Analyze', href: '/analyze' },
     { label: 'History', href: '/history' },
+    { label: 'Profile', href: '/profile' },
   ];
 
   return (
@@ -32,14 +33,9 @@ const Header = () => {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-[80%]">
-              <div className="flex flex-col space-y-6 pt-6">
-                <div className="flex justify-between items-center">
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-xl font-bold text-primary">
-                      ForexRadar7
-                    </h2>
-                  </div>
+            <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-[80%] pt-16">
+              <div className="flex flex-col space-y-6">
+                <div className="flex justify-between items-center absolute top-4 right-4">
                   <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}>
                     <X className="h-5 w-5 text-white" />
                   </Button>

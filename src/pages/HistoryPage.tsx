@@ -5,6 +5,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Link } from 'react-router-dom';
 import { AnalysisResultData } from '@/components/AnalysisResult';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Update the interface for the history items to include timestamp and date
 interface HistoryAnalysisData extends AnalysisResultData {
@@ -15,6 +16,7 @@ interface HistoryAnalysisData extends AnalysisResultData {
 const HistoryPage = () => {
   const [dateFilter, setDateFilter] = useState('all');
   const [analysisHistory, setAnalysisHistory] = useState<HistoryAnalysisData[]>([]);
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     // Load analysis history from localStorage
@@ -50,7 +52,7 @@ const HistoryPage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className="flex-grow py-8 px-6">
+      <main className={`flex-grow py-8 px-6 ${isMobile ? 'pb-24' : ''}`}>
         <div className="container mx-auto max-w-6xl">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-white">Analysis History</h1>
@@ -133,7 +135,7 @@ const HistoryPage = () => {
         </div>
       </main>
       
-      <Footer />
+      {!isMobile && <Footer />}
     </div>
   );
 };

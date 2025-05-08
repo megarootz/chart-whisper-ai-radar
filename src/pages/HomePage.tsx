@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, ChevronRight, Upload, LineChart, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +5,7 @@ import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { AnalysisResultData } from '@/components/AnalysisResult';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 type FeatureCardProps = {
   icon: React.ReactNode;
@@ -80,6 +80,7 @@ const AnalysisCard = ({ pairName, timeframe, date, sentiment, description, index
 
 const HomePage = () => {
   const [recentAnalyses, setRecentAnalyses] = useState<AnalysisResultData[]>([]);
+  const isMobile = useIsMobile();
   
   useEffect(() => {
     // Load analysis history from localStorage
@@ -113,7 +114,7 @@ const HomePage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className="flex-grow">
+      <main className={`flex-grow ${isMobile ? 'pb-24' : ''}`}>
         {/* Hero Section */}
         <section className="py-16 px-6">
           <div className="container mx-auto text-center">
@@ -199,7 +200,7 @@ const HomePage = () => {
         </section>
       </main>
       
-      <Footer />
+      {!isMobile && <Footer />}
     </div>
   );
 };
