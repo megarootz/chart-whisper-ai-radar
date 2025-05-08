@@ -12,6 +12,31 @@ export const useChartAnalysis = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
 
+  // Helper function to save analysis to history
+  const saveAnalysisToHistory = (analysis: AnalysisResultData) => {
+    try {
+      // Add timestamp to the analysis
+      const analysisWithTimestamp = {
+        ...analysis,
+        timestamp: new Date().toLocaleString()
+      };
+      
+      // Get existing history or initialize empty array
+      const existingHistory = localStorage.getItem('chartAnalysisHistory');
+      const history = existingHistory ? JSON.parse(existingHistory) : [];
+      
+      // Add new analysis to the beginning of the array
+      history.unshift(analysisWithTimestamp);
+      
+      // Save back to localStorage
+      localStorage.setItem('chartAnalysisHistory', JSON.stringify(history));
+      
+      console.log('Analysis saved to history:', analysisWithTimestamp);
+    } catch (error) {
+      console.error('Failed to save analysis to history:', error);
+    }
+  };
+
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
       setIsAnalyzing(true);
@@ -216,7 +241,11 @@ Make the response concise but comprehensive, and ensure all numeric values are a
           } : undefined
         };
 
+        // Save the analysis result
         setAnalysisResult(analysisData);
+        
+        // Save the analysis to history in localStorage
+        saveAnalysisToHistory(analysisData);
 
         toast({
           title: "Analysis Complete",

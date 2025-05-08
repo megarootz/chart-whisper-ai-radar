@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ArrowRight, ChevronRight, Upload, LineChart, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { AnalysisResultData } from '@/components/AnalysisResult';
 
 type FeatureCardProps = {
   icon: React.ReactNode;
@@ -28,9 +29,10 @@ type AnalysisCardProps = {
   date: string;
   sentiment: string;
   description: string;
+  index: number;
 };
 
-const AnalysisCard = ({ pairName, timeframe, date, sentiment, description }: AnalysisCardProps) => (
+const AnalysisCard = ({ pairName, timeframe, date, sentiment, description, index }: AnalysisCardProps) => (
   <div className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
     <div className="p-4">
       <div className="flex justify-between items-center mb-2">
@@ -42,7 +44,10 @@ const AnalysisCard = ({ pairName, timeframe, date, sentiment, description }: Ana
             <span className="text-xs text-gray-400">{date}</span>
           </div>
         </div>
-        <div className={`px-3 py-1 text-xs font-medium rounded-full ${sentiment === 'Bullish' ? 'bg-green-900 text-green-400' : sentiment === 'Bearish' ? 'bg-red-900 text-red-400' : 'bg-yellow-900 text-yellow-400'}`}>
+        <div className={`px-3 py-1 text-xs font-medium rounded-full ${
+          sentiment.toLowerCase().includes('bullish') ? 'bg-green-900 text-green-400' : 
+          sentiment.toLowerCase().includes('bearish') ? 'bg-red-900 text-red-400' : 
+          'bg-yellow-900 text-yellow-400'}`}>
           {sentiment}
         </div>
       </div>
@@ -51,7 +56,7 @@ const AnalysisCard = ({ pairName, timeframe, date, sentiment, description }: Ana
       
       <div className="flex justify-between items-center">
         <Link 
-          to="/analysis/1" 
+          to={`/analysis/${index}`}
           className="text-primary hover:underline flex items-center text-sm"
         >
           View Details <ChevronRight className="h-4 w-4 ml-1" />
@@ -74,6 +79,18 @@ const AnalysisCard = ({ pairName, timeframe, date, sentiment, description }: Ana
 );
 
 const HomePage = () => {
+  const [recentAnalyses, setRecentAnalyses] = useState<AnalysisResultData[]>([]);
+  
+  useEffect(() => {
+    // Load analysis history from localStorage
+    const storedHistory = localStorage.getItem('chartAnalysisHistory');
+    if (storedHistory) {
+      const parsedHistory = JSON.parse(storedHistory);
+      // Show at most 2 recent analyses
+      setRecentAnalyses(parsedHistory.slice(0, 2)); 
+    }
+  }, []);
+
   const features = [
     {
       icon: <Upload className="h-6 w-6 text-primary" />,
@@ -89,16 +106,6 @@ const HomePage = () => {
       icon: <LineChart className="h-6 w-6 text-primary" />,
       title: "Support & Resistance",
       description: "Get key support and resistance levels with entry and exit point recommendations."
-    }
-  ];
-
-  const recentAnalyses = [
-    {
-      pairName: "XAU/USD (Gold)",
-      timeframe: "1H",
-      date: "5/8/2025, 6:32:46 AM",
-      sentiment: "Bullish",
-      description: "The 1H chart shows a recent pullback in Gold after a strong upward move, consolidating around the $3360-$3380 level. This could be a temporary retracement within a broader uptrend."
     }
   ];
 
@@ -123,7 +130,12 @@ const HomePage = () => {
                   <Upload className="mr-2 h-5 w-5" /> Analyze Chart
                 </Link>
               </Button>
-              <Button asChild variant="outline" size="lg" className="border-gray-700 hover:bg-gray-800 text-white">
+              <Button 
+                asChild 
+                variant="outline" 
+                size="lg" 
+                className="border-gray-700 bg-gray-800 hover:bg-gray-700 text-white"
+              >
                 <Link to="/history">
                   View History
                 </Link>
@@ -161,18 +173,28 @@ const HomePage = () => {
               </Link>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {recentAnalyses.map((analysis, index) => (
-                <AnalysisCard 
-                  key={index}
-                  pairName={analysis.pairName}
-                  timeframe={analysis.timeframe}
-                  date={analysis.date}
-                  sentiment={analysis.sentiment}
-                  description={analysis.description}
-                />
-              ))}
-            </div>
+            {recentAnalyses.length === 0 ? (
+              <div className="text-center py-12 bg-chart-card border border-gray-700 rounded-lg">
+                <p className="text-gray-400">No analysis history found. Start by analyzing a chart!</p>
+                <Button asChild className="mt-4">
+                  <Link to="/analyze">Analyze a Chart</Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {recentAnalyses.map((analysis, index) => (
+                  <AnalysisCard 
+                    key={index}
+                    index={index}
+                    pairName={analysis.pairName}
+                    timeframe={analysis.timeframe}
+                    date={analysis.timestamp || analysis.date || new Date().toLocaleString()}
+                    sentiment={analysis.overallSentiment}
+                    description={analysis.marketAnalysis}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </section>
       </main>
