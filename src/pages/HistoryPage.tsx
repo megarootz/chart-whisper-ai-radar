@@ -7,9 +7,15 @@ import Footer from '@/components/Footer';
 import { Link } from 'react-router-dom';
 import { AnalysisResultData } from '@/components/AnalysisResult';
 
+// Update the interface for the history items to include timestamp and date
+interface HistoryAnalysisData extends AnalysisResultData {
+  timestamp?: string;
+  date?: string;
+}
+
 const HistoryPage = () => {
   const [dateFilter, setDateFilter] = useState('all');
-  const [analysisHistory, setAnalysisHistory] = useState<AnalysisResultData[]>([]);
+  const [analysisHistory, setAnalysisHistory] = useState<HistoryAnalysisData[]>([]);
   
   useEffect(() => {
     // Load analysis history from localStorage
@@ -30,6 +36,7 @@ const HistoryPage = () => {
     const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).getTime();
     
     return analysisHistory.filter(item => {
+      // Use timestamp or date property, or fallback to current time
       const itemDate = new Date(item.timestamp || item.date || Date.now()).getTime();
       
       if (dateFilter === 'today') return itemDate >= today;
