@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { ArrowRight, ChevronRight, Upload, LineChart, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,6 +7,7 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { AnalysisResultData } from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
+import TickmillBanner from '@/components/TickmillBanner';
 
 type FeatureCardProps = {
   icon: React.ReactNode;
@@ -125,7 +127,7 @@ const HomePage = () => {
               Upload or capture your candlestick charts and get AI-powered analysis with pattern
               recognition, trend identification, and trading suggestions.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
               <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-white">
                 <Link to="/analyze">
                   <Upload className="mr-2 h-5 w-5" /> Analyze Chart
@@ -141,6 +143,11 @@ const HomePage = () => {
                   View History
                 </Link>
               </Button>
+            </div>
+            
+            {/* Tickmill Banner */}
+            <div className="max-w-3xl mx-auto mt-10">
+              <TickmillBanner />
             </div>
           </div>
         </section>
