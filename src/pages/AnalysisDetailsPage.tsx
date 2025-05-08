@@ -25,6 +25,7 @@ const AnalysisDetailsPage = () => {
         const index = id ? parseInt(id) : 0;
         
         if (history[index]) {
+          console.log("Loaded analysis details:", history[index]);
           setAnalysisData(history[index]);
         } else {
           console.error("Analysis not found for index:", index);

@@ -37,6 +37,25 @@ export const useChartAnalysis = () => {
     }
   };
 
+  // Helper function to calculate distance in pips properly
+  const calculateDistanceInPips = (currentPrice: number, level: number, isForex: boolean, pairName: string) => {
+    // Determine pip multiplier based on pair type
+    let pipMultiplier;
+    if (isForex) {
+      // For JPY pairs, a pip is 0.01, for other forex pairs, a pip is 0.0001
+      pipMultiplier = pairName.includes('JPY') ? 0.01 : 0.0001;
+    } else {
+      // For non-forex (crypto, indices, stocks), use 0.01 as default
+      pipMultiplier = 0.01;
+    }
+    
+    // Calculate the distance in pips
+    const priceDifference = Math.abs(level - currentPrice);
+    const pips = Math.round(priceDifference / pipMultiplier);
+    
+    return pips;
+  };
+
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
       setIsAnalyzing(true);
@@ -141,12 +160,14 @@ Make the response concise but comprehensive, and ensure all numeric values are a
         // Determine if this is a forex pair to calculate pips correctly
         const isForex = detectedPairName.length === 6 && /[A-Z]{6}/.test(detectedPairName);
         
-        // Calculate pip value based on pair type
-        // For major forex pairs like EURUSD, GBPUSD, a pip is 0.0001
-        // For JPY pairs like USDJPY, a pip is 0.01
-        const pipMultiplier = isForex ? 
-          (detectedPairName.includes('JPY') ? 0.01 : 0.0001) : 
-          0.01; // Default to 0.01 for non-forex
+        // Find the current price level if available
+        const currentPriceObj = Array.isArray(parsedResult.priceLevels) ? 
+          parsedResult.priceLevels.find((l: any) => 
+            l.name && l.name.toLowerCase().includes('current')
+          ) : null;
+        
+        const currentPrice = currentPriceObj ? parseFloat(currentPriceObj.price) : null;
+        console.log("Detected current price:", currentPrice);
         
         // Map the parsed result to our AnalysisResultData format
         const analysisData: AnalysisResultData = {
@@ -171,46 +192,48 @@ Make the response concise but comprehensive, and ensure all numeric values are a
             status: pattern.status || "complete"
           })) : [],
           priceLevels: Array.isArray(parsedResult.priceLevels) ? parsedResult.priceLevels.map(level => {
-            // Convert distance to pips based on the pair type
-            let distanceInPips = '';
             const price = parseFloat(level.price);
+            let direction: 'up' | 'down';
+            let pips: number;
             
-            if (level.distance) {
-              // If the distance is already provided as a percentage or number
-              if (typeof level.distance === 'string' && level.distance.includes('%')) {
-                distanceInPips = level.distance; // Keep percentage as is
-              } else {
-                // Calculate pips difference
-                const distanceNum = parseFloat(level.distance);
-                if (!isNaN(distanceNum)) {
-                  // For raw price difference, convert to pips
-                  const pips = Math.abs(distanceNum / pipMultiplier);
-                  distanceInPips = `${Math.round(pips)} pips`;
-                } else {
-                  distanceInPips = level.distance.toString();
-                }
-              }
-            } else {
-              // If distance is not directly provided in the API response,
-              // we need a current price to calculate it
-              const currentPriceLevel = parsedResult.priceLevels.find((l: any) => 
-                l.name && l.name.toLowerCase().includes('current'));
+            // Determine direction based on comparison with current price
+            if (currentPrice !== null && !isNaN(price)) {
+              direction = price > currentPrice ? 'up' : 'down';
               
-              if (currentPriceLevel && currentPriceLevel.price) {
-                const currentPrice = parseFloat(currentPriceLevel.price);
-                if (!isNaN(currentPrice) && !isNaN(price)) {
-                  const diff = Math.abs(price - currentPrice);
-                  const pips = Math.round(diff / pipMultiplier);
-                  distanceInPips = `${pips} pips`;
+              // Calculate pips using the improved helper function
+              pips = calculateDistanceInPips(currentPrice, price, isForex, detectedPairName);
+            } else {
+              // Fallback if current price is not available
+              direction = level.direction && level.direction.toLowerCase().includes('above') ? 'up' : 'down';
+              
+              // Try to use the distance from the API if available
+              if (level.distance) {
+                if (typeof level.distance === 'string' && level.distance.includes('%')) {
+                  return {
+                    name: level.name,
+                    price: price.toString(),
+                    distance: level.distance, // Keep percentage as is
+                    direction
+                  };
+                } else {
+                  // Parse numeric distance if available
+                  const distanceNum = parseFloat(level.distance);
+                  if (!isNaN(distanceNum)) {
+                    pips = Math.round(distanceNum);
+                  } else {
+                    pips = 0; // Default if we can't parse
+                  }
                 }
+              } else {
+                pips = 0; // Default if distance not provided
               }
             }
-
+            
             return {
               name: level.name,
               price: price.toString(),
-              distance: distanceInPips || "N/A",
-              direction: level.direction && level.direction.toLowerCase().includes('above') ? 'up' : 'down'
+              distance: `${pips} pips`,
+              direction
             };
           }) : [],
           entryLevel: parsedResult.entryLevel ? parsedResult.entryLevel.toString() : undefined,
