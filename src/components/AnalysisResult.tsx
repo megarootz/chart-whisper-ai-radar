@@ -53,6 +53,8 @@ export interface AnalysisResultData {
   takeProfits?: string[];
   tradingInsight?: string;
   tradingSetup?: TradingSetup;
+  timestamp?: string;
+  date?: string;
 }
 
 const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
