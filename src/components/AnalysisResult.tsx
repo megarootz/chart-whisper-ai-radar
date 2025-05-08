@@ -188,7 +188,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                   <tr>
                     <th className="px-4 py-3">Price Level</th>
                     <th className="px-4 py-3">Price</th>
-                    <th className="px-4 py-3">Distance from Current</th>
+                    <th className="px-4 py-3">Distance</th>
                   </tr>
                 </thead>
                 <tbody>

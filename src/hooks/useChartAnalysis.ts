@@ -29,7 +29,7 @@ export const useChartAnalysis = () => {
             role: "user",
             parts: [
               {
-                text: `Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels (at least 4-6 price levels), chart patterns, and trading insights.
+                text: `Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels, chart patterns, and trading insights.
 
 Include a detailed recommended trading setup with entry price, stop loss, multiple take-profit targets, entry trigger conditions, and risk-reward ratio.
 
@@ -42,12 +42,18 @@ Format the response as a structured JSON with the following fields:
 - trendDirection (string: bullish, bearish, or neutral)
 - marketFactors (array of objects with name, description, sentiment)
 - chartPatterns (array of objects with name, confidence as number, signal, status ["complete" or "forming"])
-- priceLevels (array of at least 4-6 objects with name, price, distance, direction)
+- priceLevels (array of objects with name, price, distance, direction)
 - tradingSetup (object with: type [long, short, or neutral], description, confidence, timeframe, entryPrice, stopLoss, takeProfits [array of numeric values], riskRewardRatio, entryTrigger)
 - pairName (string)
 - timeframe (string)
 
-Make sure the distance field for price levels includes a percentage or pip value showing how far each level is from the current price. For takeProfits, ensure these are actual price values, not objects.
+For the priceLevels, give me at least 6-8 PRECISE price levels (not rounded numbers) that correspond to actual visible support and resistance zones visible in the chart. Be specific, not generic. For example, instead of "1.2000", provide the exact price like "1.1987". Each level should include:
+- name (describing the level, e.g., "Strong weekly resistance", "Daily support", "Recent lower high")
+- price (the exact price level without rounding)
+- distance (percentage or raw pips/points from current price)
+- direction (above or below current price)
+
+For takeProfits, ensure these are actual precise price values, not objects.
 
 Make the response concise but comprehensive, and ensure all numeric values are accurate based on the chart.`
               },
@@ -107,6 +113,16 @@ Make the response concise but comprehensive, and ensure all numeric values are a
         const detectedPairName = parsedResult.pairName || pairName;
         const detectedTimeframe = parsedResult.timeframe || timeframe;
         
+        // Determine if this is a forex pair to calculate pips correctly
+        const isForex = detectedPairName.length === 6 && /[A-Z]{6}/.test(detectedPairName);
+        
+        // Calculate pip value based on pair type
+        // For major forex pairs like EURUSD, GBPUSD, a pip is 0.0001
+        // For JPY pairs like USDJPY, a pip is 0.01
+        const pipMultiplier = isForex ? 
+          (detectedPairName.includes('JPY') ? 0.01 : 0.0001) : 
+          0.01; // Default to 0.01 for non-forex
+        
         // Map the parsed result to our AnalysisResultData format
         const analysisData: AnalysisResultData = {
           pairName: detectedPairName,
@@ -129,13 +145,49 @@ Make the response concise but comprehensive, and ensure all numeric values are a
                     : 'neutral',
             status: pattern.status || "complete"
           })) : [],
-          priceLevels: Array.isArray(parsedResult.priceLevels) ? parsedResult.priceLevels.map(level => ({
-            name: level.name,
-            price: level.price.toString(),
-            // Ensure distance has actual values, not just "0"
-            distance: level.distance || "1.2%",
-            direction: level.direction && level.direction.toLowerCase() === 'above' ? 'up' : 'down'
-          })) : [],
+          priceLevels: Array.isArray(parsedResult.priceLevels) ? parsedResult.priceLevels.map(level => {
+            // Convert distance to pips based on the pair type
+            let distanceInPips = '';
+            const price = parseFloat(level.price);
+            
+            if (level.distance) {
+              // If the distance is already provided as a percentage or number
+              if (typeof level.distance === 'string' && level.distance.includes('%')) {
+                distanceInPips = level.distance; // Keep percentage as is
+              } else {
+                // Calculate pips difference
+                const distanceNum = parseFloat(level.distance);
+                if (!isNaN(distanceNum)) {
+                  // For raw price difference, convert to pips
+                  const pips = Math.abs(distanceNum / pipMultiplier);
+                  distanceInPips = `${Math.round(pips)} pips`;
+                } else {
+                  distanceInPips = level.distance.toString();
+                }
+              }
+            } else {
+              // If distance is not directly provided in the API response,
+              // we need a current price to calculate it
+              const currentPriceLevel = parsedResult.priceLevels.find((l: any) => 
+                l.name && l.name.toLowerCase().includes('current'));
+              
+              if (currentPriceLevel && currentPriceLevel.price) {
+                const currentPrice = parseFloat(currentPriceLevel.price);
+                if (!isNaN(currentPrice) && !isNaN(price)) {
+                  const diff = Math.abs(price - currentPrice);
+                  const pips = Math.round(diff / pipMultiplier);
+                  distanceInPips = `${pips} pips`;
+                }
+              }
+            }
+
+            return {
+              name: level.name,
+              price: price.toString(),
+              distance: distanceInPips || "N/A",
+              direction: level.direction && level.direction.toLowerCase().includes('above') ? 'up' : 'down'
+            };
+          }) : [],
           entryLevel: parsedResult.entryLevel ? parsedResult.entryLevel.toString() : undefined,
           stopLoss: parsedResult.stopLoss ? parsedResult.stopLoss.toString() : undefined,
           takeProfits: Array.isArray(parsedResult.takeProfits) ? 
