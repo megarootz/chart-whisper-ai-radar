@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -56,6 +55,81 @@ export const useChartAnalysis = () => {
     return pips;
   };
 
+  // New helper function to validate if the stop loss and take profit levels are appropriate for the timeframe
+  const validateAndAdjustLevels = (
+    tradingSetup: any, 
+    timeframe: string, 
+    currentPrice: number | null
+  ) => {
+    if (!tradingSetup || !currentPrice) return tradingSetup;
+    
+    // Define minimum pip distances based on timeframe
+    const minPipDistances: {[key: string]: number} = {
+      'M1': 5,
+      'M5': 10, 
+      'M15': 15,
+      'H1': 20,
+      'H4': 50,
+      'D1': 100,
+      'Daily': 100,
+      'W1': 200,
+      'Weekly': 200,
+      'MN': 300,
+      'Monthly': 300
+    };
+    
+    // Get the normalized timeframe key
+    const normalizedTimeframe = timeframe.toUpperCase().replace('MINUTE', 'M').replace('HOUR', 'H').replace('DAY', 'D');
+    
+    // Default minimum distance if timeframe is not recognized
+    let minDistance = 20;
+    
+    // Find the appropriate minimum distance based on timeframe
+    Object.keys(minPipDistances).forEach(key => {
+      if (normalizedTimeframe.includes(key)) {
+        minDistance = minPipDistances[key];
+      }
+    });
+    
+    // Create a copy of the trading setup to modify
+    const adjustedSetup = { ...tradingSetup };
+    
+    // Check if stop loss distance is too small
+    if (adjustedSetup.stopLoss) {
+      const stopLossValue = parseFloat(adjustedSetup.stopLoss);
+      const stopLossPips = Math.abs(currentPrice - stopLossValue) * 10000;
+      
+      if (stopLossPips < minDistance) {
+        // Adjust stop loss to meet minimum distance
+        const adjustment = (minDistance / 10000) * (stopLossValue < currentPrice ? -1 : 1);
+        adjustedSetup.stopLoss = (currentPrice + adjustment).toFixed(5);
+        console.log(`Adjusted stop loss from ${stopLossValue} to ${adjustedSetup.stopLoss} to meet minimum distance`);
+      }
+    }
+    
+    // Check if take profit targets are too close
+    if (Array.isArray(adjustedSetup.takeProfits) && adjustedSetup.takeProfits.length > 0) {
+      const adjustedTakeProfits = adjustedSetup.takeProfits.map((tp: string) => {
+        const tpValue = parseFloat(tp);
+        if (isNaN(tpValue)) return tp;
+        
+        const tpPips = Math.abs(currentPrice - tpValue) * 10000;
+        
+        if (tpPips < minDistance * 1.5) { // Take profit should be at least 1.5x the min distance
+          // Adjust take profit to meet minimum distance
+          const adjustment = (minDistance * 1.5 / 10000) * (tpValue < currentPrice ? -1 : 1);
+          return (currentPrice + adjustment).toFixed(5);
+        }
+        
+        return tp;
+      });
+      
+      adjustedSetup.takeProfits = adjustedTakeProfits;
+    }
+    
+    return adjustedSetup;
+  };
+
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
       setIsAnalyzing(true);
@@ -66,7 +140,7 @@ export const useChartAnalysis = () => {
       // Convert image to base64
       const base64Image = await fileToBase64(file);
       
-      // Prepare request for Gemini API
+      // Prepare request for Gemini API with improved prompt
       const requestData: GeminiRequest = {
         contents: [
           {
@@ -76,6 +150,15 @@ export const useChartAnalysis = () => {
                 text: `Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels, chart patterns, and trading insights.
 
 Include a detailed recommended trading setup with entry price, stop loss, multiple take-profit targets, entry trigger conditions, and risk-reward ratio.
+
+IMPORTANT: Make sure your stop loss and take profit levels are appropriate for the timeframe. Use these guidelines:
+- For M1 (1-minute) charts: 5-20 pips SL/TP range
+- For M5 (5-minute) charts: 10-30 pips SL/TP range
+- For M15 (15-minute) charts: 15-50 pips SL/TP range
+- For H1 (1-hour) charts: 20-100 pips SL/TP range
+- For H4 (4-hour) charts: 50-200 pips SL/TP range
+- For Daily charts: 100-500 pips SL/TP range
+- For Weekly charts: 200+ pips SL/TP range
 
 For chart patterns, identify both complete patterns and potential patterns that may be forming. Include a confidence score and signal direction for each pattern.
 
@@ -168,6 +251,15 @@ Make the response concise but comprehensive, and ensure all numeric values are a
         
         const currentPrice = currentPriceObj ? parseFloat(currentPriceObj.price) : null;
         console.log("Detected current price:", currentPrice);
+        
+        // Validate and adjust trading setup if needed
+        if (parsedResult.tradingSetup && currentPrice !== null) {
+          parsedResult.tradingSetup = validateAndAdjustLevels(
+            parsedResult.tradingSetup, 
+            detectedTimeframe, 
+            currentPrice
+          );
+        }
         
         // Map the parsed result to our AnalysisResultData format
         const analysisData: AnalysisResultData = {

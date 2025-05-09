@@ -7,6 +7,7 @@ import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
 import AnalysisResult from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
+import TickmillBanner from '@/components/TickmillBanner';
 
 const AnalyzePage = () => {
   const {
@@ -145,9 +146,9 @@ const AnalyzePage = () => {
                     <div className="flex items-start">
                       <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                       <div>
-                        <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">Ready to Analyze?</h4>
+                        <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">Timeframe Info</h4>
                         <p className="text-gray-400 text-xs md:text-sm">
-                          Get detailed analysis including pattern recognition, support/resistance levels, and trend predictions.
+                          The AI will adapt stop loss and take profit levels based on the detected timeframe of your chart.
                         </p>
                       </div>
                     </div>
@@ -158,20 +159,24 @@ const AnalyzePage = () => {
           </div>
           
           {/* Analysis Results */}
-          <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6">
-            <h2 className="text-lg md:text-xl font-bold text-white mb-6 md:mb-8">Analysis Results</h2>
-            
+          <div className="space-y-6">
             {analysisResult ? (
-              <AnalysisResult data={analysisResult} />
+              <>
+                <AnalysisResult data={analysisResult} />
+                <TickmillBanner />
+              </>
             ) : (
-              <div className="flex flex-col items-center justify-center py-12 md:py-16">
-                <div className="bg-gray-800 p-3 md:p-4 rounded-full mb-3 md:mb-4">
-                  <AlertCircle className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
+              <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6">
+                <h2 className="text-lg md:text-xl font-bold text-white mb-6 md:mb-8">Analysis Results</h2>
+                <div className="flex flex-col items-center justify-center py-12 md:py-16">
+                  <div className="bg-gray-800 p-3 md:p-4 rounded-full mb-3 md:mb-4">
+                    <AlertCircle className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
+                  </div>
+                  <h3 className="text-white font-medium mb-2">No Analysis Yet</h3>
+                  <p className="text-gray-400 text-center text-sm md:text-base max-w-md">
+                    Upload a chart image and click "Analyze Chart" to get detailed technical analysis
+                  </p>
                 </div>
-                <h3 className="text-white font-medium mb-2">No Analysis Yet</h3>
-                <p className="text-gray-400 text-center text-sm md:text-base max-w-md">
-                  Upload a chart image and click "Analyze Chart" to get detailed technical analysis
-                </p>
               </div>
             )}
           </div>
