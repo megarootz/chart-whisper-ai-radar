@@ -50,25 +50,46 @@ const AnalyzePage = () => {
               <h2 className="text-lg md:text-xl font-bold text-white">Chart Analysis</h2>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Upload Section */}
-              <div className="space-y-5">
-                <h2 className="text-lg md:text-xl font-bold text-white">Upload Chart Image</h2>
+            {/* Combined Upload and Preview Section */}
+            <div className="space-y-5">
+              <div 
+                className={`border-2 ${previewUrl ? 'border-none' : 'border-dashed border-gray-700'} rounded-lg flex flex-col items-center justify-center ${previewUrl ? 'p-0' : 'p-5 md:p-8'} transition-colors cursor-pointer hover:border-primary`}
+                onClick={() => document.getElementById('file-upload')?.click()}
+                style={previewUrl ? {minHeight: '300px'} : {}}
+              >
+                <input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                 
-                <div className="border-2 border-dashed border-gray-700 rounded-lg flex flex-col items-center justify-center p-5 md:p-8 transition-colors cursor-pointer hover:border-primary" onClick={() => document.getElementById('file-upload')?.click()}>
-                  <input id="file-upload" type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                  <Cloud className="h-8 w-8 md:h-12 md:w-12 text-gray-500 mb-3 md:mb-4" />
-                  <p className="text-white text-center mb-1 md:mb-2">Drag and drop your chart image here</p>
-                  <p className="text-gray-400 text-center text-sm mb-3 md:mb-4">Supports: PNG, JPG, JPEG</p>
-                  <Button className="bg-primary text-white hover:bg-primary/90 text-sm">
-                    Browse files
-                  </Button>
+                {previewUrl ? (
+                  <img 
+                    src={previewUrl} 
+                    alt="Chart Preview" 
+                    className="max-w-full rounded-lg object-contain" 
+                    style={{maxHeight: '60vh'}}
+                  />
+                ) : (
+                  <>
+                    <Cloud className="h-8 w-8 md:h-12 md:w-12 text-gray-500 mb-3 md:mb-4" />
+                    <p className="text-white text-center mb-1 md:mb-2">Drag and drop your chart image here</p>
+                    <p className="text-gray-400 text-center text-sm mb-3 md:mb-4">Supports: PNG, JPG, JPEG</p>
+                    <Button className="bg-primary text-white hover:bg-primary/90 text-sm">
+                      Browse files
+                    </Button>
+                    
+                    <div className="text-center text-sm text-gray-400 mt-4">or</div>
+                  </>
+                )}
+              </div>
+              
+              {previewUrl && (
+                <div className="text-center">
+                  <p className="text-gray-400 text-sm">Click the image to upload a different one</p>
                 </div>
-                
-                <div className="text-center text-sm">or</div>
-                
-                <div className="bg-gray-800/50 rounded-lg p-3 md:p-4 space-y-2">
-                  <h3 className="text-white font-medium text-sm md:text-base">Image Requirements</h3>
+              )}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Image Requirements */}
+                <div className="bg-gray-800/50 rounded-lg p-3 md:p-4">
+                  <h3 className="text-white font-medium text-sm md:text-base mb-2">Image Requirements</h3>
                   <div className="space-y-2">
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
@@ -89,6 +110,24 @@ const AnalyzePage = () => {
                   </div>
                 </div>
                 
+                {/* Analysis Tips */}
+                <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3 md:p-4">
+                  <div className="flex items-start">
+                    <Info className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-yellow-400 font-medium text-sm md:text-base mb-1">Analysis Tips</h4>
+                      <ul className="text-gray-400 text-xs md:text-sm space-y-1 md:space-y-2">
+                        <li>• For best results, ensure candlesticks are clearly visible</li>
+                        <li>• Images with price labels help improve accuracy</li>
+                        <li>• Our AI works with all major currency pairs and timeframes</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Auto-Detection Info */}
                 <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 md:p-4">
                   <div className="flex items-start">
                     <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
@@ -101,60 +140,30 @@ const AnalyzePage = () => {
                   </div>
                 </div>
                 
-                <Button 
-                  className="w-full bg-primary hover:bg-primary/90 text-white" 
-                  disabled={!file || isAnalyzing} 
-                  onClick={handleUpload}
-                >
-                  {isAnalyzing ? 'Analyzing...' : <>
-                    <Upload className="mr-2 h-4 w-4" /> 
-                    Analyze Chart
-                  </>}
-                </Button>
+                {/* Timeframe Info */}
+                <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 md:p-4">
+                  <div className="flex items-start">
+                    <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">Timeframe Info</h4>
+                      <p className="text-gray-400 text-xs md:text-sm">
+                        The AI will adapt stop loss and take profit levels based on the detected timeframe of your chart.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
               
-              {/* Preview Section */}
-              <div className="space-y-5">
-                <h2 className="text-lg md:text-xl font-bold text-white">Chart Preview</h2>
-                
-                <div className="bg-black rounded-lg border border-gray-800 h-60 md:h-72 flex items-center justify-center">
-                  {previewUrl ? <img src={previewUrl} alt="Chart Preview" className="max-h-full max-w-full object-contain" /> : <div className="text-center p-4 md:p-6">
-                      <svg className="h-12 w-12 md:h-16 md:w-16 text-gray-600 mx-auto mb-3 md:mb-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.5" strokeDasharray="12 4" />
-                      </svg>
-                      <p className="text-white text-sm md:text-base mb-1">Your chart preview will appear here</p>
-                      <p className="text-gray-400 text-xs md:text-sm">Upload a candlestick chart to begin analysis</p>
-                    </div>}
-                </div>
-                
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
-                  <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3 md:p-4">
-                    <div className="flex items-start">
-                      <Info className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="text-yellow-400 font-medium text-sm md:text-base mb-1">Analysis Tips</h4>
-                        <ul className="text-gray-400 text-xs md:text-sm space-y-1 md:space-y-2">
-                          <li>• For best results, ensure candlesticks are clearly visible</li>
-                          <li>• Images with price labels help improve accuracy</li>
-                          <li>• Our AI works with all major currency pairs and timeframes</li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 md:p-4">
-                    <div className="flex items-start">
-                      <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">Timeframe Info</h4>
-                        <p className="text-gray-400 text-xs md:text-sm">
-                          The AI will adapt stop loss and take profit levels based on the detected timeframe of your chart.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <Button 
+                className="w-full bg-primary hover:bg-primary/90 text-white" 
+                disabled={!file || isAnalyzing} 
+                onClick={handleUpload}
+              >
+                {isAnalyzing ? 'Analyzing...' : <>
+                  <Upload className="mr-2 h-4 w-4" /> 
+                  Analyze Chart
+                </>}
+              </Button>
             </div>
           </div>
           
