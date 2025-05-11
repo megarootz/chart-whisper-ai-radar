@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -182,18 +181,8 @@ const AnalyzePage = () => {
             </div>
           </div>
           
-          {/* Radar Animation when analyzing */}
-          {isAnalyzing && (
-            <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6 mb-6">
-              <div className="flex flex-col items-center justify-center py-8">
-                <RadarAnimation />
-                <h3 className="text-white font-medium mt-4">Analyzing Chart</h3>
-                <p className="text-gray-400 text-center text-sm md:text-base max-w-md mt-2">
-                  Our AI is processing your chart to identify patterns, support & resistance levels, and trading opportunities
-                </p>
-              </div>
-            </div>
-          )}
+          {/* Radar Animation Modal when analyzing */}
+          {isAnalyzing && <RadarAnimation />}
           
           {/* Analysis Results */}
           <div className="space-y-6" ref={analysisResultRef}>

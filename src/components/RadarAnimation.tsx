@@ -2,8 +2,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Radar } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { Dialog, DialogContent, DialogOverlay } from "@/components/ui/dialog";
 
-const RadarAnimation = () => {
+const RadarAnimation = ({ isOpen = true }) => {
   const [rotation, setRotation] = useState(0);
   const [progress, setProgress] = useState(0);
   const animationRef = useRef<number>();
@@ -44,49 +45,58 @@ const RadarAnimation = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center w-full max-w-md mx-auto">
-      <div className="relative w-32 h-32 md:w-40 md:h-40">
-        {/* Outer circle */}
-        <div className="absolute inset-0 rounded-full border-4 border-primary/20 flex items-center justify-center">
-          {/* Middle circle with glow effect */}
-          <div className="w-3/4 h-3/4 rounded-full border-2 border-primary/40 flex items-center justify-center" 
-               style={{ boxShadow: '0 0 15px rgba(124, 58, 237, 0.3)' }}>
-            {/* Inner circle */}
-            <div className="w-1/2 h-1/2 rounded-full bg-primary/10 flex items-center justify-center">
-              {/* Pulsing dot in center */}
-              <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+    <Dialog open={isOpen}>
+      <DialogContent className="bg-chart-card border-gray-700 p-8 sm:max-w-md max-w-[95vw]">
+        <div className="flex flex-col items-center w-full max-w-md mx-auto">
+          <div className="relative w-32 h-32 md:w-40 md:h-40">
+            {/* Outer circle */}
+            <div className="absolute inset-0 rounded-full border-4 border-primary/20 flex items-center justify-center">
+              {/* Middle circle with glow effect */}
+              <div className="w-3/4 h-3/4 rounded-full border-2 border-primary/40 flex items-center justify-center" 
+                  style={{ boxShadow: '0 0 15px rgba(124, 58, 237, 0.3)' }}>
+                {/* Inner circle */}
+                <div className="w-1/2 h-1/2 rounded-full bg-primary/10 flex items-center justify-center">
+                  {/* Pulsing dot in center */}
+                  <div className="w-3 h-3 bg-primary rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Radar scan line */}
+            <div 
+              className="absolute inset-0 origin-center"
+              style={{ transform: `rotate(${rotation}deg)` }}
+            >
+              <div className="h-1/2 w-1 bg-gradient-to-t from-primary to-transparent mx-auto"></div>
+              <div className="w-16 h-16 md:w-20 md:h-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-40 rounded-full"
+                  style={{
+                    background: `conic-gradient(from ${rotation}deg, transparent, rgba(124, 58, 237, 0.8) 60deg, transparent 120deg)`
+                  }}
+              ></div>
+            </div>
+
+            {/* Radar icon */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Radar size={32} className="text-primary animate-pulse" />
             </div>
           </div>
-        </div>
 
-        {/* Radar scan line */}
-        <div 
-          className="absolute inset-0 origin-center"
-          style={{ transform: `rotate(${rotation}deg)` }}
-        >
-          <div className="h-1/2 w-1 bg-gradient-to-t from-primary to-transparent mx-auto"></div>
-          <div className="w-16 h-16 md:w-20 md:h-20 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-40 rounded-full"
-               style={{
-                 background: `conic-gradient(from ${rotation}deg, transparent, rgba(124, 58, 237, 0.8) 60deg, transparent 120deg)`
-               }}
-          ></div>
+          {/* Progress bar */}
+          <div className="w-full mt-8">
+            <Progress value={progress} className="h-1 bg-gray-800" />
+            <div className="flex justify-between text-xs text-gray-400 mt-1">
+              <span>Processing</span>
+              <span>{Math.round(progress)}%</span>
+            </div>
+          </div>
+          
+          <h3 className="text-white font-medium mt-6">Analyzing Chart</h3>
+          <p className="text-gray-400 text-center text-sm md:text-base max-w-md mt-2">
+            Our AI is processing your chart to identify patterns, support & resistance levels, and trading opportunities
+          </p>
         </div>
-
-        {/* Radar icon */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <Radar size={32} className="text-primary animate-pulse" />
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div className="w-full mt-8">
-        <Progress value={progress} className="h-1 bg-gray-800" />
-        <div className="flex justify-between text-xs text-gray-400 mt-1">
-          <span>Processing</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 
