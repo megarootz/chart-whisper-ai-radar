@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,9 +26,15 @@ const AnalyzePage = () => {
     if (analysisResult && analysisResultRef.current) {
       // Add a small delay to ensure DOM is updated before scrolling
       setTimeout(() => {
-        analysisResultRef.current?.scrollIntoView({
-          behavior: 'smooth',
-          block: 'start'
+        // Calculate scroll position to ensure the trading pair is visible
+        const resultRect = analysisResultRef.current.getBoundingClientRect();
+        const headerOffset = 80; // Estimated header height
+        const scrollPosition = window.scrollY + resultRect.top - headerOffset;
+        
+        // Scroll to the calculated position to ensure trading pair is visible at the top
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
         });
       }, 500);
     }
