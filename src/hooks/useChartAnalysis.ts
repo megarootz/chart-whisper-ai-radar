@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -130,6 +131,16 @@ export const useChartAnalysis = () => {
     return adjustedSetup;
   };
 
+  // Helper function to clean up risk-reward ratio format for proper JSON parsing
+  const cleanRiskRewardRatio = (text: string) => {
+    // Check if the text contains any JSON issues and fix them before parsing
+    
+    // Replace "riskRewardRatio": 1:3 with "riskRewardRatio": "1:3"
+    let cleanedText = text.replace(/("riskRewardRatio"\s*:\s*)(\d+:\d+)([,}])/g, '$1"$2"$3');
+    
+    return cleanedText;
+  };
+
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
       setIsAnalyzing(true);
@@ -182,6 +193,8 @@ For the priceLevels, give me at least 6-8 PRECISE price levels (not rounded numb
 
 For takeProfits, ensure these are actual precise price values, not objects.
 
+IMPORTANT: The riskRewardRatio should be formatted as a string like "1:3" to ensure proper JSON formatting.
+
 Make the response concise but comprehensive, and ensure all numeric values are accurate based on the chart.`
               },
               {
@@ -230,6 +243,9 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       } else if (resultText.includes('```')) {
         jsonStr = resultText.split('```')[1].split('```')[0].trim();
       }
+      
+      // Fix JSON format issues in risk-reward ratio before parsing
+      jsonStr = cleanRiskRewardRatio(jsonStr);
       
       try {
         // Parse the JSON response
@@ -351,7 +367,9 @@ Make the response concise but comprehensive, and ensure all numeric values are a
                           }
                           return tp.toString();
                         }) : [],
-            riskRewardRatio: parsedResult.tradingSetup.riskRewardRatio?.toString(),
+            riskRewardRatio: typeof parsedResult.tradingSetup.riskRewardRatio === 'string' ? 
+                            parsedResult.tradingSetup.riskRewardRatio : 
+                            parsedResult.tradingSetup.riskRewardRatio?.toString(),
             entryTrigger: parsedResult.tradingSetup.entryTrigger,
           } : undefined
         };
