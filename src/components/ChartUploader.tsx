@@ -1,16 +1,29 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ChartCandlestick, Upload } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import RadarAnimation from './RadarAnimation';
 
 const ChartUploader = ({ onUpload }: { onUpload: (file: File, pairName: string, timeframe: string) => void }) => {
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  // Effect to scroll to results when they become available
+  useEffect(() => {
+    if (isUploading && resultRef.current) {
+      // Scroll to the result section after starting analysis
+      resultRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }, [isUploading]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -92,6 +105,12 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File, pairName: string, 
               </label>
             </div>
           </div>
+
+          {isUploading && (
+            <div ref={resultRef} className="py-4">
+              <RadarAnimation />
+            </div>
+          )}
 
           <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-4">
             <div className="flex items-start">

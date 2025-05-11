@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
@@ -8,6 +8,7 @@ import { useChartAnalysis } from '@/hooks/useChartAnalysis';
 import AnalysisResult from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
+import RadarAnimation from '@/components/RadarAnimation';
 
 const AnalyzePage = () => {
   const {
@@ -18,6 +19,20 @@ const AnalyzePage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const analysisResultRef = useRef<HTMLDivElement>(null);
+  
+  // Effect to scroll to results when they become available
+  useEffect(() => {
+    if (analysisResult && analysisResultRef.current) {
+      // Add a small delay to ensure DOM is updated before scrolling
+      setTimeout(() => {
+        analysisResultRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }, 500);
+    }
+  }, [analysisResult]);
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -167,14 +182,27 @@ const AnalyzePage = () => {
             </div>
           </div>
           
+          {/* Radar Animation when analyzing */}
+          {isAnalyzing && (
+            <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6 mb-6">
+              <div className="flex flex-col items-center justify-center py-8">
+                <RadarAnimation />
+                <h3 className="text-white font-medium mt-4">Analyzing Chart</h3>
+                <p className="text-gray-400 text-center text-sm md:text-base max-w-md mt-2">
+                  Our AI is processing your chart to identify patterns, support & resistance levels, and trading opportunities
+                </p>
+              </div>
+            </div>
+          )}
+          
           {/* Analysis Results */}
-          <div className="space-y-6">
+          <div className="space-y-6" ref={analysisResultRef}>
             {analysisResult ? (
               <>
                 <AnalysisResult data={analysisResult} />
                 <TickmillBanner />
               </>
-            ) : (
+            ) : !isAnalyzing && (
               <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6">
                 <h2 className="text-lg md:text-xl font-bold text-white mb-6 md:mb-8">Analysis Results</h2>
                 <div className="flex flex-col items-center justify-center py-12 md:py-16">
