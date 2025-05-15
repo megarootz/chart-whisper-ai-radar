@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -96,10 +95,45 @@
       radial-gradient(at 50% 0%, rgba(156, 39, 176, 0.1) 0px, transparent 50%), 
       radial-gradient(at 100% 0%, rgba(94, 53, 177, 0.1) 0px, transparent 50%);
     background-attachment: fixed;
+    font-size: 14px;
+  }
+  
+  @media (min-width: 640px) {
+    body {
+      font-size: 16px;
+    }
   }
   
   ::selection {
     @apply bg-primary/20 text-white;
+  }
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.25rem;
+  }
+  
+  h3 {
+    font-size: 1.1rem;
+  }
+  
+  p, li, div {
+    font-size: 0.875rem;
+  }
+  
+  button {
+    padding: 0.5rem 1rem;
   }
 }
 
@@ -220,5 +254,30 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* Better mobile spacing */
+@media (max-width: 640px) {
+  .card {
+    @apply p-3;
+  }
+  
+  .section-spacing {
+    @apply py-4;
+  }
+  
+  .form-spacing {
+    @apply space-y-3;
+  }
+  
+  /* Adjust form input heights and padding */
+  input, textarea, select {
+    @apply py-1.5 px-2.5 text-sm;
+  }
+  
+  /* Make buttons more touch friendly with increased hit area */
+  button {
+    @apply min-h-[36px] min-w-[36px];
   }
 }

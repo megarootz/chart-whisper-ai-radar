@@ -64,10 +64,10 @@ const Header = () => {
 
   // Updated header with a cleaner mobile layout and hidden hamburger menu
   return (
-    <header className={`w-full sticky top-0 z-30 bg-black border-b border-gray-800 ${isMobile ? 'py-3 px-2' : 'py-4 px-6'}`}>
+    <header className={`w-full sticky top-0 z-30 bg-black border-b border-gray-800 ${isMobile ? 'py-2 px-2' : 'py-4 px-6'}`}>
       <div className="container mx-auto flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2 px-4 md:px-0">
-          <h1 className={cn("font-bold text-primary", isMobile ? "text-2xl" : "text-2xl")}>
+        <Link to="/" className="flex items-center space-x-2 px-1 md:px-0">
+          <h1 className={cn("font-bold text-primary", isMobile ? "text-xl" : "text-2xl")}>
             ForexRadar7
           </h1>
         </Link>
@@ -77,15 +77,15 @@ const Header = () => {
           <div className="flex items-center">
             <Button 
               variant="ghost" 
-              size="icon" 
+              size="sm" 
               onClick={toggleFullscreen} 
-              className="text-white mr-2 active:bg-transparent focus:bg-transparent hover:bg-transparent"
+              className="text-white mr-1 active:bg-transparent focus:bg-transparent hover:bg-transparent p-1"
               style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               {isFullscreen ? (
-                <Minimize className="h-5 w-5" />
+                <Minimize className="h-4 w-4" />
               ) : (
-                <Maximize className="h-5 w-5" />
+                <Maximize className="h-4 w-4" />
               )}
             </Button>
             
@@ -99,11 +99,11 @@ const Header = () => {
                   </Button>
                 </SheetTrigger>
               </div>
-              <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-full sm:w-[80%] pt-16 p-0">
-                <div className="flex flex-col space-y-6">
-                  <div className="flex justify-between items-center absolute top-4 right-4">
-                    <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}>
-                      <X className="h-5 w-5 text-white" />
+              <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-full sm:w-[80%] pt-12 p-0">
+                <div className="flex flex-col space-y-4">
+                  <div className="flex justify-between items-center absolute top-2 right-2">
+                    <Button variant="ghost" size="sm" onClick={() => setIsMenuOpen(false)}>
+                      <X className="h-4 w-4 text-white" />
                     </Button>
                   </div>
                   
@@ -112,7 +112,7 @@ const Header = () => {
                       <Link
                         key={item.label}
                         to={item.href}
-                        className="px-6 py-4 text-lg text-white hover:bg-gray-800 hover:text-primary transition-colors duration-200 border-b border-gray-700"
+                        className="px-4 py-3 text-base text-white hover:bg-gray-800 hover:text-primary transition-colors duration-200 border-b border-gray-700"
                         onClick={() => setIsMenuOpen(false)}
                       >
                         {item.label}
@@ -120,26 +120,28 @@ const Header = () => {
                     ))}
                   </nav>
                   
-                  <div className="px-6 py-4">
+                  <div className="px-4 py-3">
                     {user ? (
                       <Button 
                         variant="outline" 
-                        className="w-full border-gray-700 hover:bg-gray-800 text-white"
+                        size="sm"
+                        className="w-full border-gray-700 hover:bg-gray-800 text-white text-sm"
                         onClick={handleSignOut}
                       >
-                        <LogOut className="mr-2 h-4 w-4" />
+                        <LogOut className="mr-2 h-3 w-3" />
                         Sign Out
                       </Button>
                     ) : (
                       <Button 
                         variant="outline" 
-                        className="w-full border-gray-700 hover:bg-gray-800 text-white"
+                        size="sm"
+                        className="w-full border-gray-700 hover:bg-gray-800 text-white text-sm"
                         onClick={() => {
                           navigate('/auth');
                           setIsMenuOpen(false);
                         }}
                       >
-                        <User className="mr-2 h-4 w-4" />
+                        <User className="mr-2 h-3 w-3" />
                         Sign In
                       </Button>
                     )}
