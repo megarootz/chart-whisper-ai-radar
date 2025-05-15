@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
 
 // Hardcoded OpenAI API key - replace 'your-api-key-here' with your actual API key
-const HARDCODED_API_KEY = 'your-api-key-here';
+const HARDCODED_API_KEY = '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';
 
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
