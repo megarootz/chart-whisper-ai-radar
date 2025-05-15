@@ -6,15 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 
-// NOTE: This modal is currently unused as the API key is hardcoded in useChartAnalysis.ts
-// It's kept here for reference in case it needs to be reactivated in the future
-
 interface ApiKeyModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onSave: (apiKey: string) => void;
 }
 
-const ApiKeyModal = ({ open, onOpenChange }: ApiKeyModalProps) => {
+const ApiKeyModal = ({ open, onOpenChange, onSave }: ApiKeyModalProps) => {
   const { toast } = useToast();
   const [apiKey, setApiKey] = useState<string>('');
 
@@ -28,6 +26,7 @@ const ApiKeyModal = ({ open, onOpenChange }: ApiKeyModalProps) => {
       return;
     }
 
+    onSave(apiKey);
     toast({
       title: "Success",
       description: "API key saved successfully",
@@ -39,9 +38,9 @@ const ApiKeyModal = ({ open, onOpenChange }: ApiKeyModalProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="bg-chart-card border-gray-700 text-white">
         <DialogHeader>
-          <DialogTitle>Gemini API Key</DialogTitle>
+          <DialogTitle>OpenAI API Key</DialogTitle>
           <DialogDescription className="text-gray-400">
-            Enter your Gemini API key to enable chart analysis. Your key is stored locally on your device.
+            Enter your OpenAI API key to enable chart analysis. Your key is stored locally on your device.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -49,7 +48,7 @@ const ApiKeyModal = ({ open, onOpenChange }: ApiKeyModalProps) => {
             <Label htmlFor="api-key">API Key</Label>
             <Input
               id="api-key"
-              placeholder="Enter your Gemini API key"
+              placeholder="Enter your OpenAI API key"
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               className="bg-gray-800 border-gray-700 text-white"
@@ -58,7 +57,7 @@ const ApiKeyModal = ({ open, onOpenChange }: ApiKeyModalProps) => {
           <div className="text-xs text-gray-400">
             <p>To get your API key:</p>
             <ol className="list-decimal list-inside mt-1 space-y-1">
-              <li>Go to <a href="https://ai.google.dev/" target="_blank" rel="noreferrer" className="text-primary hover:underline">Google AI Studio</a></li>
+              <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-primary hover:underline">OpenAI Platform</a></li>
               <li>Create or sign in to your account</li>
               <li>Go to API keys in your account settings</li>
               <li>Create a new API key</li>

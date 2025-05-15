@@ -1,3 +1,5 @@
+// Keeping this file for backwards compatibility
+// New implementation uses OpenAI API via src/types/openai.ts
 
 export interface GeminiRequest {
   contents: Content[];

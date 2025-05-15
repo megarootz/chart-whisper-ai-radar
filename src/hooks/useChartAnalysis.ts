@@ -1,19 +1,33 @@
-import { useState } from 'react';
+
+import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
-import { GeminiRequest, GeminiResponse } from '@/types/gemini';
+import { OpenAIRequest, OpenAIResponse } from '@/types/openai';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
-
-// Hardcoded API key - Replace this with your actual Gemini API key
-const GEMINI_API_KEY = "AIzaSyCImUvlhhUP-q5exVYvh-IMnhYUhNy2bnY";
 
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
+
+  // Load API key from localStorage on component mount
+  useEffect(() => {
+    const storedApiKey = localStorage.getItem('openai_api_key');
+    if (storedApiKey) {
+      setApiKey(storedApiKey);
+    }
+  }, []);
+
+  // Helper function to save API key
+  const saveApiKey = (key: string) => {
+    localStorage.setItem('openai_api_key', key);
+    setApiKey(key);
+  };
 
   // Helper function to save analysis to Supabase
   const saveAnalysisToDatabase = async (analysis: AnalysisResultData, chartUrl?: string) => {
@@ -69,7 +83,7 @@ export const useChartAnalysis = () => {
     return pips;
   };
 
-  // New helper function to validate if the stop loss and take profit levels are appropriate for the timeframe
+  // Helper function to validate if the stop loss and take profit levels are appropriate for the timeframe
   const validateAndAdjustLevels = (
     tradingSetup: any, 
     timeframe: string, 
@@ -156,6 +170,12 @@ export const useChartAnalysis = () => {
 
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
+      // Check if API key is available
+      if (!apiKey) {
+        setShowApiKeyModal(true);
+        throw new Error('OpenAI API key is required for chart analysis');
+      }
+
       setIsAnalyzing(true);
       
       if (!user) {
@@ -165,7 +185,7 @@ export const useChartAnalysis = () => {
       // Convert image to base64
       const base64Image = await fileToBase64(file);
       
-      // Upload image to Supabase storage using the secure function
+      // Upload image to Supabase storage
       let chartUrl: string | undefined;
       try {
         chartUrl = await uploadChartImage(file, user.id);
@@ -175,16 +195,19 @@ export const useChartAnalysis = () => {
         // Continue with analysis even if image upload fails
       }
       
-      // Using the hardcoded API key
-      const apiKey = GEMINI_API_KEY;
-      
-      // Prepare request for Gemini API with improved prompt
-      const requestData: GeminiRequest = {
-        contents: [
+      // Prepare request for OpenAI API with improved prompt
+      const requestData: OpenAIRequest = {
+        model: "gpt-4-vision-preview",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert forex and technical analysis expert. Analyze chart images with precision and consistency. Provide detailed, actionable analysis based on technical indicators and price action. Be accurate, consistent, and provide the same level of analysis for similar chart patterns."
+          },
           {
             role: "user",
-            parts: [
+            content: [
               {
+                type: "text",
                 text: `Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels, chart patterns, and trading insights.
 
 Include a detailed recommended trading setup with entry price, stop loss, multiple take-profit targets, entry trigger conditions, and risk-reward ratio.
@@ -225,23 +248,27 @@ IMPORTANT: The riskRewardRatio should be formatted as a string like "1:3" to ens
 Make the response concise but comprehensive, and ensure all numeric values are accurate based on the chart.`
               },
               {
-                inline_data: {
-                  mime_type: "image/jpeg",
-                  data: base64Image.split(',')[1] // Remove the data URL prefix
+                type: "image_url",
+                image_url: {
+                  url: base64Image,
+                  detail: "high"
                 }
               }
             ]
           }
-        ]
+        ],
+        temperature: 0.3, // Lower temperature for more consistent results
+        max_tokens: 4096
       };
 
-      console.log("Sending request to Gemini API...");
+      console.log("Sending request to OpenAI API...");
       
-      // Call Gemini API
-      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+      // Call OpenAI API
+      const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify(requestData)
       });
@@ -252,15 +279,15 @@ Make the response concise but comprehensive, and ensure all numeric values are a
         throw new Error(errorData.error?.message || 'Failed to analyze the chart');
       }
 
-      const data: GeminiResponse = await response.json();
-      console.log("Received response from Gemini API:", data);
+      const data: OpenAIResponse = await response.json();
+      console.log("Received response from OpenAI API:", data);
       
-      if (!data.candidates || data.candidates.length === 0) {
-        throw new Error('No response from Gemini API');
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error('No response from OpenAI API');
       }
 
       // Parse the text response to extract JSON
-      const resultText = data.candidates[0].content.parts[0].text || '';
+      const resultText = data.choices[0].message.content || '';
       console.log("Raw API Response:", resultText);
       
       // Extract JSON from the response (might be wrapped in code blocks)
@@ -444,5 +471,8 @@ Make the response concise but comprehensive, and ensure all numeric values are a
     isAnalyzing,
     analysisResult,
     analyzeChart,
+    showApiKeyModal,
+    setShowApiKeyModal,
+    saveApiKey,
   };
 };

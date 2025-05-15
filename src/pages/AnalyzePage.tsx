@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,12 +8,16 @@ import AnalysisResult from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
 import RadarAnimation from '@/components/RadarAnimation';
+import ApiKeyModal from '@/components/ApiKeyModal';
 
 const AnalyzePage = () => {
   const {
     isAnalyzing,
     analysisResult,
-    analyzeChart
+    analyzeChart,
+    showApiKeyModal,
+    setShowApiKeyModal,
+    saveApiKey
   } = useChartAnalysis();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -63,6 +66,13 @@ const AnalyzePage = () => {
   
   return <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
+      
+      {/* API Key Modal */}
+      <ApiKeyModal 
+        open={showApiKeyModal} 
+        onOpenChange={setShowApiKeyModal}
+        onSave={saveApiKey}
+      />
       
       <main className={`flex-grow py-4 ${isMobile ? 'px-0 pb-20' : 'px-4 md:py-8 md:px-6'}`}>
         <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-6xl'}`}>
