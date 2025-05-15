@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -69,16 +68,14 @@ const AnalyzePage = () => {
       <Header />
       
       {/* API Key Modal - Only show if needed */}
-      {showApiKeyModal && (
-        <ApiKeyModal 
-          open={showApiKeyModal} 
-          onOpenChange={setShowApiKeyModal}
-          onSave={saveApiKey}
-          title="Enter OpenRouter API Key"
-          description="Please enter your OpenRouter API key from openrouter.ai to use the chart analysis feature"
-          helpLink="https://openrouter.ai/keys"
-        />
-      )}
+      <ApiKeyModal 
+        open={showApiKeyModal} 
+        onOpenChange={setShowApiKeyModal}
+        onSave={saveApiKey}
+        title="Enter OpenRouter API Key"
+        description="Please enter your OpenRouter API key from openrouter.ai to use the chart analysis feature"
+        helpLink="https://openrouter.ai/keys"
+      />
       
       <main className={`flex-grow py-4 ${isMobile ? 'px-0 pb-20' : 'px-4 md:py-8 md:px-6'}`}>
         <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-6xl'}`}>

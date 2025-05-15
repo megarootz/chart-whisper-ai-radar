@@ -32,6 +32,12 @@ const ApiKeyModal = ({
       return;
     }
     
+    // Check if the API key has the expected format for OpenRouter
+    if (!apiKey.trim().startsWith('sk-or-')) {
+      setError('Invalid OpenRouter API key format. Keys should start with "sk-or-"');
+      return;
+    }
+    
     onSave(apiKey.trim());
     onOpenChange(false);
   };

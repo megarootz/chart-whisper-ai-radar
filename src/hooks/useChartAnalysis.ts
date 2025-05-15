@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -7,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
 
-// Hardcoded OpenRouter API key - replace with your actual OpenRouter API key
+// Hardcoded OpenRouter API key
 const HARDCODED_API_KEY = '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';
 
 export const useChartAnalysis = () => {
@@ -15,26 +14,27 @@ export const useChartAnalysis = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [apiKey, setApiKey] = useState<string | null>(HARDCODED_API_KEY);
+  const [apiKey, setApiKey] = useState<string>(HARDCODED_API_KEY);
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
 
   // Load API key from localStorage as fallback only if needed
   useEffect(() => {
-    // Check if the hardcoded API key is empty or not set
-    if (!HARDCODED_API_KEY) {
-      const storedApiKey = localStorage.getItem('openai_api_key');
+    // Only check localStorage if the hardcoded key is empty
+    if (!apiKey) {
+      const storedApiKey = localStorage.getItem('openrouter_api_key');
       if (storedApiKey) {
         setApiKey(storedApiKey);
       } else {
         setShowApiKeyModal(true);
       }
     }
-  }, []);
+  }, [apiKey]);
 
   // Helper function to save API key
   const saveApiKey = (key: string) => {
-    localStorage.setItem('openai_api_key', key);
+    localStorage.setItem('openrouter_api_key', key);
     setApiKey(key);
+    setShowApiKeyModal(false);
   };
 
   // Helper function to save analysis to Supabase
@@ -178,17 +178,20 @@ export const useChartAnalysis = () => {
 
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
-      // Check if API key is available - either hardcoded or from localStorage
+      setIsAnalyzing(true);
+      
+      // Check if user is logged in
+      if (!user) {
+        throw new Error('You must be logged in to analyze charts');
+      }
+      
+      // Verify API key is available
       if (!apiKey) {
         setShowApiKeyModal(true);
         throw new Error('API key is required for chart analysis');
       }
-
-      setIsAnalyzing(true);
       
-      if (!user) {
-        throw new Error('You must be logged in to analyze charts');
-      }
+      console.log("Using API key:", apiKey.substring(0, 10) + "..." + apiKey.substring(apiKey.length - 5));
       
       // Convert image to base64
       const base64Image = await fileToBase64(file);
@@ -283,6 +286,8 @@ Make the response concise but comprehensive, and ensure all numeric values are a
         body: JSON.stringify(requestData)
       });
 
+      console.log("API Response status:", response.status);
+      
       if (!response.ok) {
         const errorData = await response.json();
         console.error("API Error:", errorData);
