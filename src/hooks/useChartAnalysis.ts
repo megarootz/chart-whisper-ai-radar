@@ -4,6 +4,7 @@ import { AnalysisResultData } from '@/components/AnalysisResult';
 import { GeminiRequest, GeminiResponse } from '@/types/gemini';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { uploadChartImage } from '@/utils/storageUtils';
 
 // Hardcoded API key - Replace this with your actual Gemini API key
 const GEMINI_API_KEY = "AIzaSyCImUvlhhUP-q5exVYvh-IMnhYUhNy2bnY";
@@ -164,25 +165,11 @@ export const useChartAnalysis = () => {
       // Convert image to base64
       const base64Image = await fileToBase64(file);
       
-      // Upload image to Supabase storage
+      // Upload image to Supabase storage using the secure function
       let chartUrl: string | undefined;
       try {
-        const fileExt = file.name.split('.').pop();
-        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-        
-        const { data: storageData, error: storageError } = await supabase.storage
-          .from('chart_images')
-          .upload(fileName, file);
-        
-        if (storageError) {
-          console.error('Error uploading chart image:', storageError);
-        } else if (storageData) {
-          const { data: urlData } = supabase.storage
-            .from('chart_images')
-            .getPublicUrl(fileName);
-            
-          chartUrl = urlData.publicUrl;
-        }
+        chartUrl = await uploadChartImage(file, user.id);
+        console.log('Chart image uploaded successfully:', chartUrl);
       } catch (uploadError) {
         console.error('Failed to upload chart image:', uploadError);
         // Continue with analysis even if image upload fails
