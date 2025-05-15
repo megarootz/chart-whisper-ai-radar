@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -5,6 +6,7 @@ import { OpenAIRequest, OpenAIResponse, OpenRouterErrorResponse } from '@/types/
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
+import { Json } from '@/integrations/supabase/types';
 
 // Your personal API key (this should be loaded from environment variables in production)
 const OPENROUTER_API_KEY = "sk-or-v1-YOUR_API_KEY_HERE";
@@ -129,11 +131,15 @@ export const useChartAnalysis = () => {
         return;
       }
       
+      // Convert AnalysisResultData to a JSON-compatible object
+      // This fixes the type error by ensuring the data matches the Json type expected by Supabase
+      const analysisDataJson: Json = JSON.parse(JSON.stringify(analysisData));
+      
       const { error } = await supabase
         .from('chart_analyses')
         .insert({
           user_id: user.id,
-          analysis_data: analysisData,
+          analysis_data: analysisDataJson,
           pair_name: analysisData.pairName,
           timeframe: analysisData.timeframe,
           chart_url: chartUrl
