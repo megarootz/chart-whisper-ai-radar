@@ -56,7 +56,7 @@ const Header = () => {
                 
                 <div className="flex flex-col space-y-3 mt-4">
                   <Button variant="outline" className="w-full border-gray-700 hover:bg-gray-800 text-white">
-                    Sign In / Register
+                    Get Started
                   </Button>
                 </div>
               </div>
@@ -77,7 +77,7 @@ const Header = () => {
             </nav>
             <div className="flex items-center space-x-3">
               <Button className="bg-primary hover:bg-primary/90 text-white">
-                Sign In / Register
+                Get Started
               </Button>
             </div>
           </div>
