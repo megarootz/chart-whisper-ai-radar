@@ -21,14 +21,17 @@ export default function AuthPage() {
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/analyze";
 
-  // Fix: Move redirect logic to useEffect to avoid render-time navigation
-  // and prevent immediate redirect if we're already on the auth page
+  // Use useEffect to handle navigation only on component mount and user state change
   useEffect(() => {
+    // Only redirect if user is logged in and we're on the auth page
     if (user && location.pathname === "/auth") {
-      // Add a small delay to avoid immediate redirect
+      console.log("User is already logged in, redirecting to:", from);
+      // Add a small delay to avoid immediate redirect loops
       const timer = setTimeout(() => {
         navigate(from, { replace: true });
-      }, 100);
+      }, 200);
+      
+      // Clean up timer if component unmounts before timeout completes
       return () => clearTimeout(timer);
     }
   }, [user, navigate, from, location.pathname]);
@@ -38,7 +41,7 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       await signIn(email, password);
-      // Navigation will happen in the useEffect
+      // Navigation will happen in the useEffect hook
     } catch (error) {
       console.error("Login error:", error);
     } finally {
@@ -70,7 +73,7 @@ export default function AuthPage() {
     }
   };
 
-  // If user is redirected by useEffect, no need to render the form
+  // Don't render the form if we're about to redirect
   if (user && location.pathname !== "/auth") {
     return null;
   }

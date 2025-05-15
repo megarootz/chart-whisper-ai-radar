@@ -1,5 +1,5 @@
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
@@ -23,31 +23,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
-  // This flag helps prevent multiple navigation attempts
-  const [hasNavigated, setHasNavigated] = useState(false);
+  // Use a ref to track navigation state instead of a state variable
+  // This helps prevent re-renders that could cause navigation loops
+  const navigationPerformedRef = useRef(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        // Only update state if there's a change
-        if (JSON.stringify(currentSession) !== JSON.stringify(session)) {
-          setSession(currentSession);
-          setUser(currentSession?.user ?? null);
-        }
+        console.log("Auth state changed:", event, !!currentSession);
         
-        if (event === 'SIGNED_IN' && !hasNavigated) {
-          setHasNavigated(true);
+        // Update the session and user state
+        setSession(currentSession);
+        setUser(currentSession?.user ?? null);
+        
+        if (event === 'SIGNED_IN' && !navigationPerformedRef.current) {
+          navigationPerformedRef.current = true;
           // Use setTimeout to defer navigation and avoid rendering issues
           setTimeout(() => {
             toast({
               title: "Success",
               description: "Signed in successfully"
             });
+            // Navigate to analyze page
             navigate('/analyze');
           }, 100);
         } else if (event === 'SIGNED_OUT') {
-          setHasNavigated(false);
+          navigationPerformedRef.current = false;
           // Defer navigation to avoid render-time updates
           setTimeout(() => {
             toast({
@@ -62,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // THEN check for existing session
     supabase.auth.getSession().then(({ data: { session: currentSession } }) => {
+      console.log("Initial session check:", !!currentSession);
       setSession(currentSession);
       setUser(currentSession?.user ?? null);
       setLoading(false);
@@ -70,14 +73,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
-  }, [navigate, hasNavigated, session]);
+  }, [navigate]);
 
-  // Reset navigation flag when changing routes
+  // Reset navigation flag when component unmounts
   useEffect(() => {
     return () => {
-      setHasNavigated(false);
+      navigationPerformedRef.current = false;
     };
-  }, [navigate]);
+  }, []);
 
   const signIn = async (email: string, password: string) => {
     try {
