@@ -67,12 +67,14 @@ const AnalyzePage = () => {
   return <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      {/* API Key Modal */}
-      <ApiKeyModal 
-        open={showApiKeyModal} 
-        onOpenChange={setShowApiKeyModal}
-        onSave={saveApiKey}
-      />
+      {/* API Key Modal - Only show if actually needed */}
+      {showApiKeyModal && (
+        <ApiKeyModal 
+          open={showApiKeyModal} 
+          onOpenChange={setShowApiKeyModal}
+          onSave={saveApiKey}
+        />
+      )}
       
       <main className={`flex-grow py-4 ${isMobile ? 'px-0 pb-20' : 'px-4 md:py-8 md:px-6'}`}>
         <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-6xl'}`}>

@@ -7,19 +7,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
 
+// Hardcoded OpenAI API key - replace 'your-api-key-here' with your actual API key
+const HARDCODED_API_KEY = 'your-api-key-here';
+
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [apiKey, setApiKey] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(HARDCODED_API_KEY);
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
 
-  // Load API key from localStorage on component mount
+  // Load API key from localStorage as fallback only if hardcoded key is not set
   useEffect(() => {
-    const storedApiKey = localStorage.getItem('openai_api_key');
-    if (storedApiKey) {
-      setApiKey(storedApiKey);
+    if (!HARDCODED_API_KEY || HARDCODED_API_KEY === 'your-api-key-here') {
+      const storedApiKey = localStorage.getItem('openai_api_key');
+      if (storedApiKey) {
+        setApiKey(storedApiKey);
+      } else {
+        setShowApiKeyModal(true);
+      }
     }
   }, []);
 
@@ -170,7 +177,7 @@ export const useChartAnalysis = () => {
 
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
-      // Check if API key is available
+      // Check if API key is available - either hardcoded or from localStorage
       if (!apiKey) {
         setShowApiKeyModal(true);
         throw new Error('OpenAI API key is required for chart analysis');
