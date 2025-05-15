@@ -6,107 +6,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
 
+// Your personal API key (this should be loaded from environment variables in production)
+const OPENROUTER_API_KEY = "sk-or-v1-YOUR_API_KEY_HERE";
+
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [apiKey, setApiKey] = useState<string>('');
+  // We're not using these states anymore since we're using a single API key
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
-
-  // Load API key from Supabase and fallback to localStorage on mount
-  useEffect(() => {
-    fetchApiKey();
-  }, [user]);
-
-  // Helper function to fetch API key from Supabase
-  const fetchApiKey = async () => {
-    if (!user) {
-      // If no user is logged in, try to get key from localStorage as fallback
-      const storedApiKey = localStorage.getItem('openrouter_api_key');
-      if (storedApiKey) {
-        console.log("Found stored API key in localStorage");
-        setApiKey(storedApiKey);
-      } else {
-        console.log("No API key found, showing modal");
-        setShowApiKeyModal(true);
-      }
-      return;
-    }
-    
-    try {
-      const { data, error } = await supabase
-        .from('user_api_keys')
-        .select('key_value')
-        .eq('user_id', user.id)
-        .eq('key_type', 'openrouter')
-        .single();
-      
-      if (error) {
-        console.log('No API key found in database or error fetching key:', error.message);
-        // Fall back to localStorage
-        const storedApiKey = localStorage.getItem('openrouter_api_key');
-        if (storedApiKey) {
-          console.log("Found stored API key in localStorage");
-          setApiKey(storedApiKey);
-        } else {
-          console.log("No API key found, showing modal");
-          setShowApiKeyModal(true);
-        }
-        return;
-      }
-      
-      if (data && data.key_value) {
-        console.log("Found API key in database");
-        setApiKey(data.key_value);
-        // Also update localStorage for faster access next time
-        localStorage.setItem('openrouter_api_key', data.key_value);
-      } else {
-        console.log("No API key found in database, showing modal");
-        setShowApiKeyModal(true);
-      }
-    } catch (err) {
-      console.error('Error fetching API key:', err);
-      setShowApiKeyModal(true);
-    }
-  };
-
-  // Helper function to save API key
-  const saveApiKey = async (key: string) => {
-    console.log("Saving new API key");
-    setApiKey(key);
-    setShowApiKeyModal(false);
-    
-    // If user is logged in, save to database
-    if (user) {
-      try {
-        const { error } = await supabase
-          .from('user_api_keys')
-          .upsert({
-            user_id: user.id,
-            key_type: 'openrouter',
-            key_value: key,
-            updated_at: new Date().toISOString()
-          }, {
-            onConflict: 'user_id,key_type'
-          });
-        
-        if (error) {
-          console.error('Error saving API key to database:', error);
-          toast({
-            title: "Error",
-            description: "Failed to save API key to database. Your analysis will still work for this session.",
-            variant: "destructive",
-          });
-        }
-      } catch (err) {
-        console.error('Error saving API key to database:', err);
-      }
-    }
-    
-    // Always save to localStorage as backup/cache
-    localStorage.setItem('openrouter_api_key', key);
-  };
 
   // Helper function to calculate distance in pips properly
   const calculateDistanceInPips = (currentPrice: number, level: number, isForex: boolean, pairName: string) => {
@@ -212,6 +121,39 @@ export const useChartAnalysis = () => {
     return cleanedText;
   };
 
+  // Save analysis to database
+  const saveAnalysisToDatabase = async (analysisData: AnalysisResultData, chartUrl?: string) => {
+    try {
+      if (!user) {
+        console.log("User not logged in, cannot save analysis");
+        return;
+      }
+      
+      const { error } = await supabase
+        .from('chart_analyses')
+        .insert({
+          user_id: user.id,
+          analysis_data: analysisData,
+          pair_name: analysisData.pairName,
+          timeframe: analysisData.timeframe,
+          chart_url: chartUrl
+        });
+      
+      if (error) {
+        console.error("Error saving analysis to database:", error);
+        toast({
+          title: "Error",
+          description: "Failed to save analysis to history",
+          variant: "destructive",
+        });
+      } else {
+        console.log("Analysis saved to database successfully");
+      }
+    } catch (err) {
+      console.error("Error in saveAnalysisToDatabase:", err);
+    }
+  };
+
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
       setIsAnalyzing(true);
@@ -221,14 +163,8 @@ export const useChartAnalysis = () => {
         throw new Error('You must be logged in to analyze charts');
       }
       
-      // Verify API key is available
-      const currentApiKey = apiKey || localStorage.getItem('openrouter_api_key');
-      
-      if (!currentApiKey) {
-        console.log("No API key available, showing modal");
-        setShowApiKeyModal(true);
-        throw new Error('API key is required for chart analysis');
-      }
+      // Using the fixed API key instead of user-provided one
+      const currentApiKey = OPENROUTER_API_KEY;
       
       console.log("Using OpenRouter API key:", currentApiKey.substring(0, 10) + "...");
       
@@ -247,7 +183,7 @@ export const useChartAnalysis = () => {
       
       // Prepare request for OpenRouter API with improved prompt
       const requestData: OpenAIRequest = {
-        model: "openai/chatgpt-4o-latest", // Updated model ID to the correct one
+        model: "openai/chatgpt-4o-latest", // Using specified model
         messages: [
           {
             role: "system",
@@ -379,7 +315,7 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       jsonStr = cleanRiskRewardRatio(jsonStr);
       
       try {
-        // Parse the JSON response
+        // Parse the JSON response and process it
         const parsedResult = JSON.parse(jsonStr);
         console.log("Parsed JSON result:", JSON.stringify(parsedResult).substring(0, 100) + "...");
         
@@ -550,6 +486,6 @@ Make the response concise but comprehensive, and ensure all numeric values are a
     analyzeChart,
     showApiKeyModal,
     setShowApiKeyModal,
-    saveApiKey,
+    saveApiKey: () => {}, // Empty function since we're not using user API keys anymore
   };
 };

@@ -8,19 +8,15 @@ import AnalysisResult from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
 import RadarAnimation from '@/components/RadarAnimation';
-import ApiKeyModal from '@/components/ApiKeyModal';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
 
 const AnalyzePage = () => {
   const {
     isAnalyzing,
     analysisResult,
     analyzeChart,
-    showApiKeyModal,
-    setShowApiKeyModal,
-    saveApiKey
   } = useChartAnalysis();
+  
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isMobile = useIsMobile();
@@ -71,36 +67,6 @@ const AnalyzePage = () => {
         return;
       }
       
-      // Check for API key in Supabase first
-      let apiKey = null;
-      
-      try {
-        const { data, error } = await supabase
-          .from('user_api_keys')
-          .select('key_value')
-          .eq('user_id', user.id)
-          .eq('key_type', 'openrouter')
-          .single();
-        
-        if (!error && data) {
-          apiKey = data.key_value;
-        }
-      } catch (err) {
-        console.error("Error fetching API key from Supabase:", err);
-      }
-      
-      // If not found in Supabase, try localStorage
-      if (!apiKey) {
-        apiKey = localStorage.getItem('openrouter_api_key');
-      }
-      
-      // Check if API key exists and has the correct format
-      if (!apiKey || (!apiKey.startsWith('sk-or-') && !apiKey.startsWith('sk-ro-'))) {
-        console.log("No valid API key found, showing modal");
-        setShowApiKeyModal(true);
-        return;
-      }
-      
       // Use "Auto-detect" as placeholder - the AI will detect from the image
       analyzeChart(file, "Auto-detect", "Auto-detect");
     }
@@ -108,16 +74,6 @@ const AnalyzePage = () => {
   
   return <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
-      
-      {/* API Key Modal - Only show if needed */}
-      <ApiKeyModal 
-        open={showApiKeyModal} 
-        onOpenChange={setShowApiKeyModal}
-        onSave={saveApiKey}
-        title="Enter OpenRouter API Key"
-        description="Please enter your OpenRouter API key from openrouter.ai to use the chart analysis feature"
-        helpLink="https://openrouter.ai/keys"
-      />
       
       <main className={`flex-grow py-4 ${isMobile ? 'px-0 pb-20' : 'px-4 md:py-8 md:px-6'}`}>
         <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-6xl'}`}>
