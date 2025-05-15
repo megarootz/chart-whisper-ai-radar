@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -7,12 +8,12 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
+
 const HomePage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+  
   const handleGetStartedClick = () => {
     if (user) {
       navigate('/analyze');
@@ -20,7 +21,9 @@ const HomePage = () => {
       navigate('/auth');
     }
   };
-  return <div className="min-h-screen flex flex-col bg-chart-bg">
+  
+  return (
+    <div className="min-h-screen flex flex-col bg-chart-bg">
       <Header />
       
       <main className="flex-grow flex flex-col">
@@ -28,7 +31,7 @@ const HomePage = () => {
         <section className="py-12 md:py-24 px-4">
           <div className="container mx-auto max-w-6xl">
             <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-center">
-              <div className="md:w-1/2 space-y-6">
+              <div className="w-full md:w-1/2 space-y-6">
                 <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
                   AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
                 </h1>
@@ -41,7 +44,7 @@ const HomePage = () => {
                   </Button>
                 </div>
               </div>
-              <div className="md:w-1/2">
+              <div className="w-full md:w-1/2">
                 
               </div>
             </div>
@@ -60,7 +63,7 @@ const HomePage = () => {
               </p>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
               <FeatureCard icon={<ChartCandlestick className="h-10 w-10 text-primary" />} title="Pattern Recognition" description="Automatically detects chart patterns like head and shoulders, double tops, flags, and more." />
               <FeatureCard icon={<BarChart2 className="h-10 w-10 text-primary" />} title="Support & Resistance" description="Identifies key support and resistance levels with precision to optimize your entries and exits." />
               <FeatureCard icon={<TrendingUp className="h-10 w-10 text-primary" />} title="Trend Analysis" description="Determines the overall trend direction and strength to keep you trading with the momentum." />
@@ -78,7 +81,7 @@ const HomePage = () => {
         </section>
         
         {/* CTA Section */}
-        <section className="py-14 md:py-20 px-4">
+        <section className="py-12 md:py-20 px-4">
           <div className="container mx-auto max-w-4xl">
             <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 md:p-10 border border-gray-700 shadow-lg">
               <div className="text-center space-y-4">
@@ -100,8 +103,10 @@ const HomePage = () => {
       </main>
       
       {!isMobile && <Footer />}
-    </div>;
+    </div>
+  );
 };
+
 const FeatureCard = ({
   icon,
   title,
@@ -110,7 +115,8 @@ const FeatureCard = ({
   icon: React.ReactNode;
   title: string;
   description: string;
-}) => <Card className="bg-chart-card border border-gray-800">
+}) => (
+  <Card className="bg-chart-card border border-gray-800">
     <CardContent className="p-6 space-y-4">
       <div className="bg-gray-800/50 w-16 h-16 rounded-full flex items-center justify-center">
         {icon}
@@ -120,5 +126,7 @@ const FeatureCard = ({
         {description}
       </p>
     </CardContent>
-  </Card>;
+  </Card>
+);
+
 export default HomePage;

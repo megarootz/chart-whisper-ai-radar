@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -44,7 +43,7 @@ const Header = () => {
         {isMobile ? (
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white mr-3">
+              <Button variant="ghost" size="icon" className="text-white mr-4">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>

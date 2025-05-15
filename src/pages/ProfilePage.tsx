@@ -21,7 +21,7 @@ const ProfilePage = () => {
             <p className="text-gray-400">Manage your account and settings</p>
           </div>
           
-          <div className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden mx-0">
+          <div className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden mx-4 md:mx-0">
             <div className="p-5 flex items-center">
               <div className="bg-primary/10 text-primary rounded-full w-16 h-16 flex items-center justify-center mr-4">
                 <User className="h-8 w-8" />
@@ -35,7 +35,7 @@ const ProfilePage = () => {
             </div>
           </div>
           
-          <div className="mt-6 text-center text-gray-400 text-sm">
+          <div className="mt-6 text-center text-gray-400 text-sm px-4 md:px-0">
             <p>ForexRadar7 v1.0.0</p>
           </div>
         </div>

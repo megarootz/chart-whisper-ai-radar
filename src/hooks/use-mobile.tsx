@@ -19,24 +19,15 @@ export function useIsMobile() {
       setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
     };
 
+    // Initial check
+    checkIsMobile();
+
     // Add event listener
-    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
-    
-    // Use the appropriate event listener method
-    if (mql.addEventListener) {
-      mql.addEventListener("change", checkIsMobile);
-    } else {
-      // Fallback for older browsers
-      window.addEventListener("resize", checkIsMobile);
-    }
+    window.addEventListener("resize", checkIsMobile);
 
     // Clean up
     return () => {
-      if (mql.removeEventListener) {
-        mql.removeEventListener("change", checkIsMobile);
-      } else {
-        window.removeEventListener("resize", checkIsMobile);
-      }
+      window.removeEventListener("resize", checkIsMobile);
     };
   }, []);
 
