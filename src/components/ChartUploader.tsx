@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +48,17 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File, pairName: string, 
       toast({
         title: "Error",
         description: "Please select a chart image to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if API key exists before analysis
+    const apiKey = localStorage.getItem('openrouter_api_key');
+    if (!apiKey || (!apiKey.startsWith('sk-or-') && !apiKey.startsWith('sk-ro-'))) {
+      toast({
+        title: "API Key Required",
+        description: "Please enter your OpenRouter API key in the settings before analyzing",
         variant: "destructive"
       });
       return;

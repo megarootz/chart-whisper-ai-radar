@@ -209,7 +209,7 @@ export const useChartAnalysis = () => {
       
       // Prepare request for OpenRouter API with improved prompt
       const requestData: OpenAIRequest = {
-        model: "openai/chatgpt-4o",
+        model: "openai/chatgpt-4o-latest", // Updated model ID to the correct one
         messages: [
           {
             role: "system",
@@ -273,7 +273,7 @@ Make the response concise but comprehensive, and ensure all numeric values are a
         max_tokens: 4096
       };
 
-      console.log("Sending request to OpenRouter API...");
+      console.log("Sending request to OpenRouter API with model:", requestData.model);
       
       // Create headers with proper authentication
       const headers = {

@@ -43,8 +43,9 @@ const ApiKeyModal = ({
     }
     
     // Check if the API key has the expected format for OpenRouter
-    if (!apiKey.trim().startsWith('sk-or-')) {
-      setError('Invalid OpenRouter API key format. Keys should start with "sk-or-"');
+    // OpenRouter keys can start with either sk-or- (old format) or sk-ro- (new format)
+    if (!apiKey.trim().startsWith('sk-or-') && !apiKey.trim().startsWith('sk-ro-')) {
+      setError('Invalid OpenRouter API key format. Keys should start with "sk-or-" or "sk-ro-"');
       return;
     }
     
@@ -74,7 +75,7 @@ const ApiKeyModal = ({
                 setApiKey(e.target.value);
                 setError('');
               }}
-              placeholder="sk-or-v1-..."
+              placeholder="sk-or-v1-... or sk-ro-..."
             />
             <Button
               variant="outline"
@@ -89,7 +90,7 @@ const ApiKeyModal = ({
           <div className="mt-4 p-2 bg-blue-900/20 border border-blue-800/50 rounded-md">
             <p className="text-xs text-blue-300">
               Get your OpenRouter API key from <a href="https://openrouter.ai/keys" target="_blank" className="underline">openrouter.ai/keys</a>. 
-              Make sure it starts with 'sk-or-'.
+              Keys typically start with 'sk-or-' or 'sk-ro-'.
             </p>
           </div>
         </div>

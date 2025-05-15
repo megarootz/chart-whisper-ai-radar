@@ -61,12 +61,15 @@ const AnalyzePage = () => {
     if (file) {
       // Clear any previous results
       console.log("Starting chart analysis...");
-      // Check if API key exists in localStorage
+      
+      // Check if API key exists in localStorage and if it has the correct format
       const apiKey = localStorage.getItem('openrouter_api_key');
-      if (!apiKey) {
+      if (!apiKey || (!apiKey.startsWith('sk-or-') && !apiKey.startsWith('sk-ro-'))) {
+        console.log("No valid API key found, showing modal");
         setShowApiKeyModal(true);
         return;
       }
+      
       // Use "Auto-detect" as placeholder - the AI will detect from the image
       analyzeChart(file, "Auto-detect", "Auto-detect");
     }
