@@ -1,73 +1,76 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { ExternalLink } from 'lucide-react';
 
 interface ApiKeyModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (apiKey: string) => void;
+  onSave: (key: string) => void;
+  title?: string;
+  description?: string;
+  helpLink?: string;
 }
 
-const ApiKeyModal = ({ open, onOpenChange, onSave }: ApiKeyModalProps) => {
-  const { toast } = useToast();
-  const [apiKey, setApiKey] = useState<string>('');
+const ApiKeyModal = ({
+  open,
+  onOpenChange,
+  onSave,
+  title = "Enter API Key",
+  description = "Please enter your API key to use the chart analysis feature",
+  helpLink = "https://platform.openai.com/account/api-keys"
+}: ApiKeyModalProps) => {
+  const [apiKey, setApiKey] = useState('');
+  const [error, setError] = useState('');
 
   const handleSave = () => {
     if (!apiKey.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter a valid API key",
-        variant: "destructive",
-      });
+      setError('API key is required');
       return;
     }
-
-    onSave(apiKey);
-    toast({
-      title: "Success",
-      description: "API key saved successfully",
-    });
+    
+    onSave(apiKey.trim());
     onOpenChange(false);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-chart-card border-gray-700 text-white">
+      <DialogContent className="sm:max-w-md bg-chart-card border-gray-700 text-white">
         <DialogHeader>
-          <DialogTitle>OpenAI API Key</DialogTitle>
-          <DialogDescription className="text-gray-400">
-            Enter your OpenAI API key to enable chart analysis. Your key is stored locally on your device.
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription className="text-chart-text">
+            {description}
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="api-key">API Key</Label>
+        <div className="py-4">
+          <Label htmlFor="api-key" className="text-white">API Key</Label>
+          <div className="flex items-center mt-2 space-x-2">
             <Input
               id="api-key"
-              placeholder="Enter your OpenAI API key"
+              className="flex-1 bg-gray-800 border-gray-700 text-white"
               value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-              className="bg-gray-800 border-gray-700 text-white"
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                setError('');
+              }}
+              placeholder="sk-or-v1-..."
             />
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => window.open(helpLink, '_blank')}
+              title="Get API Key"
+            >
+              <ExternalLink className="h-4 w-4" />
+            </Button>
           </div>
-          <div className="text-xs text-gray-400">
-            <p>To get your API key:</p>
-            <ol className="list-decimal list-inside mt-1 space-y-1">
-              <li>Go to <a href="https://platform.openai.com/api-keys" target="_blank" rel="noreferrer" className="text-primary hover:underline">OpenAI Platform</a></li>
-              <li>Create or sign in to your account</li>
-              <li>Go to API keys in your account settings</li>
-              <li>Create a new API key</li>
-            </ol>
-          </div>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} className="bg-transparent border-gray-600 text-white hover:bg-gray-800">
-            Cancel
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
           <Button onClick={handleSave}>Save Key</Button>
         </DialogFooter>
       </DialogContent>

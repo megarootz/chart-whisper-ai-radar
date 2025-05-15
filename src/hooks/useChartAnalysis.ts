@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -6,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
 
-// Hardcoded OpenAI API key - replace 'your-api-key-here' with your actual API key
+// Hardcoded OpenRouter API key - replace with your actual OpenRouter API key
 const HARDCODED_API_KEY = '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';
 
 export const useChartAnalysis = () => {
@@ -180,7 +181,7 @@ export const useChartAnalysis = () => {
       // Check if API key is available - either hardcoded or from localStorage
       if (!apiKey) {
         setShowApiKeyModal(true);
-        throw new Error('OpenAI API key is required for chart analysis');
+        throw new Error('API key is required for chart analysis');
       }
 
       setIsAnalyzing(true);
@@ -202,9 +203,9 @@ export const useChartAnalysis = () => {
         // Continue with analysis even if image upload fails
       }
       
-      // Prepare request for OpenAI API with improved prompt
+      // Prepare request for OpenRouter API with improved prompt
       const requestData: OpenAIRequest = {
-        model: "gpt-4-vision-preview",
+        model: "openai/chatgpt-4o",
         messages: [
           {
             role: "system",
@@ -268,14 +269,16 @@ Make the response concise but comprehensive, and ensure all numeric values are a
         max_tokens: 4096
       };
 
-      console.log("Sending request to OpenAI API...");
+      console.log("Sending request to OpenRouter API...");
       
-      // Call OpenAI API
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      // Call OpenRouter API
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': window.location.origin, // Site URL for OpenRouter tracking
+          'X-Title': 'Forex Chart Analyzer' // Name of your application
         },
         body: JSON.stringify(requestData)
       });
@@ -287,10 +290,10 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       }
 
       const data: OpenAIResponse = await response.json();
-      console.log("Received response from OpenAI API:", data);
+      console.log("Received response from OpenRouter API:", data);
       
       if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response from OpenAI API');
+        throw new Error('No response from OpenRouter API');
       }
 
       // Parse the text response to extract JSON

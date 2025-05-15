@@ -74,6 +74,9 @@ const AnalyzePage = () => {
           open={showApiKeyModal} 
           onOpenChange={setShowApiKeyModal}
           onSave={saveApiKey}
+          title="Enter OpenRouter API Key"
+          description="Please enter your OpenRouter API key from openrouter.ai to use the chart analysis feature"
+          helpLink="https://openrouter.ai/keys"
         />
       )}
       
