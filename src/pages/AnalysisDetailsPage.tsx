@@ -9,6 +9,7 @@ import AnalysisResult, { AnalysisResultData } from '@/components/AnalysisResult'
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const AnalysisDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +18,7 @@ const AnalysisDetailsPage = () => {
   const isMobile = useIsMobile();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { toast } = useToast();
   
   useEffect(() => {
     if (user && id) {
@@ -38,13 +40,24 @@ const AnalysisDetailsPage = () => {
       
       if (error) {
         console.error("Error fetching analysis details:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load analysis details",
+          variant: "destructive",
+        });
         return;
       }
       
       if (data && data.analysis_data) {
-        setAnalysis(data.analysis_data as AnalysisResultData);
+        // Properly cast the JSON data to AnalysisResultData
+        setAnalysis(data.analysis_data as unknown as AnalysisResultData);
       } else {
         console.error("Analysis not found");
+        toast({
+          title: "Not Found",
+          description: "The requested analysis could not be found",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error in fetchAnalysisDetails:", error);

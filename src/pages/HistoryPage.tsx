@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 // Update the interface for the history items to include timestamp and date
 interface HistoryAnalysisData extends AnalysisResultData {
@@ -23,6 +24,7 @@ const HistoryPage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  const { toast } = useToast();
   
   useEffect(() => {
     if (user) {
@@ -52,10 +54,11 @@ const HistoryPage = () => {
         return;
       }
       
-      // Process the analysis data
+      // Process the analysis data with proper type casting
       const processedData = data.map(item => {
+        const analysisData = item.analysis_data as unknown;
         return {
-          ...item.analysis_data as AnalysisResultData,
+          ...analysisData as AnalysisResultData,
           id: item.id,
           created_at: item.created_at
         };
