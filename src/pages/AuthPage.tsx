@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,17 +19,24 @@ export default function AuthPage() {
   const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const redirectedRef = useRef(false);
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/analyze";
-
-  // Use useEffect to handle navigation once when authentication state changes
+  
+  // Effect to handle navigation when authentication state changes
   useEffect(() => {
-    // Only redirect if user is logged in, not loading, and we haven't redirected yet
-    if (user && !loading && !redirectedRef.current) {
+    let redirectTimeout: NodeJS.Timeout;
+    
+    if (user && !loading) {
       console.log("User is authenticated, redirecting to:", from);
-      redirectedRef.current = true;
-      navigate(from, { replace: true });
+      
+      // Small delay to ensure state is fully processed before redirect
+      redirectTimeout = setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
     }
+    
+    return () => {
+      if (redirectTimeout) clearTimeout(redirectTimeout);
+    };
   }, [user, loading, navigate, from]);
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -109,9 +117,8 @@ export default function AuthPage() {
     }
   };
 
-  // If already authenticated, don't render the auth form
-  // This prevents the page from flashing before redirect
-  if (user) {
+  // If already authenticated and not in the process of loading, show loading state
+  if (user && !loading) {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
         <div className="text-white text-center">
