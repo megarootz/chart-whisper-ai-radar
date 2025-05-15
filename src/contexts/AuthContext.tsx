@@ -3,7 +3,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { toast } from '@/components/ui/sonner';
+import { toast } from '@/components/ui/use-toast';
 
 type AuthContextType = {
   session: Session | null;
@@ -22,25 +22,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  
+  // This flag helps prevent multiple navigation attempts
+  const [hasNavigated, setHasNavigated] = useState(false);
 
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
-        setSession(currentSession);
-        setUser(currentSession?.user ?? null);
+        // Only update state if there's a change
+        if (JSON.stringify(currentSession) !== JSON.stringify(session)) {
+          setSession(currentSession);
+          setUser(currentSession?.user ?? null);
+        }
         
-        if (event === 'SIGNED_IN') {
-          // Defer navigation to avoid render-time updates
+        if (event === 'SIGNED_IN' && !hasNavigated) {
+          setHasNavigated(true);
+          // Use setTimeout to defer navigation and avoid rendering issues
           setTimeout(() => {
-            toast.success('Signed in successfully');
-          }, 0);
+            toast({
+              title: "Success",
+              description: "Signed in successfully"
+            });
+            navigate('/analyze');
+          }, 100);
         } else if (event === 'SIGNED_OUT') {
+          setHasNavigated(false);
           // Defer navigation to avoid render-time updates
           setTimeout(() => {
-            toast.info('Signed out');
+            toast({
+              title: "Info",
+              description: "Signed out"
+            });
             navigate('/auth');
-          }, 0);
+          }, 100);
         }
       }
     );
@@ -55,6 +70,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe();
     };
+  }, [navigate, hasNavigated, session]);
+
+  // Reset navigation flag when changing routes
+  useEffect(() => {
+    return () => {
+      setHasNavigated(false);
+    };
   }, [navigate]);
 
   const signIn = async (email: string, password: string) => {
@@ -67,11 +89,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         throw error;
       }
-      
       // Remove immediate navigation, let onAuthStateChange handle it
-      // navigate('/analyze');
     } catch (error: any) {
-      toast.error(`Error signing in: ${error.message}`);
+      toast({
+        variant: "destructive",
+        title: "Error signing in",
+        description: error.message
+      });
       throw error;
     }
   };
@@ -89,7 +113,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
     } catch (error: any) {
-      toast.error(`Error signing in with Google: ${error.message}`);
+      toast({
+        variant: "destructive",
+        title: "Error signing in with Google",
+        description: error.message
+      });
       throw error;
     }
   };
@@ -110,9 +138,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
       
-      toast.success('Signed up successfully! Please check your email for verification.');
+      toast({
+        title: "Success",
+        description: "Signed up successfully! Please check your email for verification."
+      });
     } catch (error: any) {
-      toast.error(`Error signing up: ${error.message}`);
+      toast({
+        variant: "destructive",
+        title: "Error signing up",
+        description: error.message
+      });
       throw error;
     }
   };
@@ -121,7 +156,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await supabase.auth.signOut();
     } catch (error: any) {
-      toast.error(`Error signing out: ${error.error}`);
+      toast({
+        variant: "destructive",
+        title: "Error signing out",
+        description: error.message
+      });
       throw error;
     }
   };

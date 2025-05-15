@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChartCandlestick, Lock, Mail, User } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
+import { toast } from "@/components/ui/use-toast";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
@@ -21,13 +22,16 @@ export default function AuthPage() {
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/analyze";
 
   // Fix: Move redirect logic to useEffect to avoid render-time navigation
+  // and prevent immediate redirect if we're already on the auth page
   useEffect(() => {
-    if (user) {
-      navigate(from, { replace: true });
+    if (user && location.pathname === "/auth") {
+      // Add a small delay to avoid immediate redirect
+      const timer = setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 100);
+      return () => clearTimeout(timer);
     }
-  }, [user, navigate, from]);
-
-  // Remove the initial redirect check that was causing re-renders during render
+  }, [user, navigate, from, location.pathname]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +71,7 @@ export default function AuthPage() {
   };
 
   // If user is redirected by useEffect, no need to render the form
-  if (user) {
+  if (user && location.pathname !== "/auth") {
     return null;
   }
 
