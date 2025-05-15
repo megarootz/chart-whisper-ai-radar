@@ -62,30 +62,6 @@ const Header = () => {
     };
   }, []);
 
-  // Attempt to enter fullscreen mode on mobile when the component mounts
-  useEffect(() => {
-    if (isMobile) {
-      const enterFullscreen = async () => {
-        try {
-          // Only attempt to enter fullscreen from a user interaction or after page has loaded
-          const timeout = setTimeout(() => {
-            if (!document.fullscreenElement) {
-              document.documentElement.requestFullscreen()
-                .then(() => setIsFullscreen(true))
-                .catch(err => console.error(`Error enabling fullscreen: ${err.message}`));
-            }
-          }, 1000);
-          
-          return () => clearTimeout(timeout);
-        } catch (error) {
-          console.error('Error trying to enter fullscreen:', error);
-        }
-      };
-      
-      enterFullscreen();
-    }
-  }, [isMobile]);
-
   // Updated header with a cleaner mobile layout and hidden hamburger menu
   return (
     <header className={`w-full sticky top-0 z-30 bg-black border-b border-gray-800 ${isMobile ? 'py-3 px-2' : 'py-4 px-6'}`}>
@@ -103,7 +79,8 @@ const Header = () => {
               variant="ghost" 
               size="icon" 
               onClick={toggleFullscreen} 
-              className="text-white mr-2"
+              className="text-white mr-2 active:bg-transparent focus:bg-transparent hover:bg-transparent"
+              style={{ WebkitTapHighlightColor: 'transparent' }}
             >
               {isFullscreen ? (
                 <Minimize className="h-5 w-5" />
