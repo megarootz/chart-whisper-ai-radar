@@ -51,8 +51,8 @@ export const uploadChartImage = async (file: File, userId: string) => {
       .from('chart_images')
       .upload(fileName, file, {
         upsert: false,
-        // Explicitly set the file owner to the current user
-        fileMetadata: { 
+        // Use 'metadata' instead of 'fileMetadata'
+        metadata: { 
           owner: userId 
         }
       });

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -54,7 +53,7 @@ export default function AuthPage() {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await signUp(email, password, username);
+      await signUp(email, password);
       // Don't navigate automatically as the user might need to verify email
     } catch (error) {
       console.error("Signup error:", error);

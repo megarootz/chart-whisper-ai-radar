@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  signInWithGoogle: () => Promise<void>; // Add the missing method
 }
 
 // Create the AuthContext with a default value
@@ -21,6 +23,7 @@ const AuthContext = createContext<AuthContextType>({
   signUp: async () => {},
   signIn: async () => {},
   signOut: async () => {},
+  signInWithGoogle: async () => {}, // Add default implementation
 });
 
 // Create a custom hook to use the AuthContext
@@ -88,6 +91,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  // Function for Google sign in
+  const signInWithGoogle = async () => {
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+      });
+      if (error) throw error;
+      // Note: We don't set session or user here as it will be handled by the onAuthStateChange listener
+    } catch (error: any) {
+      console.error("Google sign in error", error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Use useEffect to listen for auth state changes and set the user
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -136,6 +156,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signUp,
     signIn,
     signOut,
+    signInWithGoogle, // Add the new method to the context
   };
 
   return (
