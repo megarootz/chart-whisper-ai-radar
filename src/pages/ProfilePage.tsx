@@ -4,9 +4,11 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProfilePage = () => {
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   
   return (
     <div className="min-h-screen bg-chart-bg flex flex-col">
@@ -25,8 +27,10 @@ const ProfilePage = () => {
                 <User className="h-8 w-8" />
               </div>
               <div>
-                <h2 className="text-xl font-medium text-white">Guest User</h2>
-                <p className="text-gray-400">guest@example.com</p>
+                <h2 className="text-xl font-medium text-white">
+                  {user?.email?.split('@')[0] || 'User'}
+                </h2>
+                <p className="text-gray-400">{user?.email || 'No email available'}</p>
               </div>
             </div>
           </div>
