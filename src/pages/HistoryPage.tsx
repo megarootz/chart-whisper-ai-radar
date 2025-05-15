@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { useAnalysis } from '@/contexts/AnalysisContext';
 
 // Update the interface for the history items to include timestamp and date
 interface HistoryAnalysisData extends AnalysisResultData {
@@ -20,56 +21,24 @@ interface HistoryAnalysisData extends AnalysisResultData {
 
 const HistoryPage = () => {
   const [dateFilter, setDateFilter] = useState('all');
-  const [analysisHistory, setAnalysisHistory] = useState<HistoryAnalysisData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
   const { user } = useAuth();
   const { toast } = useToast();
+  const { analysisHistory, refreshHistory } = useAnalysis();
   
   useEffect(() => {
     if (user) {
-      fetchAnalysisHistory();
+      loadHistory();
     } else {
       setIsLoading(false);
-      setAnalysisHistory([]);
     }
   }, [user]);
 
-  const fetchAnalysisHistory = async () => {
-    try {
-      setIsLoading(true);
-      
-      const { data, error } = await supabase
-        .from('chart_analyses')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        console.error("Error fetching analysis history:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load your analysis history",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Process the analysis data with proper type casting
-      const processedData = data.map(item => {
-        const analysisData = item.analysis_data as unknown;
-        return {
-          ...analysisData as AnalysisResultData,
-          id: item.id,
-          created_at: item.created_at
-        };
-      });
-      
-      setAnalysisHistory(processedData);
-    } catch (error) {
-      console.error("Error in fetchAnalysisHistory:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const loadHistory = async () => {
+    setIsLoading(true);
+    await refreshHistory();
+    setIsLoading(false);
   };
 
   // Filter the history based on date selection

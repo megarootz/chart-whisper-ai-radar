@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Download, Share } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -118,10 +117,23 @@ const AnalysisDetailsPage = () => {
             </Button>
             
             <h1 className="text-2xl font-bold text-white">Analysis Details</h1>
-            <p className="text-gray-400">{analysis.pairName} on {analysis.timeframe} timeframe</p>
+            {analysis && <p className="text-gray-400">{analysis.pairName} on {analysis.timeframe} timeframe</p>}
           </div>
           
-          <AnalysisResult data={analysis} />
+          {isLoading ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400">Loading analysis details...</p>
+            </div>
+          ) : !analysis ? (
+            <div className="text-center py-12">
+              <p className="text-gray-400">Analysis not found or you don't have permission to view it.</p>
+              <Button asChild className="mt-4">
+                <Link to="/history">Back to History</Link>
+              </Button>
+            </div>
+          ) : (
+            <AnalysisResult data={analysis} />
+          )}
         </div>
       </main>
       

@@ -1,17 +1,19 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
-import { OpenAIResponse, OpenRouterErrorResponse } from '@/types/openai';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
 import { Json } from '@/integrations/supabase/types';
+import { useAnalysis } from '@/contexts/AnalysisContext';
 
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
+  const { setLatestAnalysis, addToHistory } = useAnalysis();
 
   // Helper function to calculate distance in pips properly
   const calculateDistanceInPips = (currentPrice: number, level: number, isForex: boolean, pairName: string) => {
@@ -145,7 +147,9 @@ export const useChartAnalysis = () => {
           pair_name: analysisData.pairName,
           timeframe: analysisData.timeframe,
           chart_url: chartUrl
-        });
+        })
+        .select()
+        .single();
       
       if (error) {
         console.error("Error saving analysis to database:", error);
@@ -156,6 +160,19 @@ export const useChartAnalysis = () => {
         });
       } else {
         console.log("Analysis saved to database successfully", data);
+        
+        // Add the newly saved analysis to the history context
+        if (data) {
+          addToHistory({
+            id: data.id,
+            created_at: data.created_at,
+            pairName: analysisData.pairName,
+            timeframe: analysisData.timeframe,
+            overallSentiment: analysisData.overallSentiment,
+            marketAnalysis: analysisData.marketAnalysis
+          });
+        }
+        
         toast({
           title: "Success",
           description: "Analysis saved to your history",
@@ -257,7 +274,7 @@ export const useChartAnalysis = () => {
       console.log("Edge function response received:", data);
       
       // Parse the API response
-      const responseData = data as OpenAIResponse;
+      const responseData = data as any;
       
       if (!responseData.choices || responseData.choices.length === 0) {
         throw new Error('No response content from API');
@@ -316,12 +333,12 @@ export const useChartAnalysis = () => {
           confidenceScore: parsedResult.confidenceScore || 50,
           marketAnalysis: parsedResult.marketAnalysis || 'Analysis not available.',
           trendDirection: parsedResult.trendDirection || 'neutral',
-          marketFactors: Array.isArray(parsedResult.marketFactors) ? parsedResult.marketFactors.map(factor => ({
+          marketFactors: Array.isArray(parsedResult.marketFactors) ? parsedResult.marketFactors.map((factor: any) => ({
             name: factor.name,
             description: factor.description,
             sentiment: factor.sentiment.toLowerCase()
           })) : [],
-          chartPatterns: Array.isArray(parsedResult.chartPatterns) ? parsedResult.chartPatterns.map(pattern => ({
+          chartPatterns: Array.isArray(parsedResult.chartPatterns) ? parsedResult.chartPatterns.map((pattern: any) => ({
             name: pattern.name,
             confidence: pattern.confidence,
             signal: typeof pattern.signal === 'string' ? 
@@ -330,7 +347,7 @@ export const useChartAnalysis = () => {
                     : 'neutral',
             status: pattern.status || "complete"
           })) : [],
-          priceLevels: Array.isArray(parsedResult.priceLevels) ? parsedResult.priceLevels.map(level => {
+          priceLevels: Array.isArray(parsedResult.priceLevels) ? parsedResult.priceLevels.map((level: any) => {
             const price = parseFloat(level.price);
             let direction: 'up' | 'down';
             let pips: number;
@@ -378,7 +395,7 @@ export const useChartAnalysis = () => {
           entryLevel: parsedResult.entryLevel ? parsedResult.entryLevel.toString() : undefined,
           stopLoss: parsedResult.stopLoss ? parsedResult.stopLoss.toString() : undefined,
           takeProfits: Array.isArray(parsedResult.takeProfits) ? 
-                        parsedResult.takeProfits.map(tp => tp.toString()) : undefined,
+                        parsedResult.takeProfits.map((tp: any) => tp.toString()) : undefined,
           tradingInsight: parsedResult.tradingInsight,
           tradingSetup: parsedResult.tradingSetup ? {
             type: parsedResult.tradingSetup.type || 'neutral',
@@ -403,6 +420,9 @@ export const useChartAnalysis = () => {
 
         // Save the analysis result
         setAnalysisResult(analysisData);
+        
+        // Update the latest analysis in the context
+        setLatestAnalysis(analysisData);
         
         // Save the analysis to Supabase
         await saveAnalysisToDatabase(analysisData, chartUrl);

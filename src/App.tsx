@@ -16,6 +16,7 @@ import { useIsMobile } from "./hooks/use-mobile";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useState } from "react";
+import { AnalysisProvider } from "./contexts/AnalysisContext";
 
 const App = () => {
   // Create a new QueryClient instance that persists between renders
@@ -28,7 +29,9 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AppRoutes />
+            <AnalysisProvider>
+              <AppRoutes />
+            </AnalysisProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
