@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -8,12 +7,12 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
-
 const HomePage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
-
+  const {
+    user
+  } = useAuth();
   const handleGetStartedClick = () => {
     if (user) {
       navigate('/analyze');
@@ -21,9 +20,7 @@ const HomePage = () => {
       navigate('/auth');
     }
   };
-
-  return (
-    <div className="min-h-screen flex flex-col bg-chart-bg">
+  return <div className="min-h-screen flex flex-col bg-chart-bg">
       <Header />
       
       <main className="flex-grow flex flex-col">
@@ -39,23 +36,13 @@ const HomePage = () => {
                   Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
                 </p>
                 <div className="pt-4">
-                  <Button 
-                    onClick={handleGetStartedClick} 
-                    size="lg" 
-                    className="bg-primary hover:bg-primary/90 text-white font-medium text-lg"
-                  >
+                  <Button onClick={handleGetStartedClick} size="lg" className="bg-primary hover:bg-primary/90 text-white font-medium text-lg">
                     Get Started
                   </Button>
                 </div>
               </div>
               <div className="md:w-1/2">
-                <div className="bg-black/50 p-4 rounded-lg border border-gray-800">
-                  <img 
-                    src="/placeholder.svg" 
-                    alt="ForexRadar7 Demo" 
-                    className="w-full h-auto rounded-lg"
-                  />
-                </div>
+                
               </div>
             </div>
           </div>
@@ -74,43 +61,16 @@ const HomePage = () => {
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <FeatureCard 
-                icon={<ChartCandlestick className="h-10 w-10 text-primary" />}
-                title="Pattern Recognition"
-                description="Automatically detects chart patterns like head and shoulders, double tops, flags, and more."
-              />
-              <FeatureCard 
-                icon={<BarChart2 className="h-10 w-10 text-primary" />}
-                title="Support & Resistance"
-                description="Identifies key support and resistance levels with precision to optimize your entries and exits."
-              />
-              <FeatureCard 
-                icon={<TrendingUp className="h-10 w-10 text-primary" />}
-                title="Trend Analysis"
-                description="Determines the overall trend direction and strength to keep you trading with the momentum."
-              />
-              <FeatureCard 
-                icon={<Zap className="h-10 w-10 text-primary" />}
-                title="Entry & Exit Points"
-                description="Get precise entry triggers, stop loss levels, and multiple take profit targets for each setup."
-              />
-              <FeatureCard 
-                icon={<Award className="h-10 w-10 text-primary" />}
-                title="Risk Assessment"
-                description="Each analysis includes risk-reward ratios and confidence scores to prioritize the best trades."
-              />
-              <FeatureCard 
-                icon={<History className="h-10 w-10 text-primary" />}
-                title="Analysis History"
-                description="Save all your chart analyses to track performance and review previous setups."
-              />
+              <FeatureCard icon={<ChartCandlestick className="h-10 w-10 text-primary" />} title="Pattern Recognition" description="Automatically detects chart patterns like head and shoulders, double tops, flags, and more." />
+              <FeatureCard icon={<BarChart2 className="h-10 w-10 text-primary" />} title="Support & Resistance" description="Identifies key support and resistance levels with precision to optimize your entries and exits." />
+              <FeatureCard icon={<TrendingUp className="h-10 w-10 text-primary" />} title="Trend Analysis" description="Determines the overall trend direction and strength to keep you trading with the momentum." />
+              <FeatureCard icon={<Zap className="h-10 w-10 text-primary" />} title="Entry & Exit Points" description="Get precise entry triggers, stop loss levels, and multiple take profit targets for each setup." />
+              <FeatureCard icon={<Award className="h-10 w-10 text-primary" />} title="Risk Assessment" description="Each analysis includes risk-reward ratios and confidence scores to prioritize the best trades." />
+              <FeatureCard icon={<History className="h-10 w-10 text-primary" />} title="Analysis History" description="Save all your chart analyses to track performance and review previous setups." />
             </div>
             
             <div className="mt-12 text-center">
-              <Button 
-                onClick={handleGetStartedClick} 
-                className="bg-primary hover:bg-primary/90 text-white font-medium"
-              >
+              <Button onClick={handleGetStartedClick} className="bg-primary hover:bg-primary/90 text-white font-medium">
                 Analyze Your Chart Now
               </Button>
             </div>
@@ -129,11 +89,7 @@ const HomePage = () => {
                   Stop guessing chart patterns and support levels. Let our AI provide you with professional-grade analysis in seconds.
                 </p>
                 <div className="pt-4">
-                  <Button 
-                    onClick={handleGetStartedClick}
-                    size="lg" 
-                    className="bg-primary hover:bg-primary/90 text-white font-medium"
-                  >
+                  <Button onClick={handleGetStartedClick} size="lg" className="bg-primary hover:bg-primary/90 text-white font-medium">
                     Start Analyzing Now
                   </Button>
                 </div>
@@ -144,12 +100,17 @@ const HomePage = () => {
       </main>
       
       {!isMobile && <Footer />}
-    </div>
-  );
+    </div>;
 };
-
-const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
-  <Card className="bg-chart-card border border-gray-800">
+const FeatureCard = ({
+  icon,
+  title,
+  description
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) => <Card className="bg-chart-card border border-gray-800">
     <CardContent className="p-6 space-y-4">
       <div className="bg-gray-800/50 w-16 h-16 rounded-full flex items-center justify-center">
         {icon}
@@ -159,7 +120,5 @@ const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, titl
         {description}
       </p>
     </CardContent>
-  </Card>
-);
-
+  </Card>;
 export default HomePage;
