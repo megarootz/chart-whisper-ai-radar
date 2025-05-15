@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -67,7 +68,7 @@ const AnalyzePage = () => {
   return <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      {/* API Key Modal - Only show if actually needed */}
+      {/* API Key Modal - Only show if needed */}
       {showApiKeyModal && (
         <ApiKeyModal 
           open={showApiKeyModal} 

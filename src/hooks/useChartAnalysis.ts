@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -18,9 +17,10 @@ export const useChartAnalysis = () => {
   const [apiKey, setApiKey] = useState<string | null>(HARDCODED_API_KEY);
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
 
-  // Load API key from localStorage as fallback only if hardcoded key is not set
+  // Load API key from localStorage as fallback only if needed
   useEffect(() => {
-    if (!HARDCODED_API_KEY || HARDCODED_API_KEY === 'your-api-key-here') {
+    // Check if the hardcoded API key is empty or not set
+    if (!HARDCODED_API_KEY) {
       const storedApiKey = localStorage.getItem('openai_api_key');
       if (storedApiKey) {
         setApiKey(storedApiKey);
