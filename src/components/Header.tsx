@@ -113,7 +113,7 @@ const Header = () => {
               {user ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="border-gray-700 hover:bg-gray-800 text-white">
+                    <Button variant="default" className="bg-primary hover:bg-primary/90 text-white">
                       <User className="mr-2 h-4 w-4" />
                       Account
                     </Button>
