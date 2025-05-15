@@ -1,208 +1,144 @@
 
-import React, { useEffect, useState } from 'react';
-import { ArrowRight, ChevronRight, Upload, LineChart, TrendingUp } from 'lucide-react';
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Link } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
+import { ChartCandlestick, BarChart2, TrendingUp, History, Award, Zap } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { AnalysisResultData } from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
-import TickmillBanner from '@/components/TickmillBanner';
-
-type FeatureCardProps = {
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-};
-
-const FeatureCard = ({ icon, title, description }: FeatureCardProps) => (
-  <div className="bg-chart-card border border-gray-700 rounded-lg p-6 hover:border-primary transition-colors">
-    <div className="bg-gray-800 p-4 rounded-lg inline-block mb-4">
-      {icon}
-    </div>
-    <h3 className="text-white text-xl font-medium mb-3">{title}</h3>
-    <p className="text-gray-400">{description}</p>
-  </div>
-);
-
-type AnalysisCardProps = {
-  pairName: string;
-  timeframe: string;
-  date: string;
-  sentiment: string;
-  description: string;
-  index: number;
-};
-
-const AnalysisCard = ({ pairName, timeframe, date, sentiment, description, index }: AnalysisCardProps) => (
-  <div className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-2">
-        <div>
-          <h3 className="text-white font-medium">{pairName}</h3>
-          <div className="flex items-center space-x-2">
-            <span className="text-xs text-gray-400">{timeframe}</span>
-            <span className="text-xs text-gray-400">•</span>
-            <span className="text-xs text-gray-400">{date}</span>
-          </div>
-        </div>
-        <div className={`px-3 py-1 text-xs font-medium rounded-full ${
-          sentiment.toLowerCase().includes('bullish') ? 'bg-green-900 text-green-400' : 
-          sentiment.toLowerCase().includes('bearish') ? 'bg-red-900 text-red-400' : 
-          'bg-yellow-900 text-yellow-400'}`}>
-          {sentiment}
-        </div>
-      </div>
-      
-      <p className="text-gray-400 text-sm line-clamp-3 mb-4">{description}</p>
-      
-      <div className="flex justify-between items-center">
-        <Link 
-          to={`/analysis/${index}`}
-          className="text-primary hover:underline flex items-center text-sm"
-        >
-          View Details <ChevronRight className="h-4 w-4 ml-1" />
-        </Link>
-        <div className="flex space-x-2">
-          <button className="text-gray-400 hover:text-gray-300 p-1">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-          </button>
-          <button className="text-gray-400 hover:text-gray-300 p-1">
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-            </svg>
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-);
+import { useAuth } from '@/contexts/AuthContext';
 
 const HomePage = () => {
-  const [recentAnalyses, setRecentAnalyses] = useState<AnalysisResultData[]>([]);
+  const navigate = useNavigate();
   const isMobile = useIsMobile();
-  
-  useEffect(() => {
-    // Load analysis history from localStorage
-    const storedHistory = localStorage.getItem('chartAnalysisHistory');
-    if (storedHistory) {
-      const parsedHistory = JSON.parse(storedHistory);
-      // Show at most 2 recent analyses
-      setRecentAnalyses(parsedHistory.slice(0, 2)); 
-    }
-  }, []);
+  const { user } = useAuth();
 
-  const features = [
-    {
-      icon: <Upload className="h-6 w-6 text-primary" />,
-      title: "Easy Image Upload",
-      description: "Upload chart images directly from your device or capture them using your camera for instant analysis."
-    },
-    {
-      icon: <TrendingUp className="h-6 w-6 text-primary" />,
-      title: "Pattern Recognition",
-      description: "Identify key candlestick patterns like engulfing, doji, and hammer with confidence ratings."
-    },
-    {
-      icon: <LineChart className="h-6 w-6 text-primary" />,
-      title: "Support & Resistance",
-      description: "Get key support and resistance levels with entry and exit point recommendations."
+  const handleGetStartedClick = () => {
+    if (user) {
+      navigate('/analyze');
+    } else {
+      navigate('/auth');
     }
-  ];
+  };
 
   return (
-    <div className="min-h-screen bg-chart-bg flex flex-col">
+    <div className="min-h-screen flex flex-col bg-chart-bg">
       <Header />
       
-      <main className={`flex-grow ${isMobile ? 'pb-24' : ''}`}>
+      <main className="flex-grow flex flex-col">
         {/* Hero Section */}
-        <section className="py-16 px-6">
-          <div className="container mx-auto text-center">
-            <h1 className="text-3xl md:text-5xl font-bold text-white mb-6">
-              Professional Candlestick Chart Analysis
-            </h1>
-            <p className="text-gray-400 max-w-2xl mx-auto mb-8">
-              Upload or capture your candlestick charts and get AI-powered analysis with pattern
-              recognition, trend identification, and trading suggestions.
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4 mb-8">
-              <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-white">
-                <Link to="/analyze">
-                  <Upload className="mr-2 h-5 w-5" /> Analyze Chart
-                </Link>
-              </Button>
-              <Button 
-                asChild 
-                variant="outline" 
-                size="lg" 
-                className="border-gray-700 bg-gray-800 hover:bg-gray-700 text-white"
-              >
-                <Link to="/history">
-                  View History
-                </Link>
-              </Button>
-            </div>
-            
-            {/* Tickmill Banner */}
-            <div className="max-w-3xl mx-auto mt-10">
-              <TickmillBanner />
+        <section className="py-12 md:py-24 px-4">
+          <div className="container mx-auto max-w-6xl">
+            <div className="flex flex-col md:flex-row gap-8 md:gap-16 items-center">
+              <div className="md:w-1/2 space-y-6">
+                <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
+                  AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
+                </h1>
+                <p className="text-lg text-gray-300">
+                  Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
+                </p>
+                <div className="pt-4">
+                  <Button 
+                    onClick={handleGetStartedClick} 
+                    size="lg" 
+                    className="bg-primary hover:bg-primary/90 text-white font-medium text-lg"
+                  >
+                    Get Started
+                  </Button>
+                </div>
+              </div>
+              <div className="md:w-1/2">
+                <div className="bg-black/50 p-4 rounded-lg border border-gray-800">
+                  <img 
+                    src="/placeholder.svg" 
+                    alt="ForexRadar7 Demo" 
+                    className="w-full h-auto rounded-lg"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </section>
         
         {/* Features Section */}
-        <section className="py-16 px-6 bg-black/30">
-          <div className="container mx-auto">
-            <h2 className="text-2xl md:text-3xl font-bold text-white text-center mb-12">
-              Powerful Chart Analysis Features
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {features.map((feature, index) => (
-                <FeatureCard 
-                  key={index}
-                  icon={feature.icon}
-                  title={feature.title}
-                  description={feature.description}
-                />
-              ))}
+        <section className="py-12 md:py-20 px-4 bg-black/30">
+          <div className="container mx-auto max-w-6xl">
+            <div className="text-center mb-12">
+              <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
+                Powerful Analysis Features
+              </h2>
+              <p className="text-gray-400 max-w-2xl mx-auto">
+                Our AI trading assistant analyzes your charts with professional precision to identify key patterns and opportunities.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <FeatureCard 
+                icon={<ChartCandlestick className="h-10 w-10 text-primary" />}
+                title="Pattern Recognition"
+                description="Automatically detects chart patterns like head and shoulders, double tops, flags, and more."
+              />
+              <FeatureCard 
+                icon={<BarChart2 className="h-10 w-10 text-primary" />}
+                title="Support & Resistance"
+                description="Identifies key support and resistance levels with precision to optimize your entries and exits."
+              />
+              <FeatureCard 
+                icon={<TrendingUp className="h-10 w-10 text-primary" />}
+                title="Trend Analysis"
+                description="Determines the overall trend direction and strength to keep you trading with the momentum."
+              />
+              <FeatureCard 
+                icon={<Zap className="h-10 w-10 text-primary" />}
+                title="Entry & Exit Points"
+                description="Get precise entry triggers, stop loss levels, and multiple take profit targets for each setup."
+              />
+              <FeatureCard 
+                icon={<Award className="h-10 w-10 text-primary" />}
+                title="Risk Assessment"
+                description="Each analysis includes risk-reward ratios and confidence scores to prioritize the best trades."
+              />
+              <FeatureCard 
+                icon={<History className="h-10 w-10 text-primary" />}
+                title="Analysis History"
+                description="Save all your chart analyses to track performance and review previous setups."
+              />
+            </div>
+            
+            <div className="mt-12 text-center">
+              <Button 
+                onClick={handleGetStartedClick} 
+                className="bg-primary hover:bg-primary/90 text-white font-medium"
+              >
+                Analyze Your Chart Now
+              </Button>
             </div>
           </div>
         </section>
         
-        {/* Recent Analyses Section */}
-        <section className="py-16 px-6">
-          <div className="container mx-auto">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-white">Recent Analyses</h2>
-              <Link to="/history" className="text-primary hover:underline flex items-center">
-                View All <ArrowRight className="ml-1 h-4 w-4" />
-              </Link>
+        {/* CTA Section */}
+        <section className="py-14 md:py-20 px-4">
+          <div className="container mx-auto max-w-4xl">
+            <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-xl p-6 md:p-10 border border-gray-700 shadow-lg">
+              <div className="text-center space-y-4">
+                <h2 className="text-2xl md:text-3xl font-bold text-white">
+                  Ready to elevate your trading decisions?
+                </h2>
+                <p className="text-gray-300 md:text-lg max-w-2xl mx-auto">
+                  Stop guessing chart patterns and support levels. Let our AI provide you with professional-grade analysis in seconds.
+                </p>
+                <div className="pt-4">
+                  <Button 
+                    onClick={handleGetStartedClick}
+                    size="lg" 
+                    className="bg-primary hover:bg-primary/90 text-white font-medium"
+                  >
+                    Start Analyzing Now
+                  </Button>
+                </div>
+              </div>
             </div>
-            
-            {recentAnalyses.length === 0 ? (
-              <div className="text-center py-12 bg-chart-card border border-gray-700 rounded-lg">
-                <p className="text-gray-400">No analysis history found. Start by analyzing a chart!</p>
-                <Button asChild className="mt-4">
-                  <Link to="/analyze">Analyze a Chart</Link>
-                </Button>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {recentAnalyses.map((analysis, index) => (
-                  <AnalysisCard 
-                    key={index}
-                    index={index}
-                    pairName={analysis.pairName}
-                    timeframe={analysis.timeframe}
-                    date={analysis.timestamp || analysis.date || new Date().toLocaleString()}
-                    sentiment={analysis.overallSentiment}
-                    description={analysis.marketAnalysis}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         </section>
       </main>
@@ -211,5 +147,19 @@ const HomePage = () => {
     </div>
   );
 };
+
+const FeatureCard = ({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) => (
+  <Card className="bg-chart-card border border-gray-800">
+    <CardContent className="p-6 space-y-4">
+      <div className="bg-gray-800/50 w-16 h-16 rounded-full flex items-center justify-center">
+        {icon}
+      </div>
+      <h3 className="text-xl font-semibold text-white">{title}</h3>
+      <p className="text-gray-400">
+        {description}
+      </p>
+    </CardContent>
+  </Card>
+);
 
 export default HomePage;

@@ -1,14 +1,24 @@
 
 import React, { useState } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header = () => {
   const isMobile = useIsMobile();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const navItems = [
     { label: 'Home', href: '/' },
@@ -16,6 +26,11 @@ const Header = () => {
     { label: 'History', href: '/history' },
     { label: 'Profile', href: '/profile' },
   ];
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
+  };
 
   return (
     <header className="w-full py-3 px-4 md:py-4 md:px-6 bg-black border-b border-gray-800 sticky top-0 z-30">
@@ -55,9 +70,28 @@ const Header = () => {
                 </nav>
                 
                 <div className="flex flex-col space-y-3 mt-4">
-                  <Button variant="outline" className="w-full border-gray-700 hover:bg-gray-800 text-white">
-                    Get Started
-                  </Button>
+                  {user ? (
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-gray-700 hover:bg-gray-800 text-white"
+                      onClick={handleSignOut}
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-gray-700 hover:bg-gray-800 text-white"
+                      onClick={() => {
+                        navigate('/auth');
+                        setIsMenuOpen(false);
+                      }}
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Sign In
+                    </Button>
+                  )}
                 </div>
               </div>
             </SheetContent>
@@ -76,9 +110,42 @@ const Header = () => {
               ))}
             </nav>
             <div className="flex items-center space-x-3">
-              <Button className="bg-primary hover:bg-primary/90 text-white">
-                Get Started
-              </Button>
+              {user ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" className="border-gray-700 hover:bg-gray-800 text-white">
+                      <User className="mr-2 h-4 w-4" />
+                      Account
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="w-56 bg-chart-card border-gray-700">
+                    <div className="px-3 py-2 text-sm text-gray-300">
+                      {user.email}
+                    </div>
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                    <DropdownMenuItem 
+                      className="text-white hover:bg-gray-800 focus:bg-gray-800 cursor-pointer"
+                      onClick={() => navigate('/profile')}
+                    >
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator className="bg-gray-700" />
+                    <DropdownMenuItem 
+                      className="text-white hover:bg-gray-800 focus:bg-gray-800 cursor-pointer"
+                      onClick={handleSignOut}
+                    >
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button 
+                  className="bg-primary hover:bg-primary/90 text-white"
+                  onClick={() => navigate('/auth')}
+                >
+                  Get Started
+                </Button>
+              )}
             </div>
           </div>
         )}

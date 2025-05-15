@@ -3,6 +3,8 @@ import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
 import { GeminiRequest, GeminiResponse } from '@/types/gemini';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Hardcoded API key - Replace this with your actual Gemini API key
 const GEMINI_API_KEY = "AIzaSyCImUvlhhUP-q5exVYvh-IMnhYUhNy2bnY";
@@ -11,29 +13,37 @@ export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
 
-  // Helper function to save analysis to history
-  const saveAnalysisToHistory = (analysis: AnalysisResultData) => {
+  // Helper function to save analysis to Supabase
+  const saveAnalysisToDatabase = async (analysis: AnalysisResultData, chartUrl?: string) => {
     try {
-      // Add timestamp to the analysis
-      const analysisWithTimestamp = {
-        ...analysis,
-        timestamp: new Date().toLocaleString()
-      };
+      if (!user) {
+        throw new Error('User must be logged in to save analysis');
+      }
       
-      // Get existing history or initialize empty array
-      const existingHistory = localStorage.getItem('chartAnalysisHistory');
-      const history = existingHistory ? JSON.parse(existingHistory) : [];
+      const { error } = await supabase
+        .from('chart_analyses')
+        .insert({
+          user_id: user.id,
+          chart_url: chartUrl,
+          pair_name: analysis.pairName,
+          timeframe: analysis.timeframe,
+          analysis_data: analysis
+        });
       
-      // Add new analysis to the beginning of the array
-      history.unshift(analysisWithTimestamp);
+      if (error) {
+        throw error;
+      }
       
-      // Save back to localStorage
-      localStorage.setItem('chartAnalysisHistory', JSON.stringify(history));
-      
-      console.log('Analysis saved to history:', analysisWithTimestamp);
+      console.log('Analysis saved to database');
     } catch (error) {
-      console.error('Failed to save analysis to history:', error);
+      console.error('Failed to save analysis to database:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save analysis to your history. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -145,11 +155,39 @@ export const useChartAnalysis = () => {
     try {
       setIsAnalyzing(true);
       
-      // Using the hardcoded API key
-      const apiKey = GEMINI_API_KEY;
+      if (!user) {
+        throw new Error('You must be logged in to analyze charts');
+      }
       
       // Convert image to base64
       const base64Image = await fileToBase64(file);
+      
+      // Upload image to Supabase storage
+      let chartUrl: string | undefined;
+      try {
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${user.id}/${Date.now()}.${fileExt}`;
+        
+        const { data: storageData, error: storageError } = await supabase.storage
+          .from('chart_images')
+          .upload(fileName, file);
+        
+        if (storageError) {
+          console.error('Error uploading chart image:', storageError);
+        } else if (storageData) {
+          const { data: urlData } = supabase.storage
+            .from('chart_images')
+            .getPublicUrl(fileName);
+            
+          chartUrl = urlData.publicUrl;
+        }
+      } catch (uploadError) {
+        console.error('Failed to upload chart image:', uploadError);
+        // Continue with analysis even if image upload fails
+      }
+      
+      // Using the hardcoded API key
+      const apiKey = GEMINI_API_KEY;
       
       // Prepare request for Gemini API with improved prompt
       const requestData: GeminiRequest = {
@@ -377,8 +415,8 @@ Make the response concise but comprehensive, and ensure all numeric values are a
         // Save the analysis result
         setAnalysisResult(analysisData);
         
-        // Save the analysis to history in localStorage
-        saveAnalysisToHistory(analysisData);
+        // Save the analysis to Supabase
+        await saveAnalysisToDatabase(analysisData, chartUrl);
 
         toast({
           title: "Analysis Complete",
