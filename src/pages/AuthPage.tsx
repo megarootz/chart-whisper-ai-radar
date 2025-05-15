@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,18 +20,21 @@ export default function AuthPage() {
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/analyze";
 
-  // If user is already logged in, redirect to the requested page
-  if (user) {
-    navigate(from, { replace: true });
-    return null;
-  }
+  // Fix: Move redirect logic to useEffect to avoid render-time navigation
+  useEffect(() => {
+    if (user) {
+      navigate(from, { replace: true });
+    }
+  }, [user, navigate, from]);
+
+  // Remove the initial redirect check that was causing re-renders during render
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     try {
       await signIn(email, password);
-      navigate(from, { replace: true });
+      // Navigation will happen in the useEffect
     } catch (error) {
       console.error("Login error:", error);
     } finally {
@@ -62,6 +65,11 @@ export default function AuthPage() {
       setIsLoading(false);
     }
   };
+
+  // If user is redirected by useEffect, no need to render the form
+  if (user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">

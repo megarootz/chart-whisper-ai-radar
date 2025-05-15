@@ -31,10 +31,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(currentSession?.user ?? null);
         
         if (event === 'SIGNED_IN') {
-          toast.success('Signed in successfully');
+          // Defer navigation to avoid render-time updates
+          setTimeout(() => {
+            toast.success('Signed in successfully');
+          }, 0);
         } else if (event === 'SIGNED_OUT') {
-          toast.info('Signed out');
-          navigate('/auth');
+          // Defer navigation to avoid render-time updates
+          setTimeout(() => {
+            toast.info('Signed out');
+            navigate('/auth');
+          }, 0);
         }
       }
     );
@@ -62,7 +68,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
       
-      navigate('/analyze');
+      // Remove immediate navigation, let onAuthStateChange handle it
+      // navigate('/analyze');
     } catch (error: any) {
       toast.error(`Error signing in: ${error.message}`);
       throw error;
