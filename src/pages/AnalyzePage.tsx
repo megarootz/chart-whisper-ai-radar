@@ -9,6 +9,8 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
 import RadarAnimation from '@/components/RadarAnimation';
 import ApiKeyModal from '@/components/ApiKeyModal';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 const AnalyzePage = () => {
   const {
@@ -23,6 +25,7 @@ const AnalyzePage = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isMobile = useIsMobile();
   const analysisResultRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
   
   // Effect to scroll to results when they become available
   useEffect(() => {
@@ -57,13 +60,41 @@ const AnalyzePage = () => {
     }
   };
   
-  const handleUpload = () => {
+  const handleUpload = async () => {
     if (file) {
       // Clear any previous results
       console.log("Starting chart analysis...");
       
-      // Check if API key exists in localStorage and if it has the correct format
-      const apiKey = localStorage.getItem('openrouter_api_key');
+      // Check if user is logged in
+      if (!user) {
+        console.log("User not logged in, cannot analyze chart");
+        return;
+      }
+      
+      // Check for API key in Supabase first
+      let apiKey = null;
+      
+      try {
+        const { data, error } = await supabase
+          .from('user_api_keys')
+          .select('key_value')
+          .eq('user_id', user.id)
+          .eq('key_type', 'openrouter')
+          .single();
+        
+        if (!error && data) {
+          apiKey = data.key_value;
+        }
+      } catch (err) {
+        console.error("Error fetching API key from Supabase:", err);
+      }
+      
+      // If not found in Supabase, try localStorage
+      if (!apiKey) {
+        apiKey = localStorage.getItem('openrouter_api_key');
+      }
+      
+      // Check if API key exists and has the correct format
       if (!apiKey || (!apiKey.startsWith('sk-or-') && !apiKey.startsWith('sk-ro-'))) {
         console.log("No valid API key found, showing modal");
         setShowApiKeyModal(true);

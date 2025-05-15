@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -15,59 +14,98 @@ export const useChartAnalysis = () => {
   const [apiKey, setApiKey] = useState<string>('');
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
 
-  // Load API key from localStorage on mount
+  // Load API key from Supabase and fallback to localStorage on mount
   useEffect(() => {
-    const storedApiKey = localStorage.getItem('openrouter_api_key');
-    if (storedApiKey) {
-      console.log("Found stored API key in localStorage");
-      setApiKey(storedApiKey);
-    } else {
-      console.log("No API key found, showing modal");
-      setShowApiKeyModal(true);
-    }
-  }, []);
+    fetchApiKey();
+  }, [user]);
 
-  // Helper function to save API key
-  const saveApiKey = (key: string) => {
-    console.log("Saving new API key to localStorage");
-    localStorage.setItem('openrouter_api_key', key);
-    setApiKey(key);
-    setShowApiKeyModal(false);
-  };
-
-  // Helper function to save analysis to Supabase
-  const saveAnalysisToDatabase = async (analysis: AnalysisResultData, chartUrl?: string) => {
-    try {
-      if (!user) {
-        throw new Error('User must be logged in to save analysis');
+  // Helper function to fetch API key from Supabase
+  const fetchApiKey = async () => {
+    if (!user) {
+      // If no user is logged in, try to get key from localStorage as fallback
+      const storedApiKey = localStorage.getItem('openrouter_api_key');
+      if (storedApiKey) {
+        console.log("Found stored API key in localStorage");
+        setApiKey(storedApiKey);
+      } else {
+        console.log("No API key found, showing modal");
+        setShowApiKeyModal(true);
       }
-      
-      // Convert the analysis to a plain object to ensure it's compatible with Supabase's Json type
-      const analysisDataJson = JSON.parse(JSON.stringify(analysis));
-      
-      const { error } = await supabase
-        .from('chart_analyses')
-        .insert({
-          user_id: user.id,
-          chart_url: chartUrl,
-          pair_name: analysis.pairName,
-          timeframe: analysis.timeframe,
-          analysis_data: analysisDataJson
-        });
+      return;
+    }
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_api_keys')
+        .select('key_value')
+        .eq('user_id', user.id)
+        .eq('key_type', 'openrouter')
+        .single();
       
       if (error) {
-        throw error;
+        console.log('No API key found in database or error fetching key:', error.message);
+        // Fall back to localStorage
+        const storedApiKey = localStorage.getItem('openrouter_api_key');
+        if (storedApiKey) {
+          console.log("Found stored API key in localStorage");
+          setApiKey(storedApiKey);
+        } else {
+          console.log("No API key found, showing modal");
+          setShowApiKeyModal(true);
+        }
+        return;
       }
       
-      console.log('Analysis saved to database');
-    } catch (error) {
-      console.error('Failed to save analysis to database:', error);
-      toast({
-        title: "Error",
-        description: "Failed to save analysis to your history. Please try again.",
-        variant: "destructive",
-      });
+      if (data && data.key_value) {
+        console.log("Found API key in database");
+        setApiKey(data.key_value);
+        // Also update localStorage for faster access next time
+        localStorage.setItem('openrouter_api_key', data.key_value);
+      } else {
+        console.log("No API key found in database, showing modal");
+        setShowApiKeyModal(true);
+      }
+    } catch (err) {
+      console.error('Error fetching API key:', err);
+      setShowApiKeyModal(true);
     }
+  };
+
+  // Helper function to save API key
+  const saveApiKey = async (key: string) => {
+    console.log("Saving new API key");
+    setApiKey(key);
+    setShowApiKeyModal(false);
+    
+    // If user is logged in, save to database
+    if (user) {
+      try {
+        const { error } = await supabase
+          .from('user_api_keys')
+          .upsert({
+            user_id: user.id,
+            key_type: 'openrouter',
+            key_value: key,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'user_id,key_type'
+          });
+        
+        if (error) {
+          console.error('Error saving API key to database:', error);
+          toast({
+            title: "Error",
+            description: "Failed to save API key to database. Your analysis will still work for this session.",
+            variant: "destructive",
+          });
+        }
+      } catch (err) {
+        console.error('Error saving API key to database:', err);
+      }
+    }
+    
+    // Always save to localStorage as backup/cache
+    localStorage.setItem('openrouter_api_key', key);
   };
 
   // Helper function to calculate distance in pips properly

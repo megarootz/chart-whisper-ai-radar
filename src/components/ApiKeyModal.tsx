@@ -5,6 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { ExternalLink } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from "@/hooks/use-toast";
 
 interface ApiKeyModalProps {
   open: boolean;
@@ -25,20 +28,48 @@ const ApiKeyModal = ({
 }: ApiKeyModalProps) => {
   const [apiKey, setApiKey] = useState('');
   const [error, setError] = useState('');
+  const { user } = useAuth();
+  const { toast } = useToast();
   
   // Pre-fill with saved API key if available
   useEffect(() => {
-    if (open) {
-      const savedKey = localStorage.getItem('openrouter_api_key');
-      if (savedKey) {
-        setApiKey(savedKey);
-      }
+    if (open && user) {
+      fetchApiKey();
     }
-  }, [open]);
+  }, [open, user]);
 
-  const handleSave = () => {
+  const fetchApiKey = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('user_api_keys')
+        .select('key_value')
+        .eq('user_id', user.id)
+        .eq('key_type', 'openrouter')
+        .single();
+      
+      if (error) {
+        console.log('No API key found or error fetching key:', error.message);
+        return;
+      }
+      
+      if (data && data.key_value) {
+        setApiKey(data.key_value);
+      }
+    } catch (err) {
+      console.error('Error fetching API key:', err);
+    }
+  };
+
+  const handleSave = async () => {
     if (!apiKey.trim()) {
       setError('API key is required');
+      return;
+    }
+    
+    if (!user) {
+      setError('You must be logged in to save an API key');
       return;
     }
     
@@ -49,10 +80,41 @@ const ApiKeyModal = ({
       return;
     }
     
-    // Save the API key and close modal
-    console.log("API key validated, saving...");
-    onSave(apiKey.trim());
-    setError('');
+    try {
+      // Save to Supabase with upsert (insert if not exists, update if exists)
+      const { error: upsertError } = await supabase
+        .from('user_api_keys')
+        .upsert({
+          user_id: user.id,
+          key_type: 'openrouter',
+          key_value: apiKey.trim(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id,key_type'
+        });
+      
+      if (upsertError) {
+        console.error('Error saving API key to database:', upsertError);
+        setError('Failed to save API key to database');
+        return;
+      }
+      
+      // Also save to localStorage as a backup/cache
+      localStorage.setItem('openrouter_api_key', apiKey.trim());
+      
+      console.log("API key saved successfully");
+      toast({
+        title: "API Key Saved",
+        description: "Your OpenRouter API key has been saved successfully",
+      });
+      
+      // Save the API key and close modal
+      onSave(apiKey.trim());
+      setError('');
+    } catch (err) {
+      console.error('Error saving API key:', err);
+      setError('An unexpected error occurred while saving the API key');
+    }
   };
 
   return (
