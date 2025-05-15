@@ -111,54 +111,65 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Use useEffect to set up auth listener and check for existing session
   useEffect(() => {
+    console.log("Setting up auth listener");
+    let hasInitialized = false;
+    
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         console.log("Auth state changed:", event);
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        setSession(session);
-        setLoading(false);
         
-        // Initialize storage if user is authenticated
-        if (currentUser) {
+        // Update auth state
+        setUser(session?.user ?? null);
+        setSession(session);
+        
+        // Only try to initialize storage if we have a valid user
+        if (session?.user && !hasInitialized) {
+          hasInitialized = true;
+          
           try {
-            initializeStorage(currentUser.id).catch(err => {
-              console.error('Error initializing storage:', err);
-              // Show toast notification but don't block auth flow
-              toast({
-                variant: "destructive",
-                title: "Storage Error",
-                description: "User authenticated but storage could not be initialized.",
+            // Use setTimeout to avoid deadlock with Supabase auth
+            setTimeout(() => {
+              initializeStorage(session.user!.id).catch(err => {
+                console.error('Error initializing storage:', err);
+                toast({
+                  variant: "destructive",
+                  title: "Storage Error",
+                  description: "User authenticated but storage could not be initialized.",
+                });
               });
-            });
+            }, 0);
           } catch (error) {
             console.error('Error initializing storage:', error);
-            // Don't block the authentication flow if storage initialization fails
           }
         }
+        
+        setLoading(false);
       }
     );
 
     // Initial session check
     const initializeAuth = async () => {
       try {
+        console.log("Checking initial auth session");
         const { data: { session } } = await supabase.auth.getSession();
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        setSession(session);
         
-        // Initialize storage if user is authenticated
-        if (currentUser) {
+        if (session?.user && !hasInitialized) {
+          hasInitialized = true;
+          setUser(session.user);
+          setSession(session);
+          
+          // Initialize storage
           try {
-            await initializeStorage(currentUser.id).catch(err => {
+            await initializeStorage(session.user.id).catch(err => {
               console.error('Error initializing storage:', err);
-              // Log error but don't block auth
             });
           } catch (error) {
-            console.error('Error checking auth session:', error);
-            // Don't block the authentication flow
+            console.error('Error initializing storage:', error);
           }
+        } else {
+          setUser(null);
+          setSession(null);
         }
       } catch (error) {
         console.error('Error checking auth session:', error);
@@ -170,6 +181,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     initializeAuth();
 
     return () => {
+      console.log("Cleaning up auth listener");
       subscription.unsubscribe();
     };
   }, []);

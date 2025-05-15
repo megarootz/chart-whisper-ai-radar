@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,16 +18,18 @@ export default function AuthPage() {
   const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const redirectedRef = useRef(false);
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/analyze";
 
-  // Use useEffect to handle navigation only on component mount and user state change
+  // Use useEffect to handle navigation once when authentication state changes
   useEffect(() => {
-    // Only redirect if user is logged in and we're on the auth page
-    if (user && !loading) {
+    // Only redirect if user is logged in, not loading, and we haven't redirected yet
+    if (user && !loading && !redirectedRef.current) {
       console.log("User is authenticated, redirecting to:", from);
+      redirectedRef.current = true;
       navigate(from, { replace: true });
     }
-  }, [user, navigate, from, loading]);
+  }, [user, loading, navigate, from]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +109,20 @@ export default function AuthPage() {
     }
   };
 
-  // Show loading state during authentication
+  // If already authenticated, don't render the auth form
+  // This prevents the page from flashing before redirect
+  if (user) {
+    return (
+      <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Authentication successful. Redirecting...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading state during authentication check
   if (loading) {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
@@ -120,18 +134,7 @@ export default function AuthPage() {
     );
   }
 
-  // Don't render the form if the user is logged in - they should be redirected
-  if (user) {
-    return (
-      <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
-        <div className="text-white text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Redirecting to analyze page...</p>
-        </div>
-      </div>
-    );
-  }
-
+  // Render auth form
   return (
     <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">

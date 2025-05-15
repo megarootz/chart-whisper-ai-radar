@@ -2,21 +2,23 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const location = useLocation();
+  const [hasShownToast, setHasShownToast] = useState(false);
 
-  // Add notification when user is redirected to auth page
+  // Add notification when user is redirected to auth page, but only once
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !user && !hasShownToast) {
+      setHasShownToast(true);
       toast({
         title: "Authentication required",
         description: "Please sign in to access this page.",
       });
     }
-  }, [loading, user]);
+  }, [loading, user, hasShownToast]);
 
   // Show loading indicator while checking auth status
   if (loading) {
@@ -29,9 +31,11 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   // Redirect to auth page if not logged in
   if (!user) {
+    console.log("User not authenticated, redirecting to auth page");
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 
   // User is authenticated, render the protected content
+  console.log("User is authenticated, rendering protected content");
   return <>{children}</>;
 }
