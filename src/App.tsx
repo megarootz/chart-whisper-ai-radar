@@ -17,7 +17,26 @@ import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useState } from "react";
 
-// Separate component for routes that require auth context
+const App = () => {
+  // Create a new QueryClient instance that persists between renders
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
+
+// Separate component for all routes, now correctly wrapped inside AuthProvider
 const AppRoutes = () => {
   const isMobile = useIsMobile();
   
@@ -61,27 +80,8 @@ const AppRoutes = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <BottomNav />
+      {isMobile && <BottomNav />}
     </div>
-  );
-};
-
-const App = () => {
-  // Create a new QueryClient instance that persists between renders
-  const [queryClient] = useState(() => new QueryClient());
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <AppRoutes />
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
   );
 };
 
