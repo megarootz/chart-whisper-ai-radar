@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -15,7 +14,7 @@ export const useChartAnalysis = () => {
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  const [apiKey, setApiKey] = useState<string>(HARDCODED_API_KEY);
+  const [apiKey, setApiKey] = useState<string>('');
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
 
   // Load API key from localStorage on mount
@@ -24,7 +23,7 @@ export const useChartAnalysis = () => {
     if (storedApiKey) {
       console.log("Found stored API key in localStorage");
       setApiKey(storedApiKey);
-    } else if (!apiKey) {
+    } else {
       console.log("No API key found, showing modal");
       setShowApiKeyModal(true);
     }
@@ -299,7 +298,7 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       console.log("Response text:", responseText);
       
       // Parse the response if possible
-      let responseData: OpenAIResponse;
+      let responseData: OpenAIResponse | { error?: { message?: string } };
       try {
         responseData = JSON.parse(responseText);
       } catch (parseError) {
@@ -309,15 +308,22 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       
       if (!response.ok) {
         console.error("API Error:", responseData);
-        throw new Error(responseData.error?.message || `Failed to analyze the chart: ${response.status}`);
+        // Modified this line to handle error messages from the API response
+        const errorMessage = 'error' in responseData && typeof responseData.error === 'object' && responseData.error && 'message' in responseData.error 
+          ? responseData.error.message 
+          : `Failed to analyze the chart: ${response.status}`;
+        throw new Error(errorMessage);
       }
 
-      if (!responseData.choices || responseData.choices.length === 0) {
+      // Type assertion after successful response
+      const openAIResponse = responseData as OpenAIResponse;
+
+      if (!openAIResponse.choices || openAIResponse.choices.length === 0) {
         throw new Error('No response content from OpenRouter API');
       }
 
       // Parse the text response to extract JSON
-      const resultText = responseData.choices[0].message.content || '';
+      const resultText = openAIResponse.choices[0].message.content || '';
       console.log("Raw API Response content:", resultText);
       
       // Extract JSON from the response (might be wrapped in code blocks)

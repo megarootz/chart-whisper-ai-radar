@@ -45,3 +45,14 @@ interface Choice {
   };
   finish_reason: string;
 }
+
+// Adding error response interface for OpenRouter API
+export interface OpenRouterErrorResponse {
+  error?: {
+    message?: string;
+    type?: string;
+    param?: string;
+    code?: string;
+  };
+}
+
