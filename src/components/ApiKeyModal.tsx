@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -25,6 +25,16 @@ const ApiKeyModal = ({
 }: ApiKeyModalProps) => {
   const [apiKey, setApiKey] = useState('');
   const [error, setError] = useState('');
+  
+  // Pre-fill with saved API key if available
+  useEffect(() => {
+    if (open) {
+      const savedKey = localStorage.getItem('openrouter_api_key');
+      if (savedKey) {
+        setApiKey(savedKey);
+      }
+    }
+  }, [open]);
 
   const handleSave = () => {
     if (!apiKey.trim()) {
@@ -38,8 +48,9 @@ const ApiKeyModal = ({
       return;
     }
     
+    // Save the API key and close modal
+    console.log("API key validated, saving...");
     onSave(apiKey.trim());
-    onOpenChange(false);
   };
 
   return (
@@ -74,6 +85,12 @@ const ApiKeyModal = ({
             </Button>
           </div>
           {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
+          <div className="mt-4 p-2 bg-blue-900/20 border border-blue-800/50 rounded-md">
+            <p className="text-xs text-blue-300">
+              Get your OpenRouter API key from <a href="https://openrouter.ai/keys" target="_blank" className="underline">openrouter.ai/keys</a>. 
+              Make sure it starts with 'sk-or-'.
+            </p>
+          </div>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>

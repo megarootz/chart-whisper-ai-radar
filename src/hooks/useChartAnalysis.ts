@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -17,21 +18,21 @@ export const useChartAnalysis = () => {
   const [apiKey, setApiKey] = useState<string>(HARDCODED_API_KEY);
   const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
 
-  // Load API key from localStorage as fallback only if needed
+  // Load API key from localStorage on mount
   useEffect(() => {
-    // Only check localStorage if the hardcoded key is empty
-    if (!apiKey) {
-      const storedApiKey = localStorage.getItem('openrouter_api_key');
-      if (storedApiKey) {
-        setApiKey(storedApiKey);
-      } else {
-        setShowApiKeyModal(true);
-      }
+    const storedApiKey = localStorage.getItem('openrouter_api_key');
+    if (storedApiKey) {
+      console.log("Found stored API key in localStorage");
+      setApiKey(storedApiKey);
+    } else if (!apiKey) {
+      console.log("No API key found, showing modal");
+      setShowApiKeyModal(true);
     }
-  }, [apiKey]);
+  }, []);
 
   // Helper function to save API key
   const saveApiKey = (key: string) => {
+    console.log("Saving new API key to localStorage");
     localStorage.setItem('openrouter_api_key', key);
     setApiKey(key);
     setShowApiKeyModal(false);
@@ -191,7 +192,7 @@ export const useChartAnalysis = () => {
         throw new Error('API key is required for chart analysis');
       }
       
-      console.log("Using API key:", apiKey.substring(0, 10) + "..." + apiKey.substring(apiKey.length - 5));
+      console.log("Using API key:", apiKey.substring(0, 10) + "...");
       
       // Convert image to base64
       const base64Image = await fileToBase64(file);
@@ -274,36 +275,50 @@ Make the response concise but comprehensive, and ensure all numeric values are a
 
       console.log("Sending request to OpenRouter API...");
       
-      // Call OpenRouter API
+      // Create headers with proper authentication
+      const headers = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': window.location.origin, // Site URL for OpenRouter tracking
+        'X-Title': 'Forex Chart Analyzer' // Name of your application
+      };
+      
+      console.log("Request headers:", headers);
+      
+      // Call OpenRouter API with explicit headers
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': window.location.origin, // Site URL for OpenRouter tracking
-          'X-Title': 'Forex Chart Analyzer' // Name of your application
-        },
+        headers,
         body: JSON.stringify(requestData)
       });
 
       console.log("API Response status:", response.status);
       
+      // Get full response text for debugging
+      const responseText = await response.text();
+      console.log("Response text:", responseText);
+      
+      // Parse the response if possible
+      let responseData: OpenAIResponse;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error("Failed to parse response as JSON:", parseError);
+        throw new Error(`Invalid response from API: ${responseText.substring(0, 100)}...`);
+      }
+      
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error("API Error:", errorData);
-        throw new Error(errorData.error?.message || 'Failed to analyze the chart');
+        console.error("API Error:", responseData);
+        throw new Error(responseData.error?.message || `Failed to analyze the chart: ${response.status}`);
       }
 
-      const data: OpenAIResponse = await response.json();
-      console.log("Received response from OpenRouter API:", data);
-      
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error('No response from OpenRouter API');
+      if (!responseData.choices || responseData.choices.length === 0) {
+        throw new Error('No response content from OpenRouter API');
       }
 
       // Parse the text response to extract JSON
-      const resultText = data.choices[0].message.content || '';
-      console.log("Raw API Response:", resultText);
+      const resultText = responseData.choices[0].message.content || '';
+      console.log("Raw API Response content:", resultText);
       
       // Extract JSON from the response (might be wrapped in code blocks)
       let jsonStr = resultText;
