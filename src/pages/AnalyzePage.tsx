@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -62,6 +61,12 @@ const AnalyzePage = () => {
     if (file) {
       // Clear any previous results
       console.log("Starting chart analysis...");
+      // Check if API key exists in localStorage
+      const apiKey = localStorage.getItem('openrouter_api_key');
+      if (!apiKey) {
+        setShowApiKeyModal(true);
+        return;
+      }
       // Use "Auto-detect" as placeholder - the AI will detect from the image
       analyzeChart(file, "Auto-detect", "Auto-detect");
     }
@@ -235,4 +240,5 @@ const AnalyzePage = () => {
       {!isMobile && <Footer />}
     </div>;
 };
+
 export default AnalyzePage;

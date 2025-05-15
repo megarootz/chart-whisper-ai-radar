@@ -51,6 +51,7 @@ const ApiKeyModal = ({
     // Save the API key and close modal
     console.log("API key validated, saving...");
     onSave(apiKey.trim());
+    setError('');
   };
 
   return (

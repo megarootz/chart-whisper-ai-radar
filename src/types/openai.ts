@@ -35,6 +35,12 @@ export interface OpenAIResponse {
     completion_tokens: number;
     total_tokens: number;
   };
+  error?: {
+    message?: string;
+    type?: string;
+    param?: string;
+    code?: string;
+  };
 }
 
 interface Choice {
@@ -46,7 +52,7 @@ interface Choice {
   finish_reason: string;
 }
 
-// Adding error response interface for OpenRouter API
+// Adding standalone error response interface for OpenRouter API
 export interface OpenRouterErrorResponse {
   error?: {
     message?: string;
@@ -55,4 +61,3 @@ export interface OpenRouterErrorResponse {
     code?: string;
   };
 }
-

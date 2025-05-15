@@ -1,13 +1,11 @@
+
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
-import { OpenAIRequest, OpenAIResponse } from '@/types/openai';
+import { OpenAIRequest, OpenAIResponse, OpenRouterErrorResponse } from '@/types/openai';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
-
-// Hardcoded OpenRouter API key
-const HARDCODED_API_KEY = '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';
 
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -186,12 +184,15 @@ export const useChartAnalysis = () => {
       }
       
       // Verify API key is available
-      if (!apiKey) {
+      const currentApiKey = apiKey || localStorage.getItem('openrouter_api_key');
+      
+      if (!currentApiKey) {
+        console.log("No API key available, showing modal");
         setShowApiKeyModal(true);
         throw new Error('API key is required for chart analysis');
       }
       
-      console.log("Using API key:", apiKey.substring(0, 10) + "...");
+      console.log("Using OpenRouter API key:", currentApiKey.substring(0, 10) + "...");
       
       // Convert image to base64
       const base64Image = await fileToBase64(file);
@@ -277,12 +278,12 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       // Create headers with proper authentication
       const headers = {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${currentApiKey}`,
         'HTTP-Referer': window.location.origin, // Site URL for OpenRouter tracking
         'X-Title': 'Forex Chart Analyzer' // Name of your application
       };
       
-      console.log("Request headers:", headers);
+      console.log("Request headers:", JSON.stringify(headers));
       
       // Call OpenRouter API with explicit headers
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -295,10 +296,10 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       
       // Get full response text for debugging
       const responseText = await response.text();
-      console.log("Response text:", responseText);
+      console.log("Response text:", responseText.substring(0, 500) + "...");
       
       // Parse the response if possible
-      let responseData: OpenAIResponse | { error?: { message?: string } };
+      let responseData: OpenAIResponse | OpenRouterErrorResponse;
       try {
         responseData = JSON.parse(responseText);
       } catch (parseError) {
@@ -307,24 +308,26 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       }
       
       if (!response.ok) {
-        console.error("API Error:", responseData);
-        // Modified this line to handle error messages from the API response
-        const errorMessage = 'error' in responseData && typeof responseData.error === 'object' && responseData.error && 'message' in responseData.error 
+        console.error("API Error:", JSON.stringify(responseData));
+        
+        // Handle error from OpenRouter API
+        const errorMessage = responseData && 'error' in responseData && responseData.error && 'message' in responseData.error 
           ? responseData.error.message 
           : `Failed to analyze the chart: ${response.status}`;
-        throw new Error(errorMessage);
+          
+        throw new Error(errorMessage || 'Unknown error from API');
       }
 
       // Type assertion after successful response
       const openAIResponse = responseData as OpenAIResponse;
-
+      
       if (!openAIResponse.choices || openAIResponse.choices.length === 0) {
         throw new Error('No response content from OpenRouter API');
       }
 
       // Parse the text response to extract JSON
       const resultText = openAIResponse.choices[0].message.content || '';
-      console.log("Raw API Response content:", resultText);
+      console.log("Raw API Response content:", resultText.substring(0, 100) + "...");
       
       // Extract JSON from the response (might be wrapped in code blocks)
       let jsonStr = resultText;
@@ -340,7 +343,7 @@ Make the response concise but comprehensive, and ensure all numeric values are a
       try {
         // Parse the JSON response
         const parsedResult = JSON.parse(jsonStr);
-        console.log("Parsed JSON result:", parsedResult);
+        console.log("Parsed JSON result:", JSON.stringify(parsedResult).substring(0, 100) + "...");
         
         // Use detected pair name and timeframe from the API if available, otherwise fallback to placeholders
         const detectedPairName = parsedResult.pairName || pairName;
