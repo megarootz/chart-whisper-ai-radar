@@ -34,6 +34,7 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     return (
       <div className="flex justify-center items-center h-screen bg-chart-bg">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+        <p className="text-gray-300 ml-3">Loading authentication status...</p>
       </div>
     );
   }

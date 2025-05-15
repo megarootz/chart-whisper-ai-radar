@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -170,9 +169,9 @@ export default function AuthPage() {
   if (user && !loading) {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
-        <div className="text-white text-center">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Authentication successful. Redirecting...</p>
+          <p className="text-gray-300">Authentication successful. Redirecting...</p>
         </div>
       </div>
     );
@@ -182,9 +181,9 @@ export default function AuthPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
-        <div className="text-white text-center">
+        <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Checking authentication...</p>
+          <p className="text-gray-300">Checking authentication...</p>
         </div>
       </div>
     );
