@@ -39,7 +39,7 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-gray-800 flex justify-around items-center h-16 w-full">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-gray-800 flex justify-around items-center h-16 w-screen">
       {navItems.map((item) => (
         <Link
           key={item.label}

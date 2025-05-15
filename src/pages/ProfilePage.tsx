@@ -14,14 +14,14 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className="flex-grow py-6 px-0 md:px-6 pb-24">
-        <div className="container mx-auto max-w-4xl">
-          <div className="mb-6 px-4 md:px-0">
+      <main className={`flex-grow py-6 ${isMobile ? 'px-0' : 'px-6'} pb-24`}>
+        <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-4xl'}`}>
+          <div className={`mb-6 ${isMobile ? 'px-4' : 'px-0'}`}>
             <h1 className="text-2xl font-bold text-white mb-2">Profile</h1>
             <p className="text-gray-400">Manage your account and settings</p>
           </div>
           
-          <div className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden mx-4 md:mx-0">
+          <div className={`bg-chart-card border border-gray-700 rounded-lg overflow-hidden ${isMobile ? 'mx-0' : 'mx-0 md:mx-0'}`}>
             <div className="p-5 flex items-center">
               <div className="bg-primary/10 text-primary rounded-full w-16 h-16 flex items-center justify-center mr-4">
                 <User className="h-8 w-8" />

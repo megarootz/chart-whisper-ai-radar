@@ -31,6 +31,7 @@ const Header = () => {
     navigate('/');
   };
 
+  // Updated header with a cleaner mobile layout and hidden hamburger menu
   return (
     <header className="w-full py-2 px-0 md:py-4 md:px-6 bg-black border-b border-gray-800 sticky top-0 z-30">
       <div className="container mx-auto flex items-center justify-between">
@@ -41,12 +42,16 @@ const Header = () => {
         </Link>
         
         {isMobile ? (
+          // We keep the Sheet component but hide the trigger on mobile since we have bottom nav
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white mr-4">
-                <Menu className="h-5 w-5" />
-              </Button>
-            </SheetTrigger>
+            {/* Mobile menu button is now hidden since we use bottom navigation */}
+            <div className="hidden">
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="text-white mr-4">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+            </div>
             <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-full sm:w-[80%] pt-16 p-0">
               <div className="flex flex-col space-y-6">
                 <div className="flex justify-between items-center absolute top-4 right-4">
