@@ -129,7 +129,15 @@ export const useChartAnalysis = () => {
       // This fixes the type error by ensuring the data matches the Json type expected by Supabase
       const analysisDataJson: Json = JSON.parse(JSON.stringify(analysisData));
       
-      const { error } = await supabase
+      console.log("Saving analysis to database:", {
+        user_id: user.id,
+        analysis_data: analysisDataJson,
+        pair_name: analysisData.pairName,
+        timeframe: analysisData.timeframe,
+        chart_url: chartUrl
+      });
+      
+      const { data, error } = await supabase
         .from('chart_analyses')
         .insert({
           user_id: user.id,
@@ -147,10 +155,57 @@ export const useChartAnalysis = () => {
           variant: "destructive",
         });
       } else {
-        console.log("Analysis saved to database successfully");
+        console.log("Analysis saved to database successfully", data);
+        toast({
+          title: "Success",
+          description: "Analysis saved to your history",
+          variant: "default",
+        });
       }
     } catch (err) {
       console.error("Error in saveAnalysisToDatabase:", err);
+      toast({
+        title: "Error",
+        description: "Failed to save analysis to history",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Initialize storage bucket if it doesn't exist
+  const initializeStorage = async (userId?: string) => {
+    try {
+      if (!userId) return false;
+      
+      // Check if chart_images bucket exists
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      
+      if (bucketsError) {
+        console.error("Error listing buckets:", bucketsError);
+        return false;
+      }
+      
+      // If bucket doesn't exist, create it
+      if (!buckets?.find(bucket => bucket.name === 'chart_images')) {
+        console.log("Creating chart_images bucket...");
+        const { error: createError } = await supabase.storage.createBucket('chart_images', {
+          public: true
+        });
+        
+        if (createError) {
+          console.error("Error creating bucket:", createError);
+          return false;
+        }
+        
+        console.log("chart_images bucket created successfully");
+      } else {
+        console.log("chart_images bucket already exists");
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error initializing storage:", error);
+      return false;
     }
   };
 
@@ -169,6 +224,9 @@ export const useChartAnalysis = () => {
       // Upload image to Supabase storage
       let chartUrl: string | undefined;
       try {
+        // Initialize storage bucket if needed
+        await initializeStorage(user.id);
+        
         chartUrl = await uploadChartImage(file, user.id);
         console.log('Chart image uploaded successfully:', chartUrl);
       } catch (uploadError) {

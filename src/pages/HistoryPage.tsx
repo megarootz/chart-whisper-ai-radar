@@ -1,31 +1,73 @@
+
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share } from 'lucide-react';
+import { ArrowLeft, Download, Share, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Link } from 'react-router-dom';
 import { AnalysisResultData } from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { format } from 'date-fns';
 
 // Update the interface for the history items to include timestamp and date
 interface HistoryAnalysisData extends AnalysisResultData {
-  timestamp?: string;
-  date?: string;
+  id?: string;
+  created_at?: string;
 }
 
 const HistoryPage = () => {
   const [dateFilter, setDateFilter] = useState('all');
   const [analysisHistory, setAnalysisHistory] = useState<HistoryAnalysisData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const isMobile = useIsMobile();
+  const { user } = useAuth();
   
   useEffect(() => {
-    // Load analysis history from localStorage
-    const storedHistory = localStorage.getItem('chartAnalysisHistory');
-    if (storedHistory) {
-      const parsedHistory = JSON.parse(storedHistory);
-      setAnalysisHistory(parsedHistory);
+    if (user) {
+      fetchAnalysisHistory();
+    } else {
+      setIsLoading(false);
+      setAnalysisHistory([]);
     }
-  }, []);
+  }, [user]);
+
+  const fetchAnalysisHistory = async () => {
+    try {
+      setIsLoading(true);
+      
+      const { data, error } = await supabase
+        .from('chart_analyses')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching analysis history:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load your analysis history",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Process the analysis data
+      const processedData = data.map(item => {
+        return {
+          ...item.analysis_data as AnalysisResultData,
+          id: item.id,
+          created_at: item.created_at
+        };
+      });
+      
+      setAnalysisHistory(processedData);
+    } catch (error) {
+      console.error("Error in fetchAnalysisHistory:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter the history based on date selection
   const filteredHistory = React.useMemo(() => {
@@ -37,8 +79,8 @@ const HistoryPage = () => {
     const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).getTime();
     
     return analysisHistory.filter(item => {
-      // Use timestamp or date property, or fallback to current time
-      const itemDate = new Date(item.timestamp || item.date || Date.now()).getTime();
+      // Use timestamp or created_at property
+      const itemDate = new Date(item.created_at || Date.now()).getTime();
       
       if (dateFilter === 'today') return itemDate >= today;
       if (dateFilter === 'week') return itemDate >= weekAgo;
@@ -47,6 +89,15 @@ const HistoryPage = () => {
       return true;
     });
   }, [analysisHistory, dateFilter]);
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return '';
+    try {
+      return format(new Date(dateStr), 'MMM d, yyyy h:mm a');
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   return (
     <div className="min-h-screen bg-chart-bg flex flex-col">
@@ -79,7 +130,12 @@ const HistoryPage = () => {
             </div>
           </div>
           
-          {filteredHistory.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <span className="ml-2 text-gray-400">Loading your analysis history...</span>
+            </div>
+          ) : filteredHistory.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-400">No analysis history found. Start by analyzing a chart!</p>
               <Button asChild className="mt-4">
@@ -89,17 +145,17 @@ const HistoryPage = () => {
           ) : (
             <div className="space-y-4">
               {filteredHistory.map((analysis, index) => (
-                <div key={index} className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
+                <div key={analysis.id || index} className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
                   <div className="p-5">
                     <div className="flex justify-between items-start mb-4">
                       <div>
                         <h3 className="text-white font-medium text-lg mb-1">{analysis.pairName}</h3>
-                        <div className="flex items-center text-gray-400 text-sm">
+                        <div className="flex flex-wrap items-center text-gray-400 text-sm">
                           <span className="mr-2">{analysis.overallSentiment}</span>
                           <span className="mr-2">•</span>
                           <span className="mr-2">{analysis.timeframe}</span>
                           <span className="mr-2">•</span>
-                          <span>{analysis.timestamp || analysis.date || new Date().toLocaleString()}</span>
+                          <span>{formatDate(analysis.created_at)}</span>
                         </div>
                       </div>
                       <div className={`px-3 py-1 text-xs font-medium rounded-full ${
@@ -114,7 +170,7 @@ const HistoryPage = () => {
                     <p className="text-gray-400 text-sm mb-4">{analysis.marketAnalysis}</p>
                     
                     <div className="flex justify-between items-center">
-                      <Link to={`/analysis/${index}`} className="text-primary hover:underline text-sm">
+                      <Link to={`/analysis/${analysis.id}`} className="text-primary hover:underline text-sm">
                         View Details
                       </Link>
                       
