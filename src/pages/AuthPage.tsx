@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,9 +16,12 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
+  const [showResetForm, setShowResetForm] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const { signIn, signUp, signInWithGoogle, resetPassword, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/analyze";
   
   // Effect to handle navigation when authentication state changes
@@ -34,10 +37,19 @@ export default function AuthPage() {
       }, 100);
     }
     
+    // Check if we have a reset=true in URL params for password reset flow
+    const isReset = searchParams.get('reset') === 'true';
+    if (isReset) {
+      toast({
+        title: "Password Reset Link Sent",
+        description: "Check your email for a link to reset your password.",
+      });
+    }
+    
     return () => {
       if (redirectTimeout) clearTimeout(redirectTimeout);
     };
-  }, [user, loading, navigate, from]);
+  }, [user, loading, navigate, from, searchParams]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -117,6 +129,43 @@ export default function AuthPage() {
     }
   };
 
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) {
+      toast({
+        variant: "destructive",
+        title: "Email Required",
+        description: "Please provide your email address to reset your password.",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      await resetPassword(email);
+      setResetSent(true);
+      toast({
+        title: "Reset Link Sent",
+        description: "Check your email for a link to reset your password.",
+      });
+    } catch (error: any) {
+      console.error("Password reset error:", error);
+      toast({
+        variant: "destructive",
+        title: "Password Reset Failed",
+        description: error.message || "An error occurred during password reset.",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Toggle between sign-in form and reset password form
+  const toggleResetForm = () => {
+    setShowResetForm(!showResetForm);
+    setResetSent(false);
+  };
+
   // If already authenticated and not in the process of loading, show loading state
   if (user && !loading) {
     return (
@@ -136,6 +185,86 @@ export default function AuthPage() {
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
           <p>Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render password reset form
+  if (showResetForm) {
+    return (
+      <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-6">
+            <div className="flex justify-center mb-2">
+              <ChartCandlestick className="h-10 w-10 text-primary" />
+            </div>
+            <h1 className="text-2xl font-bold text-white">ForexRadar7</h1>
+            <p className="text-gray-400 mt-1">Reset your password</p>
+          </div>
+          
+          <Card className="border-gray-800 bg-chart-card">
+            <form onSubmit={handleResetPassword}>
+              <CardHeader>
+                <CardTitle className="text-white">Forgot Password</CardTitle>
+                <CardDescription>
+                  {resetSent 
+                    ? "Check your email for a password reset link" 
+                    : "Enter your email to receive a password reset link"}
+                </CardDescription>
+              </CardHeader>
+              
+              {!resetSent && (
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email" className="text-white">Email</Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3 top-2.5 h-5 w-5 text-gray-500" />
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="your@email.com"
+                        className="pl-10 bg-gray-900 border-gray-700 text-white"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              )}
+              
+              <CardFooter className="flex flex-col space-y-3">
+                {!resetSent ? (
+                  <Button 
+                    type="submit" 
+                    className="w-full bg-primary hover:bg-primary/90" 
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "Sending..." : "Send Reset Link"}
+                  </Button>
+                ) : (
+                  <Button 
+                    type="button"
+                    variant="outline"
+                    className="w-full border-gray-700 text-white hover:bg-gray-800"
+                    onClick={() => setResetSent(false)}
+                  >
+                    Send Again
+                  </Button>
+                )}
+                
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full text-primary hover:text-primary/90 hover:bg-transparent"
+                  onClick={toggleResetForm}
+                >
+                  Back to Sign In
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
         </div>
       </div>
     );
@@ -196,6 +325,16 @@ export default function AuthPage() {
                         required
                       />
                     </div>
+                  </div>
+                  <div className="text-right">
+                    <Button
+                      type="button"
+                      variant="link"
+                      className="p-0 h-auto text-primary text-sm hover:text-primary/90"
+                      onClick={toggleResetForm}
+                    >
+                      Forgot password?
+                    </Button>
                   </div>
                 </CardContent>
                 <CardFooter className="flex flex-col space-y-3">

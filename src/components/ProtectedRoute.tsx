@@ -12,14 +12,14 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
 
   // Add notification when user is redirected to auth page, but only once
   useEffect(() => {
-    if (!loading && !user && !hasShownToast) {
+    if (!loading && !user && !hasShownToast && !location.pathname.includes("/auth")) {
       setHasShownToast(true);
       toast({
         title: "Authentication required",
         description: "Please sign in to access this page.",
       });
     }
-  }, [loading, user, hasShownToast]);
+  }, [loading, user, hasShownToast, location.pathname]);
 
   // Only increment the check count when loading changes
   useEffect(() => {

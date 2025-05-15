@@ -1,11 +1,10 @@
-
 import { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { initializeStorage } from '@/utils/storageUtils';
 import { toast } from '@/components/ui/use-toast';
 
-// Define the AuthContext type
+// Define the AuthContext type with resetPassword
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -14,6 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>; 
+  resetPassword: (email: string) => Promise<void>; // New function for password reset
 }
 
 // Create the AuthContext with a default value
@@ -25,6 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => {},
   signOut: async () => {},
   signInWithGoogle: async () => {},
+  resetPassword: async () => {}, // Default implementation for password reset
 });
 
 // Create a custom hook to use the AuthContext
@@ -103,6 +104,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Note: We don't set session or user here as it will be handled by the onAuthStateChange listener
     } catch (error: any) {
       console.error("Google sign in error", error.message);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // New function for password reset
+  const resetPassword = async (email: string) => {
+    try {
+      setLoading(true);
+      
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+      
+      if (error) throw error;
+      
+      return Promise.resolve();
+    } catch (error: any) {
+      console.error("Password reset error", error.message);
       throw error;
     } finally {
       setLoading(false);
@@ -203,7 +224,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Provide the auth context value
+  // Provide the auth context value with resetPassword function
   const value: AuthContextType = {
     user,
     session,
@@ -212,6 +233,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     signOut,
     signInWithGoogle,
+    resetPassword, // Add the reset password function to the context
   };
 
   return (
