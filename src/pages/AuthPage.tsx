@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -41,9 +42,18 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       await signIn(email, password);
+      toast({
+        title: "Success!",
+        description: "You've been signed in successfully.",
+      });
       // Navigation will happen through the auth state change listener
-    } catch (error) {
+    } catch (error: any) {
       console.error("Login error:", error);
+      toast({
+        variant: "destructive",
+        title: "Sign In Failed",
+        description: error.message || "Please check your credentials and try again.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -54,9 +64,18 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       await signUp(email, password);
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account.",
+      });
       // Don't navigate automatically as the user might need to verify email
-    } catch (error) {
+    } catch (error: any) {
       console.error("Signup error:", error);
+      toast({
+        variant: "destructive",
+        title: "Sign Up Failed",
+        description: error.message || "An error occurred during sign up.",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -67,8 +86,13 @@ export default function AuthPage() {
     try {
       await signInWithGoogle();
       // The redirect will be handled by Supabase OAuth flow
-    } catch (error) {
+    } catch (error: any) {
       console.error("Google sign-in error:", error);
+      toast({
+        variant: "destructive",
+        title: "Google Sign In Failed",
+        description: "There was an error signing in with Google.",
+      });
       setIsLoading(false);
     }
   };
