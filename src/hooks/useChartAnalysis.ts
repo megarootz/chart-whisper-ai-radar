@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -22,6 +21,9 @@ export const useChartAnalysis = () => {
         throw new Error('User must be logged in to save analysis');
       }
       
+      // Convert the analysis to a plain object to ensure it's compatible with Supabase's Json type
+      const analysisDataJson = JSON.parse(JSON.stringify(analysis));
+      
       const { error } = await supabase
         .from('chart_analyses')
         .insert({
@@ -29,7 +31,7 @@ export const useChartAnalysis = () => {
           chart_url: chartUrl,
           pair_name: analysis.pairName,
           timeframe: analysis.timeframe,
-          analysis_data: analysis
+          analysis_data: analysisDataJson
         });
       
       if (error) {
