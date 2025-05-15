@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, X, User, LogOut, Maximize, Minimize } from 'lucide-react';
+import React, { useState } from 'react';
+import { Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
@@ -18,7 +18,6 @@ const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const navItems = [
     { label: 'Home', href: '/' },
@@ -32,39 +31,9 @@ const Header = () => {
     navigate('/');
   };
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().then(() => {
-        setIsFullscreen(true);
-      }).catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().then(() => {
-          setIsFullscreen(false);
-        }).catch(err => {
-          console.error(`Error attempting to exit fullscreen: ${err.message}`);
-        });
-      }
-    }
-  };
-
-  // Check fullscreen status when it changes
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
-  }, []);
-
   // Updated header with a cleaner mobile layout and hidden hamburger menu
   return (
-    <header className={`w-full sticky top-0 z-30 bg-black border-b border-gray-800 ${isMobile ? 'py-2 px-2' : 'py-4 px-6'}`}>
+    <header className={`w-full sticky top-0 z-30 bg-black border-b border-gray-800 ${isMobile ? 'py-3 px-3' : 'py-4 px-6'}`}>
       <div className="container mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2 px-1 md:px-0">
           <h1 className={cn("font-bold text-primary", isMobile ? "text-xl" : "text-2xl")}>
@@ -73,22 +42,8 @@ const Header = () => {
         </Link>
         
         {isMobile ? (
-          // Mobile view with fullscreen toggle button
+          // Mobile view without fullscreen toggle button
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={toggleFullscreen} 
-              className="text-white mr-1 active:bg-transparent focus:bg-transparent hover:bg-transparent p-1"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
-            >
-              {isFullscreen ? (
-                <Minimize className="h-4 w-4" />
-              ) : (
-                <Maximize className="h-4 w-4" />
-              )}
-            </Button>
-            
             {/* We keep the Sheet component but hide the trigger on mobile since we have bottom nav */}
             <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
               {/* Mobile menu button is now hidden since we use bottom navigation */}

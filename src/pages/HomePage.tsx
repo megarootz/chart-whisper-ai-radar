@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -84,8 +83,8 @@ const HomePage = () => {
           </div>
         </section>
         
-        {/* CTA Section */}
-        <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-20 px-4'}`}>
+        {/* CTA Section - Improved for mobile */}
+        <section className={`py-8 ${isMobile ? 'px-3 pb-16' : 'py-12 md:py-20 px-4'}`}>
           <div className="container mx-auto max-w-4xl">
             <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-4 md:p-10 border border-gray-700 shadow-lg">
               <div className="text-center space-y-3 md:space-y-4">
