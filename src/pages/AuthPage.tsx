@@ -16,6 +16,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [redirectAttempted, setRedirectAttempted] = useState(false);
   const { signIn, signUp, signInWithGoogle, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -23,9 +24,12 @@ export default function AuthPage() {
 
   // Use useEffect to handle navigation only on component mount and user state change
   useEffect(() => {
-    // Only redirect if user is logged in and we're on the auth page
-    if (user && location.pathname === "/auth") {
-      console.log("User is already logged in, redirecting to:", from);
+    // Only redirect if user is logged in, we're on the auth page, and haven't attempted redirect yet
+    if (user && location.pathname === "/auth" && !redirectAttempted) {
+      console.log("User is authenticated, redirecting to:", from);
+      
+      // Set flag to prevent redirect loop
+      setRedirectAttempted(true);
       
       // Add a small delay to avoid immediate redirect loops
       const timer = setTimeout(() => {
@@ -35,7 +39,7 @@ export default function AuthPage() {
       // Clean up timer if component unmounts before timeout completes
       return () => clearTimeout(timer);
     }
-  }, [user, navigate, from, location.pathname]);
+  }, [user, navigate, from, location.pathname, redirectAttempted]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,8 +102,15 @@ export default function AuthPage() {
   };
 
   // Don't render the form if we're about to redirect
-  if (user && location.pathname !== "/auth") {
-    return null;
+  if (user && redirectAttempted) {
+    return (
+      <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Redirecting to dashboard...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
