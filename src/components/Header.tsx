@@ -33,9 +33,9 @@ const Header = () => {
   };
 
   return (
-    <header className="w-full py-3 px-4 md:py-4 md:px-6 bg-black border-b border-gray-800 sticky top-0 z-30">
+    <header className="w-full py-2 px-0 md:py-4 md:px-6 bg-black border-b border-gray-800 sticky top-0 z-30">
       <div className="container mx-auto flex items-center justify-between">
-        <Link to="/" className="flex items-center space-x-2">
+        <Link to="/" className="flex items-center space-x-2 px-4 md:px-0">
           <h1 className={cn("font-bold text-primary", isMobile ? "text-xl" : "text-2xl")}>
             ForexRadar7
           </h1>
@@ -44,11 +44,11 @@ const Header = () => {
         {isMobile ? (
           <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-white">
+              <Button variant="ghost" size="icon" className="text-white mr-3">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-[80%] pt-16">
+            <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-full sm:w-[80%] pt-16 p-0">
               <div className="flex flex-col space-y-6">
                 <div className="flex justify-between items-center absolute top-4 right-4">
                   <Button variant="ghost" size="icon" onClick={() => setIsMenuOpen(false)}>
@@ -56,12 +56,12 @@ const Header = () => {
                   </Button>
                 </div>
                 
-                <nav className="flex flex-col space-y-5">
+                <nav className="flex flex-col space-y-0">
                   {navItems.map((item) => (
                     <Link
                       key={item.label}
                       to={item.href}
-                      className="px-2 py-2 text-lg text-white hover:text-primary transition-colors duration-200"
+                      className="px-6 py-4 text-lg text-white hover:bg-gray-800 hover:text-primary transition-colors duration-200 border-b border-gray-700"
                       onClick={() => setIsMenuOpen(false)}
                     >
                       {item.label}
@@ -69,7 +69,7 @@ const Header = () => {
                   ))}
                 </nav>
                 
-                <div className="flex flex-col space-y-3 mt-4">
+                <div className="px-6 py-4">
                   {user ? (
                     <Button 
                       variant="outline" 

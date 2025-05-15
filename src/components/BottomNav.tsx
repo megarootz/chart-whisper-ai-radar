@@ -39,18 +39,18 @@ const BottomNav = () => {
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-gray-800 flex justify-around items-center h-14">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-black border-t border-gray-800 flex justify-around items-center h-16">
       {navItems.map((item) => (
         <Link
           key={item.label}
           to={item.href}
           className={cn(
             "flex flex-col items-center justify-center w-full h-full pt-1",
-            "text-[10px] font-medium transition-colors",
+            "text-[11px] font-medium transition-colors",
             item.isActive ? "text-primary" : "text-gray-400"
           )}
         >
-          <item.icon className={cn("h-4 w-4 mb-0.5", item.isActive ? "text-primary" : "text-gray-400")} />
+          <item.icon className={cn("h-5 w-5 mb-1", item.isActive ? "text-primary" : "text-gray-400")} />
           <span>{item.label}</span>
         </Link>
       ))}
