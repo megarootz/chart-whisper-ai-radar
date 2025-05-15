@@ -1,23 +1,17 @@
-
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
-import { OpenAIRequest, OpenAIResponse, OpenRouterErrorResponse } from '@/types/openai';
+import { OpenAIResponse, OpenRouterErrorResponse } from '@/types/openai';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
 import { Json } from '@/integrations/supabase/types';
-
-// Your personal API key (this should be loaded from environment variables in production)
-const OPENROUTER_API_KEY = "sk-or-v1-YOUR_API_KEY_HERE";
 
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
-  // We're not using these states anymore since we're using a single API key
-  const [showApiKeyModal, setShowApiKeyModal] = useState<boolean>(false);
 
   // Helper function to calculate distance in pips properly
   const calculateDistanceInPips = (currentPrice: number, level: number, isForex: boolean, pairName: string) => {
@@ -169,11 +163,6 @@ export const useChartAnalysis = () => {
         throw new Error('You must be logged in to analyze charts');
       }
       
-      // Using the fixed API key instead of user-provided one
-      const currentApiKey = OPENROUTER_API_KEY;
-      
-      console.log("Using OpenRouter API key:", currentApiKey.substring(0, 10) + "...");
-      
       // Convert image to base64
       const base64Image = await fileToBase64(file);
       
@@ -187,126 +176,37 @@ export const useChartAnalysis = () => {
         // Continue with analysis even if image upload fails
       }
       
-      // Prepare request for OpenRouter API with improved prompt
-      const requestData: OpenAIRequest = {
-        model: "openai/chatgpt-4o-latest", // Using specified model
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert forex and technical analysis expert. Analyze chart images with precision and consistency. Provide detailed, actionable analysis based on technical indicators and price action. Be accurate, consistent, and provide the same level of analysis for similar chart patterns."
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: `Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels, chart patterns, and trading insights.
-
-Include a detailed recommended trading setup with entry price, stop loss, multiple take-profit targets, entry trigger conditions, and risk-reward ratio.
-
-IMPORTANT: Make sure your stop loss and take profit levels are appropriate for the timeframe. Use these guidelines:
-- For M1 (1-minute) charts: 5-20 pips SL/TP range
-- For M5 (5-minute) charts: 10-30 pips SL/TP range
-- For M15 (15-minute) charts: 15-50 pips SL/TP range
-- For H1 (1-hour) charts: 20-100 pips SL/TP range
-- For H4 (4-hour) charts: 50-200 pips SL/TP range
-- For Daily charts: 100-500 pips SL/TP range
-- For Weekly charts: 200+ pips SL/TP range
-
-For chart patterns, identify both complete patterns and potential patterns that may be forming. Include a confidence score and signal direction for each pattern.
-
-Format the response as a structured JSON with the following fields:
-- overallSentiment (string: bullish, bearish, neutral, mildly bullish, or mildly bearish)
-- confidenceScore (number 0-100)
-- marketAnalysis (string)
-- trendDirection (string: bullish, bearish, or neutral)
-- marketFactors (array of objects with name, description, sentiment)
-- chartPatterns (array of objects with name, confidence as number, signal, status ["complete" or "forming"])
-- priceLevels (array of objects with name, price, distance, direction)
-- tradingSetup (object with: type [long, short, or neutral], description, confidence, timeframe, entryPrice, stopLoss, takeProfits [array of numeric values], riskRewardRatio, entryTrigger)
-- pairName (string)
-- timeframe (string)
-
-For the priceLevels, give me at least 6-8 PRECISE price levels (not rounded numbers) that correspond to actual visible support and resistance zones visible in the chart. Be specific, not generic. For example, instead of "1.2000", provide the exact price like "1.1987". Each level should include:
-- name (describing the level, e.g., "Strong weekly resistance", "Daily support", "Recent lower high")
-- price (the exact price level without rounding)
-- distance (percentage or raw pips/points from current price)
-- direction (above or below current price)
-
-For takeProfits, ensure these are actual precise price values, not objects.
-
-IMPORTANT: The riskRewardRatio should be formatted as a string like "1:3" to ensure proper JSON formatting.
-
-Make the response concise but comprehensive, and ensure all numeric values are accurate based on the chart.`
-              },
-              {
-                type: "image_url",
-                image_url: {
-                  url: base64Image,
-                  detail: "high"
-                }
-              }
-            ]
-          }
-        ],
-        temperature: 0.3, // Lower temperature for more consistent results
-        max_tokens: 4096
-      };
-
-      console.log("Sending request to OpenRouter API with model:", requestData.model);
+      console.log("Calling Supabase Edge Function to analyze chart");
       
-      // Create headers with proper authentication
-      const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${currentApiKey}`,
-        'HTTP-Referer': window.location.origin, // Site URL for OpenRouter tracking
-        'X-Title': 'Forex Chart Analyzer' // Name of your application
-      };
-      
-      console.log("Request headers:", JSON.stringify(headers));
-      
-      // Call OpenRouter API with explicit headers
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(requestData)
+      // Call our Supabase Edge Function instead of making the API call directly
+      const { data, error } = await supabase.functions.invoke("analyze-chart", {
+        body: {
+          base64Image,
+          pairName,
+          timeframe
+        }
       });
-
-      console.log("API Response status:", response.status);
       
-      // Get full response text for debugging
-      const responseText = await response.text();
-      console.log("Response text:", responseText.substring(0, 500) + "...");
-      
-      // Parse the response if possible
-      let responseData: OpenAIResponse | OpenRouterErrorResponse;
-      try {
-        responseData = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error("Failed to parse response as JSON:", parseError);
-        throw new Error(`Invalid response from API: ${responseText.substring(0, 100)}...`);
-      }
-      
-      if (!response.ok) {
-        console.error("API Error:", JSON.stringify(responseData));
-        
-        // Handle error from OpenRouter API
-        const errorMessage = responseData && 'error' in responseData && responseData.error && 'message' in responseData.error 
-          ? responseData.error.message 
-          : `Failed to analyze the chart: ${response.status}`;
-          
-        throw new Error(errorMessage || 'Unknown error from API');
+      if (error) {
+        console.error("Edge function error:", error);
+        throw new Error(`Edge function error: ${error.message}`);
       }
 
-      // Type assertion after successful response
-      const openAIResponse = responseData as OpenAIResponse;
+      if (!data) {
+        throw new Error('No response from analysis function');
+      }
+
+      console.log("Edge function response received:", data);
       
-      if (!openAIResponse.choices || openAIResponse.choices.length === 0) {
-        throw new Error('No response content from OpenRouter API');
+      // Parse the API response
+      const responseData = data as OpenAIResponse;
+      
+      if (!responseData.choices || responseData.choices.length === 0) {
+        throw new Error('No response content from API');
       }
 
       // Parse the text response to extract JSON
-      const resultText = openAIResponse.choices[0].message.content || '';
+      const resultText = responseData.choices[0].message.content || '';
       console.log("Raw API Response content:", resultText.substring(0, 100) + "...");
       
       // Extract JSON from the response (might be wrapped in code blocks)
@@ -422,7 +322,6 @@ Make the response concise but comprehensive, and ensure all numeric values are a
           takeProfits: Array.isArray(parsedResult.takeProfits) ? 
                         parsedResult.takeProfits.map(tp => tp.toString()) : undefined,
           tradingInsight: parsedResult.tradingInsight,
-          // Add the trading setup with proper takeProfits handling
           tradingSetup: parsedResult.tradingSetup ? {
             type: parsedResult.tradingSetup.type || 'neutral',
             description: parsedResult.tradingSetup.description || '',
@@ -430,12 +329,9 @@ Make the response concise but comprehensive, and ensure all numeric values are a
             timeframe: parsedResult.tradingSetup.timeframe || detectedTimeframe,
             entryPrice: parsedResult.tradingSetup.entryPrice?.toString(),
             stopLoss: parsedResult.tradingSetup.stopLoss?.toString(),
-            // Ensure takeProfits are strings, not objects
             takeProfits: Array.isArray(parsedResult.tradingSetup.takeProfits) ? 
                         parsedResult.tradingSetup.takeProfits.map((tp: any) => {
-                          // If tp is an object, try to extract its value, otherwise convert to string
                           if (typeof tp === 'object' && tp !== null) {
-                            // Try common property names like value, price, target
                             return (tp.value || tp.price || tp.target || "").toString();
                           }
                           return tp.toString();
@@ -490,8 +386,8 @@ Make the response concise but comprehensive, and ensure all numeric values are a
     isAnalyzing,
     analysisResult,
     analyzeChart,
-    showApiKeyModal,
-    setShowApiKeyModal,
-    saveApiKey: () => {}, // Empty function since we're not using user API keys anymore
+    showApiKeyModal: false,
+    setShowApiKeyModal: () => {},
+    saveApiKey: () => {},
   };
 };
