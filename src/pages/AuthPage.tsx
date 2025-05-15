@@ -16,33 +16,31 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [redirectAttempted, setRedirectAttempted] = useState(false);
-  const { signIn, signUp, signInWithGoogle, user } = useAuth();
+  const { signIn, signUp, signInWithGoogle, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = (location.state as { from?: { pathname: string } })?.from?.pathname || "/analyze";
 
   // Use useEffect to handle navigation only on component mount and user state change
   useEffect(() => {
-    // Only redirect if user is logged in, we're on the auth page, and haven't attempted redirect yet
-    if (user && location.pathname === "/auth" && !redirectAttempted) {
+    // Only redirect if user is logged in and we're on the auth page
+    if (user && !loading) {
       console.log("User is authenticated, redirecting to:", from);
-      
-      // Set flag to prevent redirect loop
-      setRedirectAttempted(true);
-      
-      // Add a small delay to avoid immediate redirect loops
-      const timer = setTimeout(() => {
-        navigate(from, { replace: true });
-      }, 200);
-      
-      // Clean up timer if component unmounts before timeout completes
-      return () => clearTimeout(timer);
+      navigate(from, { replace: true });
     }
-  }, [user, navigate, from, location.pathname, redirectAttempted]);
+  }, [user, navigate, from, loading]);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please provide both email and password.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await signIn(email, password);
@@ -50,7 +48,7 @@ export default function AuthPage() {
         title: "Success!",
         description: "You've been signed in successfully.",
       });
-      // Navigation will happen through the auth state change listener
+      // Navigation will happen through the auth state change listener in useEffect
     } catch (error: any) {
       console.error("Login error:", error);
       toast({
@@ -65,14 +63,23 @@ export default function AuthPage() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!email || !password) {
+      toast({
+        variant: "destructive",
+        title: "Missing information",
+        description: "Please provide both email and password.",
+      });
+      return;
+    }
+    
     setIsLoading(true);
     try {
       await signUp(email, password);
       toast({
         title: "Account created!",
-        description: "Please check your email to verify your account.",
+        description: "You're now signed in. Redirecting to dashboard...",
       });
-      // Don't navigate automatically as the user might need to verify email
+      // Navigation will happen through the auth state change listener in useEffect
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
@@ -89,7 +96,7 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       await signInWithGoogle();
-      // The redirect will be handled by Supabase OAuth flow
+      // The redirect will be handled by the auth state change listener in useEffect
     } catch (error: any) {
       console.error("Google sign-in error:", error);
       toast({
@@ -101,13 +108,25 @@ export default function AuthPage() {
     }
   };
 
-  // Don't render the form if we're about to redirect
-  if (user && redirectAttempted) {
+  // Show loading state during authentication
+  if (loading) {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Redirecting to dashboard...</p>
+          <p>Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render the form if the user is logged in - they should be redirected
+  if (user) {
+    return (
+      <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
+        <div className="text-white text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto mb-4"></div>
+          <p>Redirecting to analyze page...</p>
         </div>
       </div>
     );

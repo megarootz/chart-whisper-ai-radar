@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { initializeStorage } from '@/utils/storageUtils';
+import { toast } from '@/components/ui/use-toast';
 
 // Define the AuthContext type
 interface AuthContextType {
@@ -36,7 +37,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isInitialized, setIsInitialized] = useState(false);
 
   // Function to sign up
   const signUp = async (email: string, password: string) => {
@@ -109,15 +109,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Use useEffect to listen for auth state changes and set the user
+  // Use useEffect to set up auth listener and check for existing session
   useEffect(() => {
-    if (isInitialized) return;
-    
-    // Set flag to prevent multiple initializations
-    setIsInitialized(true);
-    
+    // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log("Auth state changed:", event);
         const currentUser = session?.user ?? null;
         setUser(currentUser);
@@ -127,7 +123,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Initialize storage if user is authenticated
         if (currentUser) {
           try {
-            await initializeStorage(currentUser.id);
+            initializeStorage(currentUser.id).catch(err => {
+              console.error('Error initializing storage:', err);
+              // Show toast notification but don't block auth flow
+              toast({
+                variant: "destructive",
+                title: "Storage Error",
+                description: "User authenticated but storage could not be initialized.",
+              });
+            });
           } catch (error) {
             console.error('Error initializing storage:', error);
             // Don't block the authentication flow if storage initialization fails
@@ -147,10 +151,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Initialize storage if user is authenticated
         if (currentUser) {
           try {
-            await initializeStorage(currentUser.id);
+            await initializeStorage(currentUser.id).catch(err => {
+              console.error('Error initializing storage:', err);
+              // Log error but don't block auth
+            });
           } catch (error) {
             console.error('Error checking auth session:', error);
-            // Don't block the authentication flow if storage initialization fails
+            // Don't block the authentication flow
           }
         }
       } catch (error) {
@@ -165,7 +172,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isInitialized]);
+  }, []);
 
   // Provide the auth context value
   const value: AuthContextType = {
