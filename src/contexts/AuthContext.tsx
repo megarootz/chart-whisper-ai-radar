@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,8 +22,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   
-  // Use a ref to track navigation state instead of a state variable
-  // This helps prevent re-renders that could cause navigation loops
+  // Use a ref to track navigation state
   const navigationPerformedRef = useRef(false);
 
   useEffect(() => {
@@ -33,31 +31,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       (event, currentSession) => {
         console.log("Auth state changed:", event, !!currentSession);
         
-        // Update the session and user state
+        // First update the session and user state
         setSession(currentSession);
         setUser(currentSession?.user ?? null);
         
+        // Then handle navigation based on events
         if (event === 'SIGNED_IN' && !navigationPerformedRef.current) {
           navigationPerformedRef.current = true;
-          // Use setTimeout to defer navigation and avoid rendering issues
+          console.log("Sign in detected, will navigate soon");
+          
+          // Use setTimeout to defer navigation until after state updates
           setTimeout(() => {
             toast({
               title: "Success",
               description: "Signed in successfully"
             });
-            // Navigate to analyze page
-            navigate('/analyze');
-          }, 100);
+            // Navigate to analyze page with replace to avoid history buildup
+            navigate('/analyze', { replace: true });
+          }, 500); // Use longer delay to ensure state is settled
         } else if (event === 'SIGNED_OUT') {
           navigationPerformedRef.current = false;
+          console.log("Sign out detected");
+          
           // Defer navigation to avoid render-time updates
           setTimeout(() => {
             toast({
               title: "Info",
               description: "Signed out"
             });
-            navigate('/auth');
-          }, 100);
+            navigate('/auth', { replace: true });
+          }, 500); // Use longer delay
         }
       }
     );

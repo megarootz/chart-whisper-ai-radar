@@ -26,6 +26,7 @@ export default function AuthPage() {
     // Only redirect if user is logged in and we're on the auth page
     if (user && location.pathname === "/auth") {
       console.log("User is already logged in, redirecting to:", from);
+      
       // Add a small delay to avoid immediate redirect loops
       const timer = setTimeout(() => {
         navigate(from, { replace: true });
@@ -41,7 +42,7 @@ export default function AuthPage() {
     setIsLoading(true);
     try {
       await signIn(email, password);
-      // Navigation will happen in the useEffect hook
+      // Navigation will happen through the auth state change listener
     } catch (error) {
       console.error("Login error:", error);
     } finally {
