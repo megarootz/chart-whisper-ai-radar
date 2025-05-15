@@ -31,7 +31,8 @@ export function useIsMobile() {
       
       if (!viewportMeta) {
         viewportMeta = document.createElement('meta');
-        viewportMeta.name = 'viewport';
+        // Cast to HTMLMetaElement which has the name property
+        (viewportMeta as HTMLMetaElement).name = 'viewport';
         document.head.appendChild(viewportMeta);
       }
       
