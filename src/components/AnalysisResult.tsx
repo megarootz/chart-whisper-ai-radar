@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -64,6 +63,35 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
     return data.priceLevels.filter(level => level.name.toLowerCase().includes('resist'));
   };
 
+  // Helper function to render bulleted list items from text content
+  const renderBulletPoints = (text: string) => {
+    if (!text) return null;
+    
+    // Check if the content already has bullet points
+    if (text.includes('•') || text.includes('-')) {
+      return (
+        <div className="space-y-2">
+          {text.split('\n').map((line, index) => (
+            <p key={index} className={`
+              ${line.trim().startsWith('•') || line.trim().startsWith('-') ? 'ml-4' : ''}
+            `}>
+              {line}
+            </p>
+          ))}
+        </div>
+      );
+    }
+    
+    // Otherwise, render as regular text
+    return (
+      <div className="space-y-1">
+        {text.split('\n').map((line, index) => (
+          <p key={index}>{line}</p>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-4 animate-fade-in">
       <Card className="w-full bg-chart-card border-gray-700">
@@ -72,7 +100,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
         </CardHeader>
         <CardContent>
           <ScrollArea className="h-[600px] pr-4">
-            <div className="space-y-6 text-white font-mono">
+            <div className="space-y-6 text-white">
               {/* Analysis Header */}
               <div className="text-xl font-bold text-primary">
                 {data.pairName} Technical Analysis ({data.timeframe} Chart)
@@ -82,8 +110,8 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               <div className="space-y-2">
                 <div className="text-lg font-semibold">1. Trend Direction:</div>
                 <div className="pl-4">
-                  <p>Overall trend: {data.trendDirection.charAt(0).toUpperCase() + data.trendDirection.slice(1)}</p>
-                  <p className="mt-2">{data.marketAnalysis}</p>
+                  <p className="font-medium">Overall trend: {data.trendDirection.charAt(0).toUpperCase() + data.trendDirection.slice(1)}</p>
+                  {renderBulletPoints(data.marketAnalysis)}
                 </div>
               </div>
               
@@ -92,11 +120,13 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                 <div className="text-lg font-semibold">2. Key Support Levels:</div>
                 <div className="pl-4">
                   {getSupportLevels().length > 0 ? (
-                    getSupportLevels().map((level, index) => (
-                      <p key={index} className="text-bullish">
-                        {level.price}: {level.name.replace('Support:', '').trim()}
-                      </p>
-                    ))
+                    <ul className="list-disc ml-6 space-y-2">
+                      {getSupportLevels().map((level, index) => (
+                        <li key={index} className="text-bullish">
+                          <span className="font-medium">{level.price}:</span> {level.name.replace('Support:', '').trim()}
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
                     <p>No specific support levels identified.</p>
                   )}
@@ -108,11 +138,13 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                 <div className="text-lg font-semibold">3. Key Resistance Levels:</div>
                 <div className="pl-4">
                   {getResistanceLevels().length > 0 ? (
-                    getResistanceLevels().map((level, index) => (
-                      <p key={index} className="text-bearish">
-                        {level.price}: {level.name.replace('Resistance:', '').trim()}
-                      </p>
-                    ))
+                    <ul className="list-disc ml-6 space-y-2">
+                      {getResistanceLevels().map((level, index) => (
+                        <li key={index} className="text-bearish">
+                          <span className="font-medium">{level.price}:</span> {level.name.replace('Resistance:', '').trim()}
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
                     <p>No specific resistance levels identified.</p>
                   )}
@@ -124,18 +156,22 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                 <div className="text-lg font-semibold">4. Chart Patterns:</div>
                 <div className="pl-4">
                   {data.chartPatterns.length > 0 ? (
-                    data.chartPatterns.map((pattern, index) => (
-                      <div key={index} className="mb-3">
-                        <p className={`font-medium ${
-                          pattern.signal === 'bullish' ? 'text-bullish' : 
-                          pattern.signal === 'bearish' ? 'text-bearish' : 'text-neutral'
-                        }`}>
-                          {pattern.name}:
-                        </p>
-                        <p>Pattern with {pattern.confidence}% confidence indicating a {pattern.signal} signal.</p>
-                        {pattern.status && <p>Status: {pattern.status}</p>}
-                      </div>
-                    ))
+                    <ul className="list-disc ml-6 space-y-4">
+                      {data.chartPatterns.map((pattern, index) => (
+                        <li key={index}>
+                          <p className={`font-medium ${
+                            pattern.signal === 'bullish' ? 'text-bullish' : 
+                            pattern.signal === 'bearish' ? 'text-bearish' : 'text-neutral'
+                          }`}>
+                            {pattern.name}:
+                          </p>
+                          <ul className="list-disc ml-6 mt-1">
+                            <li>Pattern with {pattern.confidence}% confidence indicating a {pattern.signal} signal.</li>
+                            {pattern.status && <li>Status: {pattern.status}</li>}
+                          </ul>
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
                     <p>No significant chart patterns identified.</p>
                   )}
@@ -147,14 +183,16 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                 <div className="text-lg font-semibold">5. Technical Indicators:</div>
                 <div className="pl-4">
                   {data.marketFactors.length > 0 ? (
-                    data.marketFactors.map((factor, index) => (
-                      <p key={index} className={
-                        factor.sentiment === 'bullish' ? 'text-bullish' : 
-                        factor.sentiment === 'bearish' ? 'text-bearish' : 'text-neutral'
-                      }>
-                        {factor.name}: {factor.description}
-                      </p>
-                    ))
+                    <ul className="list-disc ml-6 space-y-2">
+                      {data.marketFactors.map((factor, index) => (
+                        <li key={index} className={
+                          factor.sentiment === 'bullish' ? 'text-bullish' : 
+                          factor.sentiment === 'bearish' ? 'text-bearish' : 'text-neutral'
+                        }>
+                          {factor.description}
+                        </li>
+                      ))}
+                    </ul>
                   ) : (
                     <p>No technical indicator data available.</p>
                   )}
@@ -164,48 +202,57 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               {/* 6. Trading Insights */}
               <div className="space-y-2">
                 <div className="text-lg font-semibold">6. Trading Insights:</div>
-                <div className="pl-4 space-y-3">
-                  {data.tradingSetup && (
-                    <>
-                      {data.tradingSetup.type === 'long' && (
-                        <div>
-                          <p className="text-bullish font-medium">Bullish Scenario:</p>
-                          <p>{data.tradingSetup.description}</p>
-                          {data.tradingSetup.entryPrice && <p>Entry: {data.tradingSetup.entryPrice}</p>}
-                          {data.tradingSetup.stopLoss && <p>Stop Loss: {data.tradingSetup.stopLoss}</p>}
-                          {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
-                            <p>Take Profit: {data.tradingSetup.takeProfits.join(', ')}</p>
-                          )}
-                        </div>
-                      )}
-                      
-                      {data.tradingSetup.type === 'short' && (
-                        <div>
-                          <p className="text-bearish font-medium">Bearish Scenario:</p>
-                          <p>{data.tradingSetup.description}</p>
-                          {data.tradingSetup.entryPrice && <p>Entry: {data.tradingSetup.entryPrice}</p>}
-                          {data.tradingSetup.stopLoss && <p>Stop Loss: {data.tradingSetup.stopLoss}</p>}
-                          {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
-                            <p>Take Profit: {data.tradingSetup.takeProfits.join(', ')}</p>
-                          )}
-                        </div>
-                      )}
-                      
-                      {data.tradingSetup.type === 'neutral' && (
-                        <div>
-                          <p className="font-medium">Neutral/Consolidation Scenario:</p>
-                          <p>{data.tradingSetup.description}</p>
-                        </div>
-                      )}
-                    </>
-                  )}
+                <div className="pl-4 space-y-4">
+                  {/* Bullish Scenario */}
+                  <div>
+                    <p className="text-bullish font-medium">Bullish Scenario:</p>
+                    {data.tradingSetup && data.tradingSetup.type === 'long' ? (
+                      <ul className="list-disc ml-6 space-y-1 mt-1">
+                        <li>{data.tradingSetup.description}</li>
+                        {data.tradingSetup.entryPrice && <li>Entry: {data.tradingSetup.entryPrice}</li>}
+                        {data.tradingSetup.stopLoss && <li>Stop Loss: {data.tradingSetup.stopLoss}</li>}
+                        {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
+                          <li>Take Profit: {data.tradingSetup.takeProfits.join(', ')}</li>
+                        )}
+                      </ul>
+                    ) : (
+                      <p className="ml-4">No bullish scenario available.</p>
+                    )}
+                  </div>
+                  
+                  {/* Bearish Scenario */}
+                  <div>
+                    <p className="text-bearish font-medium">Bearish Scenario:</p>
+                    {data.tradingSetup && data.tradingSetup.type === 'short' ? (
+                      <ul className="list-disc ml-6 space-y-1 mt-1">
+                        <li>{data.tradingSetup.description}</li>
+                        {data.tradingSetup.entryPrice && <li>Entry: {data.tradingSetup.entryPrice}</li>}
+                        {data.tradingSetup.stopLoss && <li>Stop Loss: {data.tradingSetup.stopLoss}</li>}
+                        {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
+                          <li>Take Profit: {data.tradingSetup.takeProfits.join(', ')}</li>
+                        )}
+                      </ul>
+                    ) : (
+                      <p className="ml-4">No bearish scenario available.</p>
+                    )}
+                  </div>
+                  
+                  {/* Neutral Scenario */}
+                  <div>
+                    <p className="font-medium">Neutral / Consolidation Scenario:</p>
+                    {data.tradingSetup && data.tradingSetup.type === 'neutral' ? (
+                      <ul className="list-disc ml-6 space-y-1 mt-1">
+                        <li>{data.tradingSetup.description}</li>
+                      </ul>
+                    ) : (
+                      <p className="ml-4">No consolidation scenario available.</p>
+                    )}
+                  </div>
                   
                   {data.tradingInsight && !data.tradingSetup && (
-                    <p>{data.tradingInsight}</p>
-                  )}
-                  
-                  {!data.tradingInsight && !data.tradingSetup && (
-                    <p>No specific trading insights available.</p>
+                    <div className="mt-2">
+                      {renderBulletPoints(data.tradingInsight)}
+                    </div>
                   )}
                 </div>
               </div>

@@ -29,7 +29,7 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert forex and technical analysis specialist. Analyze chart images with precision and provide detailed analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content."
+          content: "You are an expert forex and technical analysis specialist. Analyze chart images with precision and provide detailed analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content. Ensure you include all sections with full details."
         },
         {
           role: "user",
@@ -39,29 +39,39 @@ serve(async (req) => {
               text: `Analyze this ${pairName} chart on ${timeframe} timeframe. Identify key technical elements including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
 
 [${pairName}] Technical Analysis (${timeframe} Chart)
+
 1. Trend Direction:
 Overall trend: [Bullish/Bearish/Neutral]
 
-[Describe the key price movement visible on the chart]
+[Describe the key price movement visible on the chart with specific details]
 
-[Note any recent change in direction]
+[Note any recent change in direction with specific details]
 
-Currently, the price appears to be [describe current price action]
+Currently, the price appears to be [describe current price action in detail]
 
 2. Key Support Levels:
-[List specific price levels with brief descriptions]
+[List multiple specific price levels with detailed descriptions for each]
 
 3. Key Resistance Levels:
-[List specific price levels with brief descriptions]
+[List multiple specific price levels with detailed descriptions for each]
 
 4. Chart Patterns:
-[Name specific patterns visible on the chart with technical implications]
+[Name specific patterns visible on the chart with detailed technical implications]
+[Include complete analysis of pattern formation and implications]
 
-5. Technical Indicators:
-[Describe visible indicators and their signals]
+5. Technical Indicators (inferred from price action):
+[Provide detailed analysis of indicators and their signals]
+[Include specific insights about momentum, volume, etc]
 
 6. Trading Insights:
-[Provide actionable trading scenarios based on the analysis]`
+Bullish Scenario:
+[Detailed entry, target and stop conditions]
+
+Bearish Scenario:
+[Detailed entry, target and stop conditions]
+
+Neutral / Consolidation Scenario:
+[Range trading strategies and breakout watch levels]`
             },
             {
               type: "image_url",
@@ -74,7 +84,7 @@ Currently, the price appears to be [describe current price action]
         }
       ],
       temperature: 0.3,
-      max_tokens: 1000
+      max_tokens: 1300
     };
 
     console.log("Sending request to OpenRouter API with model:", requestData.model);

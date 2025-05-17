@@ -40,23 +40,25 @@ const Index = () => {
           {/* Chart information inputs */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="pair-name" className="text-white">Trading Pair</Label>
+              <Label htmlFor="pair-name" className="text-white">Trading Pair (required)</Label>
               <Input 
                 id="pair-name" 
-                placeholder="e.g. EUR/USD, BTCUSD, AAPL" 
+                placeholder="e.g. EUR/USD, BTCUSD, XAU/USD" 
                 value={pairName} 
                 onChange={e => setPairName(e.target.value)} 
                 className="bg-chart-card text-white border-gray-700 focus:border-primary"
+                required
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="timeframe" className="text-white">Timeframe</Label>
+              <Label htmlFor="timeframe" className="text-white">Timeframe (required)</Label>
               <Input 
                 id="timeframe" 
                 placeholder="e.g. 1H, 4H, Daily, Weekly" 
                 value={timeframe} 
                 onChange={e => setTimeframe(e.target.value)} 
                 className="bg-chart-card text-white border-gray-700 focus:border-primary"
+                required
               />
             </div>
           </div>

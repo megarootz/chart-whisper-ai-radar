@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -13,108 +14,6 @@ export const useChartAnalysis = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { setLatestAnalysis, addToHistory } = useAnalysis();
-
-  // Helper function to calculate distance in pips properly
-  const calculateDistanceInPips = (currentPrice: number, level: number, isForex: boolean, pairName: string) => {
-    // Determine pip multiplier based on pair type
-    let pipMultiplier;
-    if (isForex) {
-      // For JPY pairs, a pip is 0.01, for other forex pairs, a pip is 0.0001
-      pipMultiplier = pairName.includes('JPY') ? 0.01 : 0.0001;
-    } else {
-      // For non-forex (crypto, indices, stocks), use 0.01 as default
-      pipMultiplier = 0.01;
-    }
-    
-    // Calculate the distance in pips
-    const priceDifference = Math.abs(level - currentPrice);
-    const pips = Math.round(priceDifference / pipMultiplier);
-    
-    return pips;
-  };
-
-  // Helper function to validate if the stop loss and take profit levels are appropriate for the timeframe
-  const validateAndAdjustLevels = (
-    tradingSetup: any, 
-    timeframe: string, 
-    currentPrice: number | null
-  ) => {
-    if (!tradingSetup || !currentPrice) return tradingSetup;
-    
-    // Define minimum pip distances based on timeframe
-    const minPipDistances: {[key: string]: number} = {
-      'M1': 5,
-      'M5': 10, 
-      'M15': 15,
-      'H1': 20,
-      'H4': 50,
-      'D1': 100,
-      'Daily': 100,
-      'W1': 200,
-      'Weekly': 200,
-      'MN': 300,
-      'Monthly': 300
-    };
-    
-    // Get the normalized timeframe key
-    const normalizedTimeframe = timeframe.toUpperCase().replace('MINUTE', 'M').replace('HOUR', 'H').replace('DAY', 'D');
-    
-    // Default minimum distance if timeframe is not recognized
-    let minDistance = 20;
-    
-    // Find the appropriate minimum distance based on timeframe
-    Object.keys(minPipDistances).forEach(key => {
-      if (normalizedTimeframe.includes(key)) {
-        minDistance = minPipDistances[key];
-      }
-    });
-    
-    // Create a copy of the trading setup to modify
-    const adjustedSetup = { ...tradingSetup };
-    
-    // Check if stop loss distance is too small
-    if (adjustedSetup.stopLoss) {
-      const stopLossValue = parseFloat(adjustedSetup.stopLoss);
-      const stopLossPips = Math.abs(currentPrice - stopLossValue) * 10000;
-      
-      if (stopLossPips < minDistance) {
-        // Adjust stop loss to meet minimum distance
-        const adjustment = (minDistance / 10000) * (stopLossValue < currentPrice ? -1 : 1);
-        adjustedSetup.stopLoss = (currentPrice + adjustment).toFixed(5);
-        console.log(`Adjusted stop loss from ${stopLossValue} to ${adjustedSetup.stopLoss} to meet minimum distance`);
-      }
-    }
-    
-    // Check if take profit targets are too close
-    if (Array.isArray(adjustedSetup.takeProfits) && adjustedSetup.takeProfits.length > 0) {
-      const adjustedTakeProfits = adjustedSetup.takeProfits.map((tp: string) => {
-        const tpValue = parseFloat(tp);
-        if (isNaN(tpValue)) return tp;
-        
-        const tpPips = Math.abs(currentPrice - tpValue) * 10000;
-        
-        if (tpPips < minDistance * 1.5) { // Take profit should be at least 1.5x the min distance
-          // Adjust take profit to meet minimum distance
-          const adjustment = (minDistance * 1.5 / 10000) * (tpValue < currentPrice ? -1 : 1);
-          return (currentPrice + adjustment).toFixed(5);
-        }
-        
-        return tp;
-      });
-      
-      adjustedSetup.takeProfits = adjustedTakeProfits;
-    }
-    
-    return adjustedSetup;
-  };
-
-  // Helper function to clean up risk-reward ratio format for proper JSON parsing
-  const cleanRiskRewardRatio = (text: string) => {
-    // Replace "riskRewardRatio": 1:3 with "riskRewardRatio": "1:3"
-    let cleanedText = text.replace(/("riskRewardRatio"\s*:\s*)(\d+:\d+)([,}])/g, '$1"$2"$3');
-    
-    return cleanedText;
-  };
 
   // Save analysis to database
   const saveAnalysisToDatabase = async (analysisData: AnalysisResultData, chartUrl?: string) => {
@@ -325,145 +224,148 @@ export const useChartAnalysis = () => {
       (trendMatch[1].toLowerCase().includes('bullish') ? 'bullish' : 
        trendMatch[1].toLowerCase().includes('bearish') ? 'bearish' : 'neutral') : 
       'neutral';
-      
-    // Extract overall sentiment based on trading bias if present
-    const biasMatch = resultText.match(/Trading\s+Bias[:\s]+([^\s\n]+)/i);
-    const overallSentiment = biasMatch ? 
-      (biasMatch[1].toLowerCase().includes('bullish') ? 'bullish' : 
-       biasMatch[1].toLowerCase().includes('bearish') ? 'bearish' : 'neutral') : 
-      trendDirection;
-      
+    
+    // Extract market analysis - get full trend section
+    const trendSectionMatch = resultText.match(/1\.\s+Trend\s+Direction:([\s\S]+?)(?=2\.\s+Key\s+Support|$)/i);
+    const marketAnalysis = trendSectionMatch ? trendSectionMatch[1].trim() : '';
+    
     // Extract support levels
-    const supportSection = resultText.match(/Key\s+Support\s+Levels:([\s\S]+?)(?:Key\s+Resistance\s+Levels:|Chart\s+Patterns:|$)/i);
+    const supportSection = resultText.match(/2\.\s+Key\s+Support\s+Levels:([\s\S]+?)(?=3\.\s+Key\s+Resistance|$)/i);
     const supportLevels = supportSection ? extractPriceLevels(supportSection[1], false) : [];
     
     // Extract resistance levels
-    const resistanceSection = resultText.match(/Key\s+Resistance\s+Levels:([\s\S]+?)(?:Chart\s+Patterns:|Technical\s+Indicators|$)/i);
+    const resistanceSection = resultText.match(/3\.\s+Key\s+Resistance\s+Levels:([\s\S]+?)(?=4\.\s+Chart\s+Patterns|$)/i);
     const resistanceLevels = resistanceSection ? extractPriceLevels(resistanceSection[1], true) : [];
     
     // Combine all price levels
     const priceLevels = [...supportLevels, ...resistanceLevels];
     
     // Extract chart patterns
-    const patternSection = resultText.match(/Chart\s+Patterns:([\s\S]+?)(?:Technical\s+Indicators|Trading\s+Insights|$)/i);
-    const chartPatterns = patternSection ? extractChartPatterns(patternSection[1]) : [];
+    const patternsSection = resultText.match(/4\.\s+Chart\s+Patterns:([\s\S]+?)(?=5\.\s+Technical\s+Indicators|$)/i);
+    const chartPatterns = patternsSection ? extractChartPatterns(patternsSection[1]) : [];
+    
+    // Extract technical indicators
+    const indicatorsSection = resultText.match(/5\.\s+Technical\s+Indicators[^:]*:([\s\S]+?)(?=6\.\s+Trading\s+Insights|$)/i);
+    const technicalIndicators = indicatorsSection ? 
+      extractMarketFactors(indicatorsSection[1]) : [];
     
     // Extract trading insights
-    const insightSection = resultText.match(/Trading\s+Insights:([\s\S]+?)(?:Summary\s+Table|$)/i);
-    const tradingInsight = insightSection ? insightSection[1].trim() : '';
+    const insightsSection = resultText.match(/6\.\s+Trading\s+Insights:([\s\S]+?)(?=Summary|$)/i);
+    const tradingInsight = insightsSection ? insightsSection[1].trim() : '';
     
-    // Create a simplified trading setup from the insights
-    const bullishScenario = resultText.match(/Bullish\s+Scenario:([^\n]+(?:\n[^\n]+)*?)(?:Bearish\s+Scenario:|Neutral|$)/i);
-    const bearishScenario = resultText.match(/Bearish\s+Scenario:([^\n]+(?:\n[^\n]+)*?)(?:Neutral|Bullish|$)/i);
+    // Extract bullish scenario
+    const bullishSection = resultText.match(/Bullish\s+Scenario:([\s\S]+?)(?=Bearish\s+Scenario|Neutral|$)/i);
+    const bullishDetails = bullishSection ? bullishSection[1].trim() : '';
     
-    // Extract potential targets and stop loss levels
-    const targetMatch = resultText.match(/could\s+(?:resume|target|reach)\s+(?:the\s+)?(?:uptrend\s+)?(?:towards|at)\s+([0-9.,]+)/i);
-    const stopLossMatch = resultText.match(/Stop\s+loss\s+(?:can|should)\s+be\s+placed\s+[^0-9]+([0-9.,]+)/i);
+    // Extract bearish scenario
+    const bearishSection = resultText.match(/Bearish\s+Scenario:([\s\S]+?)(?=Neutral|Bullish|$)/i);
+    const bearishDetails = bearishSection ? bearishSection[1].trim() : '';
     
-    // Create trading setup based on the trend direction
-    const tradingSetup = {
-      type: trendDirection === 'bullish' ? 'long' : trendDirection === 'bearish' ? 'short' : 'neutral',
-      description: trendDirection === 'bullish' ? 
-        (bullishScenario ? bullishScenario[1].trim() : 'Bullish bias based on trend analysis') :
-        (bearishScenario ? bearishScenario[1].trim() : 'Bearish bias based on trend analysis'),
-      confidence: 60, // Default confidence
-      timeframe: timeframe,
-      entryPrice: undefined, // Not specified in the new format
-      stopLoss: stopLossMatch ? stopLossMatch[1] : undefined,
-      takeProfits: targetMatch ? [targetMatch[1]] : [],
-      riskRewardRatio: "1:2", // Default risk-reward ratio
-      entryTrigger: undefined, // Not specified in the new format
-    };
+    // Extract neutral scenario
+    const neutralSection = resultText.match(/Neutral\s*\/?\s*Consolidation\s+Scenario:([\s\S]+?)(?=Bullish|Bearish|$)/i);
+    const neutralDetails = neutralSection ? neutralSection[1].trim() : '';
     
-    // Create market analysis from the trend description
-    const trendSection = resultText.match(/(?:Overall\s+trend|Trend\s+Direction)[^:]*:([^\n]+(?:\n[^\n]+)*?)(?:\d+\.\s+Key|$)/i);
-    const marketAnalysis = trendSection ? trendSection[1].trim() : 'Analysis not available';
+    // Determine overall sentiment
+    let overallSentiment: 'bullish' | 'bearish' | 'neutral' | 'mildly bullish' | 'mildly bearish';
     
-    // Create market factors from technical indicators
-    const indicatorSection = resultText.match(/Technical\s+Indicators[^:]*:([^\n]+(?:\n[^\n]+)*?)(?:\d+\.\s+Trading|$)/i);
-    const marketFactors = [];
-    if (indicatorSection) {
-      const lines = indicatorSection[1].split('\n').filter(line => line.trim().length > 0);
-      lines.forEach(line => {
-        const sentiment = line.toLowerCase().includes('bullish') ? 'bullish' : 
-                         line.toLowerCase().includes('bearish') ? 'bearish' : 'neutral';
-        marketFactors.push({
-          name: line.split(':')[0] || 'Technical Factor',
-          description: line.trim(),
-          sentiment
-        });
-      });
+    if (resultText.toLowerCase().includes('trading bias: bullish')) {
+      overallSentiment = 'bullish';
+    } else if (resultText.toLowerCase().includes('trading bias: bearish')) {
+      overallSentiment = 'bearish';
+    } else if (resultText.toLowerCase().includes('trading bias: neutral')) {
+      overallSentiment = 'neutral';
+    } else {
+      // Default to trend direction
+      overallSentiment = trendDirection as any;
     }
     
-    // If no market factors were extracted, create a default one
-    if (marketFactors.length === 0) {
-      marketFactors.push({
-        name: 'Trend Analysis',
-        description: marketAnalysis,
-        sentiment: trendDirection
-      });
+    // Create trading setup based on scenarios
+    let tradingSetup: TradingSetup | undefined;
+    
+    if (bullishDetails && trendDirection !== 'bearish') {
+      // Extract entry/target/stop from bullish scenario
+      const stopMatch = bullishDetails.match(/stop[\s-]*loss[^0-9]+([0-9,.]+)/i);
+      const targetMatch = bullishDetails.match(/(?:target|resistance)[^0-9]+([0-9,.]+)/i);
+      
+      tradingSetup = {
+        type: 'long',
+        description: bullishDetails,
+        confidence: 70,
+        timeframe,
+        stopLoss: stopMatch ? stopMatch[1] : undefined,
+        takeProfits: targetMatch ? [targetMatch[1]] : [],
+        riskRewardRatio: "1:2",
+      };
+    } else if (bearishDetails && trendDirection !== 'bullish') {
+      // Extract entry/target/stop from bearish scenario
+      const stopMatch = bearishDetails.match(/stop[\s-]*loss[^0-9]+([0-9,.]+)/i);
+      const targetMatch = bearishDetails.match(/(?:target|support)[^0-9]+([0-9,.]+)/i);
+      
+      tradingSetup = {
+        type: 'short',
+        description: bearishDetails,
+        confidence: 70,
+        timeframe,
+        stopLoss: stopMatch ? stopMatch[1] : undefined,
+        takeProfits: targetMatch ? [targetMatch[1]] : [],
+        riskRewardRatio: "1:2",
+      };
+    } else if (neutralDetails) {
+      tradingSetup = {
+        type: 'neutral',
+        description: neutralDetails,
+        confidence: 70,
+        timeframe,
+      };
     }
     
     return {
       pairName: symbol,
       timeframe: timeframe,
-      overallSentiment: overallSentiment as any,
-      confidenceScore: 70, // Default confidence score
+      overallSentiment,
+      confidenceScore: 70,
       marketAnalysis,
       trendDirection: trendDirection as any,
-      marketFactors,
+      marketFactors: technicalIndicators,
       chartPatterns,
       priceLevels,
-      tradingSetup: tradingSetup as any,
+      tradingSetup,
       tradingInsight
     };
   };
   
   // Helper function to extract price levels from text
-  const extractPriceLevels = (text: string, isResistance: boolean): any[] => {
-    const levels: any[] = [];
-    const levelRegex = /([0-9.,]+):\s*([^\n]+)/g;
+  const extractPriceLevels = (text: string, isResistance: boolean): PriceLevel[] => {
+    const levels: PriceLevel[] = [];
+    
+    // Extract bullet points or numbered list items
+    const bulletPattern = /(?:•|\-|\*|[0-9]+\.)\s+([0-9,.\s-]+)(?:zone|level|area)?:?\s+([^\n]+)/g;
     let match;
     
-    // First try to find price levels in format "1.2345: description"
-    while ((match = levelRegex.exec(text)) !== null) {
-      const price = match[1].trim();
+    while ((match = bulletPattern.exec(text)) !== null) {
+      const priceRange = match[1].trim();
       const description = match[2].trim();
       
       levels.push({
         name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
-        price: price,
-        distance: "0 pips", // We don't have enough info to calculate
+        price: priceRange,
         direction: isResistance ? 'up' : 'down'
       });
     }
     
-    // If no matches found with first regex, try alternative formats
+    // If no bullets found, try to extract price ranges directly
     if (levels.length === 0) {
-      // Try finding price numbers with descriptions
-      const altRegex = /\[([^:]+)(?::\s*([0-9.,]+))?\]|([0-9.,]+)/g;
-      while ((match = altRegex.exec(text)) !== null) {
-        const levelName = match[1]?.trim() || (isResistance ? 'Resistance' : 'Support');
-        let price = match[2]?.trim() || match[3]?.trim();
+      const pricePattern = /([0-9,.\s-]+)(?:zone|level|area)?:?\s+([^\n]+)/g;
+      
+      while ((match = pricePattern.exec(text)) !== null) {
+        const priceRange = match[1].trim();
+        const description = match[2].trim();
         
-        // If we have a name but no price, look for nearby numbers
-        if (levelName && !price) {
-          const nearbyTextAfter = text.substring(match.index + match[0].length, match.index + match[0].length + 30);
-          const priceMatch = nearbyTextAfter.match(/([0-9.,]+)/);
-          if (priceMatch) {
-            price = priceMatch[1];
-          }
-        }
-        
-        // Only add if we have a price
-        if (price) {
-          levels.push({
-            name: isResistance ? `Resistance: ${levelName}` : `Support: ${levelName}`,
-            price: price,
-            distance: "0 pips",
-            direction: isResistance ? 'up' : 'down'
-          });
-        }
+        levels.push({
+          name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
+          price: priceRange,
+          direction: isResistance ? 'up' : 'down'
+        });
       }
     }
     
@@ -471,53 +373,154 @@ export const useChartAnalysis = () => {
   };
   
   // Helper function to extract chart patterns from text
-  const extractChartPatterns = (text: string): any[] => {
-    const patterns: any[] = [];
-    const lines = text.split('\n').filter(line => line.trim().length > 0);
+  const extractChartPatterns = (text: string): ChartPattern[] => {
+    const patterns: ChartPattern[] = [];
     
-    for (const line of lines) {
-      // Try to extract pattern name and description
-      if (line.includes(':') || line.match(/\[[^\]]+\]/)) {
-        // This might be a pattern name
-        let patternName = '';
-        let description = '';
-        
-        if (line.includes(':')) {
-          const parts = line.split(':');
-          patternName = parts[0].replace(/\[\s*|\s*\]/, '').trim();
-          description = parts.slice(1).join(':').trim();
-        } else {
-          const match = line.match(/\[([^\]]+)\]/);
-          patternName = match ? match[1].trim() : line.trim();
+    // Look for pattern names and descriptions
+    const patternRegex = /(?:•|\-|\*|[0-9]+\.)\s+([^:]+)(?::|Formation|Pattern)([^\n]+)?/g;
+    let match;
+    
+    while ((match = patternRegex.exec(text)) !== null) {
+      const patternName = match[1].trim();
+      const description = match[2] ? match[2].trim() : '';
+      
+      // Determine if bullish or bearish
+      let signal: 'bullish' | 'bearish' | 'neutral' = 'neutral';
+      if ((patternName + description).toLowerCase().includes('bullish')) {
+        signal = 'bullish';
+      } else if ((patternName + description).toLowerCase().includes('bearish')) {
+        signal = 'bearish';
+      }
+      
+      patterns.push({
+        name: patternName,
+        confidence: 70, // Default confidence
+        signal,
+        status: (patternName + description).toLowerCase().includes('forming') ? 'forming' : 'complete'
+      });
+    }
+    
+    // If no patterns found with regex, check if there are complete sections
+    if (patterns.length === 0) {
+      // Check for known pattern types
+      const patternTypes = [
+        'Double Top', 'Double Bottom', 'Head and Shoulders', 
+        'Inverse Head and Shoulders', 'Triangle', 
+        'Flag', 'Pennant', 'Wedge'
+      ];
+      
+      for (const pattern of patternTypes) {
+        if (text.includes(pattern)) {
+          // Find the surrounding text
+          const patternIndex = text.indexOf(pattern);
+          const surroundingText = text.substring(
+            Math.max(0, patternIndex - 50), 
+            Math.min(text.length, patternIndex + pattern.length + 200)
+          );
           
-          // Look for description in next lines
-          const lineIndex = lines.indexOf(line);
-          if (lineIndex < lines.length - 1) {
-            description = lines[lineIndex + 1].trim();
+          // Determine sentiment
+          let signal: 'bullish' | 'bearish' | 'neutral' = 'neutral';
+          if (surroundingText.toLowerCase().includes('bullish')) {
+            signal = 'bullish';
+          } else if (surroundingText.toLowerCase().includes('bearish')) {
+            signal = 'bearish';
           }
-        }
-        
-        // Determine sentiment from the description
-        let signal = 'neutral';
-        if ((description + patternName).toLowerCase().includes('bullish')) {
-          signal = 'bullish';
-        } else if ((description + patternName).toLowerCase().includes('bearish')) {
-          signal = 'bearish';
-        }
-        
-        // Add the pattern if we have a name
-        if (patternName) {
+          
           patterns.push({
-            name: patternName,
-            confidence: 70, // Default confidence since it's not specified
+            name: pattern,
+            confidence: 70,
             signal,
-            status: "complete" // Default status
+            status: surroundingText.toLowerCase().includes('forming') ? 'forming' : 'complete'
           });
         }
       }
     }
     
     return patterns;
+  };
+  
+  // Helper function to extract market factors from technical indicators text
+  const extractMarketFactors = (text: string): MarketFactor[] => {
+    const marketFactors: MarketFactor[] = [];
+    
+    // Extract bullet points
+    const lines = text.split('\n');
+    for (let line of lines) {
+      line = line.trim();
+      if (line && (line.startsWith('•') || line.startsWith('-') || line.startsWith('*'))) {
+        // Remove the bullet and trim
+        line = line.substring(1).trim();
+        
+        // Determine sentiment
+        let sentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral';
+        if (line.toLowerCase().includes('bullish') || 
+            line.toLowerCase().includes('overbought')) {
+          sentiment = 'bullish';
+        } else if (line.toLowerCase().includes('bearish') || 
+                  line.toLowerCase().includes('oversold')) {
+          sentiment = 'bearish';
+        }
+        
+        // Try to extract indicator name
+        const colonPos = line.indexOf(':');
+        let name = 'Technical Indicator';
+        if (colonPos > 0) {
+          name = line.substring(0, colonPos).trim();
+          line = line.substring(colonPos + 1).trim();
+        } else {
+          // Try to find common indicator names
+          const indicators = ['RSI', 'MACD', 'Moving Average', 'MA', 'Stochastic', 'Volume'];
+          for (const ind of indicators) {
+            if (line.includes(ind)) {
+              name = ind;
+              break;
+            }
+          }
+        }
+        
+        marketFactors.push({
+          name,
+          description: line,
+          sentiment
+        });
+      }
+    }
+    
+    // If no bullet points found, try to extract paragraphs
+    if (marketFactors.length === 0) {
+      const paragraphs = text.split('\n\n');
+      for (const para of paragraphs) {
+        if (para.trim()) {
+          // Determine sentiment
+          let sentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral';
+          if (para.toLowerCase().includes('bullish') || 
+              para.toLowerCase().includes('overbought')) {
+            sentiment = 'bullish';
+          } else if (para.toLowerCase().includes('bearish') || 
+                    para.toLowerCase().includes('oversold')) {
+            sentiment = 'bearish';
+          }
+          
+          // Try to extract indicator name
+          let name = 'Technical Indicator';
+          const indicators = ['RSI', 'MACD', 'Moving Average', 'MA', 'Stochastic', 'Volume'];
+          for (const ind of indicators) {
+            if (para.includes(ind)) {
+              name = ind;
+              break;
+            }
+          }
+          
+          marketFactors.push({
+            name,
+            description: para.trim(),
+            sentiment
+          });
+        }
+      }
+    }
+    
+    return marketFactors;
   };
 
   // Helper function to convert file to base64
