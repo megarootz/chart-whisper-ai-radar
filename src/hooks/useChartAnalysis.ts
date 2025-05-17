@@ -110,8 +110,6 @@ export const useChartAnalysis = () => {
 
   // Helper function to clean up risk-reward ratio format for proper JSON parsing
   const cleanRiskRewardRatio = (text: string) => {
-    // Check if the text contains any JSON issues and fix them before parsing
-    
     // Replace "riskRewardRatio": 1:3 with "riskRewardRatio": "1:3"
     let cleanedText = text.replace(/("riskRewardRatio"\s*:\s*)(\d+:\d+)([,}])/g, '$1"$2"$3');
     
@@ -283,51 +281,23 @@ export const useChartAnalysis = () => {
       const resultText = responseData.choices[0].message.content || '';
       console.log("Raw API Response content:", resultText.substring(0, 100) + "...");
       
-      // Parse response - adapt this for new format
-      try {
-        // Process the results in the new format - first try to extract as JSON
-        let parsedResult;
-        let analysisData: AnalysisResultData;
-        
-        try {
-          // Try to parse as JSON first (for compatibility)
-          let jsonStr = resultText;
-          if (resultText.includes('```json')) {
-            jsonStr = resultText.split('```json')[1].split('```')[0].trim();
-          } else if (resultText.includes('```')) {
-            jsonStr = resultText.split('```')[1].split('```')[0].trim();
-          }
-          
-          // Fix JSON format issues before parsing
-          jsonStr = cleanRiskRewardRatio(jsonStr);
-          parsedResult = JSON.parse(jsonStr);
-          
-          // If it's JSON, process the old way
-          analysisData = processJsonResult(parsedResult, pairName, timeframe);
-        } catch (jsonError) {
-          console.log("Not JSON format, processing as text format");
-          // If it's not JSON, process as text format
-          analysisData = processTextResult(resultText, pairName, timeframe);
-        }
+      // Process response as text format using the new template structure
+      const analysisData = processTextResult(resultText, pairName, timeframe);
+      
+      // Save the analysis result
+      setAnalysisResult(analysisData);
+      
+      // Update the latest analysis in the context
+      setLatestAnalysis(analysisData);
+      
+      // Save the analysis to Supabase
+      await saveAnalysisToDatabase(analysisData, chartUrl);
 
-        // Save the analysis result
-        setAnalysisResult(analysisData);
-        
-        // Update the latest analysis in the context
-        setLatestAnalysis(analysisData);
-        
-        // Save the analysis to Supabase
-        await saveAnalysisToDatabase(analysisData, chartUrl);
-
-        toast({
-          title: "Analysis Complete",
-          description: `Successfully analyzed the ${analysisData.pairName} chart on ${analysisData.timeframe} timeframe`,
-          variant: "default",
-        });
-      } catch (parseError) {
-        console.error("Parsing error:", parseError, "Raw text:", resultText.substring(0, 500));
-        throw new Error("Failed to parse the analysis result. Invalid response format from API.");
-      }
+      toast({
+        title: "Analysis Complete",
+        description: `Successfully analyzed the ${analysisData.pairName} chart on ${analysisData.timeframe} timeframe`,
+        variant: "default",
+      });
       
     } catch (error) {
       console.error("Error analyzing chart:", error);
@@ -342,118 +312,7 @@ export const useChartAnalysis = () => {
     }
   };
 
-  // Process result in JSON format (for backward compatibility)
-  const processJsonResult = (parsedResult: any, defaultPairName: string, defaultTimeframe: string): AnalysisResultData => {
-    // Use detected pair name and timeframe from the API if available, otherwise fallback to placeholders
-    const detectedPairName = parsedResult.pairName || defaultPairName;
-    const detectedTimeframe = parsedResult.timeframe || defaultTimeframe;
-    
-    // Determine if this is a forex pair to calculate pips correctly
-    const isForex = detectedPairName.length === 6 && /[A-Z]{6}/.test(detectedPairName);
-    
-    // Find the current price level if available
-    const currentPriceObj = Array.isArray(parsedResult.priceLevels) ? 
-      parsedResult.priceLevels.find((l: any) => 
-        l.name && l.name.toLowerCase().includes('current')
-      ) : null;
-    
-    const currentPrice = currentPriceObj ? parseFloat(currentPriceObj.price) : null;
-    
-    // Validate and adjust trading setup if needed
-    if (parsedResult.tradingSetup && currentPrice !== null) {
-      parsedResult.tradingSetup = validateAndAdjustLevels(
-        parsedResult.tradingSetup, 
-        detectedTimeframe, 
-        currentPrice
-      );
-    }
-    
-    // Map the parsed result to our AnalysisResultData format
-    return {
-      pairName: detectedPairName,
-      timeframe: detectedTimeframe,
-      overallSentiment: parsedResult.overallSentiment || 'neutral',
-      confidenceScore: parsedResult.confidenceScore || 50,
-      marketAnalysis: parsedResult.marketAnalysis || 'Analysis not available.',
-      trendDirection: parsedResult.trendDirection || 'neutral',
-      marketFactors: Array.isArray(parsedResult.marketFactors) ? parsedResult.marketFactors.map((factor: any) => ({
-        name: factor.name,
-        description: factor.description,
-        sentiment: factor.sentiment.toLowerCase()
-      })) : [],
-      chartPatterns: Array.isArray(parsedResult.chartPatterns) ? parsedResult.chartPatterns.map((pattern: any) => ({
-        name: pattern.name,
-        confidence: pattern.confidence,
-        signal: typeof pattern.signal === 'string' ? 
-                pattern.signal.toLowerCase().includes('bullish') ? 'bullish' : 
-                pattern.signal.toLowerCase().includes('bearish') ? 'bearish' : 'neutral' 
-                : 'neutral',
-        status: pattern.status || "complete"
-      })) : [],
-      priceLevels: Array.isArray(parsedResult.priceLevels) ? parsedResult.priceLevels.map((level: any) => {
-        // ... keep existing code (process price levels)
-        const price = parseFloat(level.price);
-        let direction: 'up' | 'down' = 'up';
-        let pips = 0;
-        
-        if (currentPrice !== null && !isNaN(price)) {
-          direction = price > currentPrice ? 'up' : 'down';
-          pips = calculateDistanceInPips(currentPrice, price, isForex, detectedPairName);
-        } else {
-          direction = level.direction && level.direction.toLowerCase().includes('above') ? 'up' : 'down';
-          
-          if (level.distance) {
-            if (typeof level.distance === 'string' && level.distance.includes('%')) {
-              return {
-                name: level.name,
-                price: price.toString(),
-                distance: level.distance,
-                direction
-              };
-            } else {
-              const distanceNum = parseFloat(level.distance);
-              if (!isNaN(distanceNum)) {
-                pips = Math.round(distanceNum);
-              }
-            }
-          }
-        }
-        
-        return {
-          name: level.name,
-          price: price.toString(),
-          distance: `${pips} pips`,
-          direction
-        };
-      }) : [],
-      entryLevel: parsedResult.entryLevel ? parsedResult.entryLevel.toString() : undefined,
-      stopLoss: parsedResult.stopLoss ? parsedResult.stopLoss.toString() : undefined,
-      takeProfits: Array.isArray(parsedResult.takeProfits) ? 
-                    parsedResult.takeProfits.map((tp: any) => tp.toString()) : undefined,
-      tradingInsight: parsedResult.tradingInsight,
-      tradingSetup: parsedResult.tradingSetup ? {
-        type: parsedResult.tradingSetup.type || 'neutral',
-        description: parsedResult.tradingSetup.description || '',
-        confidence: parsedResult.tradingSetup.confidence || 50,
-        timeframe: parsedResult.tradingSetup.timeframe || detectedTimeframe,
-        entryPrice: parsedResult.tradingSetup.entryPrice?.toString(),
-        stopLoss: parsedResult.tradingSetup.stopLoss?.toString(),
-        takeProfits: Array.isArray(parsedResult.tradingSetup.takeProfits) ? 
-                    parsedResult.tradingSetup.takeProfits.map((tp: any) => {
-                      if (typeof tp === 'object' && tp !== null) {
-                        return (tp.value || tp.price || tp.target || "").toString();
-                      }
-                      return tp.toString();
-                    }) : [],
-        riskRewardRatio: typeof parsedResult.tradingSetup.riskRewardRatio === 'string' ? 
-                        parsedResult.tradingSetup.riskRewardRatio : 
-                        parsedResult.tradingSetup.riskRewardRatio?.toString(),
-        entryTrigger: parsedResult.tradingSetup.entryTrigger,
-      } : undefined
-    };
-  };
-  
-  // Process result in the new text format
+  // Process result in the new text format based on the updated template
   const processTextResult = (resultText: string, defaultPairName: string, defaultTimeframe: string): AnalysisResultData => {
     // Parse text format - extract symbol and timeframe from title if possible
     const titleMatch = resultText.match(/\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i);
@@ -498,7 +357,7 @@ export const useChartAnalysis = () => {
     const bearishScenario = resultText.match(/Bearish\s+Scenario:([^\n]+(?:\n[^\n]+)*?)(?:Neutral|Bullish|$)/i);
     
     // Extract potential targets and stop loss levels
-    const targetMatch = resultText.match(/could\s+(?:resume|target|reach)\s+(?:the\s+)?(?:uptrend\s+)?towards\s+([0-9.,]+)/i);
+    const targetMatch = resultText.match(/could\s+(?:resume|target|reach)\s+(?:the\s+)?(?:uptrend\s+)?(?:towards|at)\s+([0-9.,]+)/i);
     const stopLossMatch = resultText.match(/Stop\s+loss\s+(?:can|should)\s+be\s+placed\s+[^0-9]+([0-9.,]+)/i);
     
     // Create trading setup based on the trend direction
@@ -563,43 +422,48 @@ export const useChartAnalysis = () => {
   // Helper function to extract price levels from text
   const extractPriceLevels = (text: string, isResistance: boolean): any[] => {
     const levels: any[] = [];
-    const levelRegex = /\[([^:]+)(?::\s*([0-9.,]+))?\]/g;
+    const levelRegex = /([0-9.,]+):\s*([^\n]+)/g;
     let match;
     
+    // First try to find price levels in format "1.2345: description"
     while ((match = levelRegex.exec(text)) !== null) {
-      const levelName = match[1].trim();
-      let price = match[2]?.trim();
-      
-      // If price is not explicitly given in brackets, try to find it elsewhere in the text
-      if (!price) {
-        const priceFinder = new RegExp(`${levelName}[^0-9]*([0-9.,]+)`, 'i');
-        const priceMatch = text.match(priceFinder);
-        if (priceMatch) {
-          price = priceMatch[1];
-        } else {
-          // Skip this entry if we can't find a price
-          continue;
-        }
-      }
+      const price = match[1].trim();
+      const description = match[2].trim();
       
       levels.push({
-        name: isResistance ? `Resistance: ${levelName}` : `Support: ${levelName}`,
+        name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
         price: price,
         distance: "0 pips", // We don't have enough info to calculate
         direction: isResistance ? 'up' : 'down'
       });
     }
     
-    // If no levels were extracted using the bracket format, try looking for numbered lists
+    // If no matches found with first regex, try alternative formats
     if (levels.length === 0) {
-      const lineRegex = /([0-9.,]+)\s*:\s*([^\n]+)/g;
-      while ((match = lineRegex.exec(text)) !== null) {
-        levels.push({
-          name: isResistance ? `Resistance: ${match[2].trim()}` : `Support: ${match[2].trim()}`,
-          price: match[1],
-          distance: "0 pips",
-          direction: isResistance ? 'up' : 'down'
-        });
+      // Try finding price numbers with descriptions
+      const altRegex = /\[([^:]+)(?::\s*([0-9.,]+))?\]|([0-9.,]+)/g;
+      while ((match = altRegex.exec(text)) !== null) {
+        const levelName = match[1]?.trim() || (isResistance ? 'Resistance' : 'Support');
+        let price = match[2]?.trim() || match[3]?.trim();
+        
+        // If we have a name but no price, look for nearby numbers
+        if (levelName && !price) {
+          const nearbyTextAfter = text.substring(match.index + match[0].length, match.index + match[0].length + 30);
+          const priceMatch = nearbyTextAfter.match(/([0-9.,]+)/);
+          if (priceMatch) {
+            price = priceMatch[1];
+          }
+        }
+        
+        // Only add if we have a price
+        if (price) {
+          levels.push({
+            name: isResistance ? `Resistance: ${levelName}` : `Support: ${levelName}`,
+            price: price,
+            distance: "0 pips",
+            direction: isResistance ? 'up' : 'down'
+          });
+        }
       }
     }
     
@@ -611,44 +475,45 @@ export const useChartAnalysis = () => {
     const patterns: any[] = [];
     const lines = text.split('\n').filter(line => line.trim().length > 0);
     
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+    for (const line of lines) {
+      // Try to extract pattern name and description
       if (line.includes(':') || line.match(/\[[^\]]+\]/)) {
         // This might be a pattern name
-        const patternName = line.includes(':') ? 
-          line.split(':')[0].replace(/\[\s*|\s*\]/, '').trim() : 
-          line.match(/\[([^\]]+)\]/)?.[1]?.trim() || line.trim();
-          
+        let patternName = '';
         let description = '';
-        let j = i + 1;
         
-        // Collect description lines until we hit another pattern or end
-        while (j < lines.length && 
-               !lines[j].includes(':') && 
-               !lines[j].match(/\[[^\]]+\]:/) && 
-               !lines[j].match(/^[A-Z][a-z]+\s+Pattern/)) {
-          description += lines[j].trim() + ' ';
-          j++;
+        if (line.includes(':')) {
+          const parts = line.split(':');
+          patternName = parts[0].replace(/\[\s*|\s*\]/, '').trim();
+          description = parts.slice(1).join(':').trim();
+        } else {
+          const match = line.match(/\[([^\]]+)\]/);
+          patternName = match ? match[1].trim() : line.trim();
+          
+          // Look for description in next lines
+          const lineIndex = lines.indexOf(line);
+          if (lineIndex < lines.length - 1) {
+            description = lines[lineIndex + 1].trim();
+          }
         }
         
         // Determine sentiment from the description
         let signal = 'neutral';
-        if (description.toLowerCase().includes('bullish')) {
+        if ((description + patternName).toLowerCase().includes('bullish')) {
           signal = 'bullish';
-        } else if (description.toLowerCase().includes('bearish')) {
+        } else if ((description + patternName).toLowerCase().includes('bearish')) {
           signal = 'bearish';
         }
         
-        // Add the pattern
-        patterns.push({
-          name: patternName,
-          confidence: 70, // Default confidence since it's not specified
-          signal,
-          status: "complete" // Default status
-        });
-        
-        // Skip processed lines
-        i = j - 1;
+        // Add the pattern if we have a name
+        if (patternName) {
+          patterns.push({
+            name: patternName,
+            confidence: 70, // Default confidence since it's not specified
+            signal,
+            status: "complete" // Default status
+          });
+        }
       }
     }
     

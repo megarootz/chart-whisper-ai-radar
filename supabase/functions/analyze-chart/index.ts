@@ -25,7 +25,7 @@ serve(async (req) => {
     
     // Prepare request for OpenRouter API with optimized prompt
     const requestData = {
-      model: "openai/gpt-4.1-mini", // Changed model to gpt-4.1-mini
+      model: "openai/gpt-4.1-mini", // Updated model to gpt-4.1-mini
       messages: [
         {
           role: "system",
