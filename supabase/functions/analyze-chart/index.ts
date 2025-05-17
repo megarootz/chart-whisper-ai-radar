@@ -29,14 +29,39 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert forex and technical analysis expert. Analyze chart images with precision and provide accurate analysis based solely on what you see in the chart. Keep your analysis concise but informative. Do not provide generic placeholder responses."
+          content: "You are an expert forex and technical analysis specialist. Analyze chart images with precision and provide detailed analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this ${pairName} chart on ${timeframe} timeframe. Identify key technical elements including trend direction, support and resistance levels, chart patterns, and trading insights. Be precise and analyze only what you can see in the chart - do not make up information or use placeholder text.`
+              text: `Analyze this ${pairName} chart on ${timeframe} timeframe. Identify key technical elements including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
+
+[${pairName}] Technical Analysis (${timeframe} Chart)
+1. Trend Direction:
+Overall trend: [Bullish/Bearish/Neutral]
+
+[Describe the key price movement visible on the chart]
+
+[Note any recent change in direction]
+
+Currently, the price appears to be [describe current price action]
+
+2. Key Support Levels:
+[List specific price levels with brief descriptions]
+
+3. Key Resistance Levels:
+[List specific price levels with brief descriptions]
+
+4. Chart Patterns:
+[Name specific patterns visible on the chart with technical implications]
+
+5. Technical Indicators:
+[Describe visible indicators and their signals]
+
+6. Trading Insights:
+[Provide actionable trading scenarios based on the analysis]`
             },
             {
               type: "image_url",
@@ -49,7 +74,7 @@ serve(async (req) => {
         }
       ],
       temperature: 0.3,
-      max_tokens: 1000  // Controlled token limit to manage response size
+      max_tokens: 1000
     };
 
     console.log("Sending request to OpenRouter API with model:", requestData.model);
