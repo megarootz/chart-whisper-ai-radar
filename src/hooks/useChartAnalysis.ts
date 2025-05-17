@@ -214,8 +214,10 @@ export const useChartAnalysis = () => {
   const processTextResult = (resultText: string, defaultPairName: string, defaultTimeframe: string): AnalysisResultData => {
     // Parse text format - extract symbol and timeframe from title if possible
     const titleMatch = resultText.match(/\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i);
-    const symbol = titleMatch ? titleMatch[1] : defaultPairName;
-    const timeframe = titleMatch ? titleMatch[2] : defaultTimeframe;
+    
+    // Always use the user-provided values instead of auto-detect
+    const symbol = defaultPairName;
+    const timeframe = defaultTimeframe;
     
     // Extract trend direction
     const trendMatch = resultText.match(/(?:Overall\s+trend|Trend\s+Direction):\s*([^\.\n]+)/i);
