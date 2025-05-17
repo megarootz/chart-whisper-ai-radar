@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -101,8 +102,8 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
         <CardContent>
           <ScrollArea className="h-[600px] pr-4">
             <div className="space-y-6 text-white">
-              {/* Analysis Header */}
-              <div className="text-xl font-bold text-primary">
+              {/* Analysis Header - Display pair and timeframe */}
+              <div className="text-xl font-bold text-primary mb-4">
                 {data.pairName} Technical Analysis ({data.timeframe} Chart)
               </div>
               

@@ -16,7 +16,7 @@ const Index = () => {
   const [timeframe, setTimeframe] = useState('');
   
   const handleChartUpload = (file: File) => {
-    // Use the user-provided pair name and timeframe instead of "Auto-detect"
+    // Use the user-provided pair name and timeframe
     const finalPairName = pairName.trim() || "Unknown Pair";
     const finalTimeframe = timeframe.trim() || "Unknown Timeframe";
     
