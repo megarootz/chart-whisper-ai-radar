@@ -29,14 +29,14 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert forex and technical analysis expert. Analyze chart images with precision and provide analysis in a structured format. Keep your analysis concise but informative."
+          content: "You are an expert forex and technical analysis expert. Analyze chart images with precision and provide accurate analysis based solely on what you see in the chart. Keep your analysis concise but informative. Do not provide generic placeholder responses."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Analyze this chart image. Identify the trading pair, timeframe, and provide detailed technical analysis including trend direction, key support and resistance levels, chart patterns, and trading insights."
+              text: `Analyze this ${pairName} chart on ${timeframe} timeframe. Identify key technical elements including trend direction, support and resistance levels, chart patterns, and trading insights. Be precise and analyze only what you can see in the chart - do not make up information or use placeholder text.`
             },
             {
               type: "image_url",
@@ -49,7 +49,7 @@ serve(async (req) => {
         }
       ],
       temperature: 0.3,
-      max_tokens: 1000  // Reduced token limit to control response size
+      max_tokens: 1000  // Controlled token limit to manage response size
     };
 
     console.log("Sending request to OpenRouter API with model:", requestData.model);

@@ -209,49 +209,6 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                   )}
                 </div>
               </div>
-              
-              {/* Summary Table */}
-              <div className="space-y-2">
-                <div className="text-lg font-semibold">Summary Table:</div>
-                <div className="pl-4">
-                  <div className="grid grid-cols-2 gap-2 border border-gray-700 rounded-md overflow-hidden">
-                    <div className="bg-gray-800 p-2">Factor</div>
-                    <div className="bg-gray-800 p-2">Observation</div>
-                    
-                    <div className="border-t border-gray-700 p-2">Trend</div>
-                    <div className="border-t border-gray-700 p-2">{data.trendDirection.charAt(0).toUpperCase() + data.trendDirection.slice(1)}</div>
-                    
-                    <div className="border-t border-gray-700 p-2">Key Support Levels</div>
-                    <div className="border-t border-gray-700 p-2">
-                      {getSupportLevels().length > 0 ? 
-                        getSupportLevels().map(level => level.price).join(', ') : 
-                        'None identified'
-                      }
-                    </div>
-                    
-                    <div className="border-t border-gray-700 p-2">Key Resistance Levels</div>
-                    <div className="border-t border-gray-700 p-2">
-                      {getResistanceLevels().length > 0 ? 
-                        getResistanceLevels().map(level => level.price).join(', ') : 
-                        'None identified'
-                      }
-                    </div>
-                    
-                    <div className="border-t border-gray-700 p-2">Chart Patterns</div>
-                    <div className="border-t border-gray-700 p-2">
-                      {data.chartPatterns.length > 0 ? 
-                        data.chartPatterns.map(pattern => `${pattern.name} (${pattern.signal})`).join(', ') : 
-                        'None identified'
-                      }
-                    </div>
-                    
-                    <div className="border-t border-gray-700 p-2">Trading Bias</div>
-                    <div className="border-t border-gray-700 p-2">
-                      {data.overallSentiment.charAt(0).toUpperCase() + data.overallSentiment.slice(1)}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </div>
           </ScrollArea>
         </CardContent>

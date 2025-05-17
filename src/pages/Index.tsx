@@ -1,18 +1,26 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import Header from '@/components/Header';
 import ChartUploader from '@/components/ChartUploader';
 import AnalysisResult from '@/components/AnalysisResult';
 import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 const Index = () => {
   const { isAnalyzing, analysisResult, analyzeChart } = useChartAnalysis();
   const isMobile = useIsMobile();
+  const [pairName, setPairName] = useState('');
+  const [timeframe, setTimeframe] = useState('');
   
   const handleChartUpload = (file: File) => {
-    analyzeChart(file, "Auto-detect", "Auto-detect");
+    // Use the user-provided pair name and timeframe instead of "Auto-detect"
+    const finalPairName = pairName.trim() || "Unknown Pair";
+    const finalTimeframe = timeframe.trim() || "Unknown Timeframe";
+    
+    analyzeChart(file, finalPairName, finalTimeframe);
   };
 
   return (
@@ -27,6 +35,30 @@ const Index = () => {
             <p className="text-chart-text text-lg max-w-3xl">
               Upload a chart screenshot to get AI-powered trading insights in a detailed chat format.
             </p>
+          </div>
+          
+          {/* Chart information inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="pair-name" className="text-white">Trading Pair</Label>
+              <Input 
+                id="pair-name" 
+                placeholder="e.g. EUR/USD, BTCUSD, AAPL" 
+                value={pairName} 
+                onChange={e => setPairName(e.target.value)} 
+                className="bg-chart-card text-white border-gray-700 focus:border-primary"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="timeframe" className="text-white">Timeframe</Label>
+              <Input 
+                id="timeframe" 
+                placeholder="e.g. 1H, 4H, Daily, Weekly" 
+                value={timeframe} 
+                onChange={e => setTimeframe(e.target.value)} 
+                className="bg-chart-card text-white border-gray-700 focus:border-primary"
+              />
+            </div>
           </div>
           
           <ChartUploader onUpload={handleChartUpload} />
