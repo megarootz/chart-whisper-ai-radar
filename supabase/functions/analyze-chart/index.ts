@@ -25,11 +25,11 @@ serve(async (req) => {
     
     // Prepare request for OpenRouter API with optimized prompt
     const requestData = {
-      model: "openai/gpt-4.1-mini", // Updated model to gpt-4.1-mini
+      model: "openai/gpt-4.1-mini", // Using the gpt-4.1-mini model
       messages: [
         {
           role: "system",
-          content: "You are an expert forex and technical analysis expert. Analyze chart images with precision and consistency."
+          content: "You are an expert forex and technical analysis expert. Analyze chart images with precision and provide analysis in a structured format. Keep your analysis concise but informative."
         },
         {
           role: "user",

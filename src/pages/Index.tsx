@@ -5,15 +5,14 @@ import ChartUploader from '@/components/ChartUploader';
 import AnalysisResult from '@/components/AnalysisResult';
 import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
-import { Separator } from '@/components/ui/separator';
 import { useIsMobile } from '@/hooks/use-mobile';
 
 const Index = () => {
   const { isAnalyzing, analysisResult, analyzeChart } = useChartAnalysis();
   const isMobile = useIsMobile();
   
-  const handleChartUpload = (file: File, pairName: string, timeframe: string) => {
-    analyzeChart(file, pairName, timeframe);
+  const handleChartUpload = (file: File) => {
+    analyzeChart(file, "Auto-detect", "Auto-detect");
   };
 
   return (
@@ -23,21 +22,22 @@ const Index = () => {
         <div className="max-w-4xl mx-auto space-y-8">
           <div>
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
-              AI-Powered Forex Chart Analysis
+              AI-Powered Chart Analysis
             </h1>
             <p className="text-chart-text text-lg max-w-3xl">
-              Upload your chart screenshot and get instant professional analysis powered by advanced AI. Identify trends, patterns, and critical price levels.
+              Upload a chart screenshot to get AI-powered trading insights in a detailed chat format.
             </p>
           </div>
           
           <ChartUploader onUpload={handleChartUpload} />
           
-          {analysisResult && (
-            <>
-              <Separator className="bg-gray-700" />
-              <AnalysisResult data={analysisResult} />
-            </>
+          {isAnalyzing && (
+            <div className="text-center py-6">
+              <p className="text-white text-lg">Analyzing your chart...</p>
+            </div>
           )}
+          
+          {analysisResult && <AnalysisResult data={analysisResult} />}
         </div>
       </main>
       {!isMobile && <Footer />}

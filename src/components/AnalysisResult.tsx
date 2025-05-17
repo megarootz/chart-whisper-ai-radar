@@ -1,32 +1,29 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-import { Progress } from '@/components/ui/progress';
-import { TrendingUp, TrendingDown, CircleArrowDown, CircleArrowUp, ChartCandlestick, Download, ChevronDown, ChevronUp } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
-interface MarketFactor {
+import React from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
+
+export interface MarketFactor {
   name: string;
   description: string;
   sentiment: 'bullish' | 'bearish' | 'neutral';
 }
 
-interface ChartPattern {
+export interface ChartPattern {
   name: string;
   confidence: number;
   signal: 'bullish' | 'bearish' | 'neutral';
   status?: 'complete' | 'forming';
 }
 
-interface PriceLevel {
+export interface PriceLevel {
   name: string;
   price: string;
-  distance: string;
-  direction: 'up' | 'down';
+  distance?: string;
+  direction?: 'up' | 'down';
 }
 
-interface TradingSetup {
+export interface TradingSetup {
   type: 'long' | 'short' | 'neutral';
   description: string;
   confidence: number;
@@ -58,299 +55,206 @@ export interface AnalysisResultData {
 }
 
 const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
-  const [isTradingSetupExpanded, setIsTradingSetupExpanded] = useState(false);
-  
-  const getSentimentColor = (sentiment: string): string => {
-    if (sentiment.includes('bullish')) return 'bg-bullish';
-    if (sentiment.includes('bearish')) return 'bg-bearish';
-    return 'bg-neutral';
+  // Function to get support and resistance levels
+  const getSupportLevels = () => {
+    return data.priceLevels.filter(level => level.name.toLowerCase().includes('support'));
   };
-
-  const getSentimentTextColor = (sentiment: string): string => {
-    if (sentiment.includes('bullish')) return 'text-bullish';
-    if (sentiment.includes('bearish')) return 'text-bearish';
-    return 'text-neutral';
+  
+  const getResistanceLevels = () => {
+    return data.priceLevels.filter(level => level.name.toLowerCase().includes('resist'));
   };
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 animate-fade-in">
       <Card className="w-full bg-chart-card border-gray-700">
         <CardHeader>
-          <div className="flex justify-between items-center mb-2">
-            <div className="flex items-center gap-2">
-              <div className="bg-gray-800 p-2 rounded-full">
-                <ChartCandlestick className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <CardTitle className="text-white flex items-center gap-2">
-                  {data.pairName} <span className="text-sm font-normal text-gray-400">{data.timeframe}</span>
-                </CardTitle>
-                <CardDescription className="text-chart-text">
-                  Analysis Results
-                </CardDescription>
-              </div>
-            </div>
-            <Badge className={`${getSentimentColor(data.overallSentiment)} text-white uppercase`}>
-              {data.overallSentiment}
-            </Badge>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-chart-text">Signal Strength</span>
-            <span className="text-white font-medium">{data.confidenceScore}%</span>
-          </div>
-          <Progress value={data.confidenceScore} className="h-2" />
+          <CardTitle className="text-white">Analysis Results</CardTitle>
         </CardHeader>
-        
-        <CardContent className="space-y-6">
-          <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-            <h3 className="text-white text-lg mb-2">Market Analysis</h3>
-            <p className="text-chart-text">{data.marketAnalysis}</p>
-          </div>
-          
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <h3 className="text-white text-lg">Trend Direction</h3>
-              <div className="flex items-center gap-1">
-                {data.trendDirection === 'bullish' ? (
-                  <>
-                    <TrendingUp className="h-5 w-5 text-bullish" />
-                    <span className="text-bullish font-medium">Bullish</span>
-                  </>
-                ) : data.trendDirection === 'bearish' ? (
-                  <>
-                    <TrendingDown className="h-5 w-5 text-bearish" />
-                    <span className="text-bearish font-medium">Bearish</span>
-                  </>
-                ) : (
-                  <span className="text-neutral font-medium">Neutral</span>
-                )}
+        <CardContent>
+          <ScrollArea className="h-[600px] pr-4">
+            <div className="space-y-6 text-white font-mono">
+              {/* Analysis Header */}
+              <div className="text-xl font-bold text-primary">
+                {data.pairName} Technical Analysis ({data.timeframe} Chart)
               </div>
-            </div>
-          </div>
-          
-          <div>
-            <h3 className="text-white text-lg mb-3">Key Market Factors</h3>
-            <div className="space-y-3">
-              {data.marketFactors.map((factor, index) => (
-                <div key={index} className="bg-gray-800/30 rounded-lg p-3 border border-gray-700">
-                  <div className="flex justify-between items-center mb-1">
-                    <h4 className="text-white font-medium">{factor.name}</h4>
-                    <Badge className={`${getSentimentColor(factor.sentiment)}`}>
-                      {factor.sentiment.charAt(0).toUpperCase() + factor.sentiment.slice(1)}
-                    </Badge>
-                  </div>
-                  <p className="text-chart-text text-sm">{factor.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <Separator className="bg-gray-700" />
-          
-          <div>
-            <h3 className="text-white text-lg mb-3">Chart Patterns</h3>
-            <div className="space-y-3">
-              {data.chartPatterns.map((pattern, index) => (
-                <div key={index} className="flex items-center justify-between bg-gray-800/30 rounded-lg p-3 border border-gray-700">
-                  <div className="flex items-center gap-2">
-                    {pattern.signal === 'bullish' ? (
-                      <CircleArrowUp className="h-5 w-5 text-bullish" />
-                    ) : pattern.signal === 'bearish' ? (
-                      <CircleArrowDown className="h-5 w-5 text-bearish" />
-                    ) : (
-                      <span className="h-5 w-5 rounded-full bg-neutral"></span>
-                    )}
-                    <div>
-                      <span className={`font-medium ${getSentimentTextColor(pattern.signal)}`}>
-                        {pattern.name}
-                      </span>
-                      {pattern.status === 'forming' && (
-                        <Badge className="ml-2 bg-blue-500/20 text-blue-300 text-xs">Forming</Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-chart-text text-sm">{pattern.confidence}%</span>
-                    <span className={`text-sm ${getSentimentTextColor(pattern.signal)}`}>
-                      {pattern.signal.charAt(0).toUpperCase() + pattern.signal.slice(1)} signal
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-          
-          <Separator className="bg-gray-700" />
-          
-          <div>
-            <h3 className="text-white text-lg mb-3">Key Price Levels</h3>
-            <div className="relative overflow-x-auto rounded-lg border border-gray-700">
-              <table className="w-full text-left">
-                <thead className="bg-gray-800 text-xs uppercase text-gray-400">
-                  <tr>
-                    <th className="px-4 py-3">Price Level</th>
-                    <th className="px-4 py-3">Price</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.priceLevels.map((level, index) => (
-                    <tr key={index} className="border-b border-gray-700 bg-gray-800/30">
-                      <td className="px-4 py-3 font-medium text-white flex items-center gap-2">
-                        <span className={level.name.toLowerCase().includes('resist') ? "text-bearish" : "text-bullish"}>•</span> 
-                        {level.name}
-                      </td>
-                      <td className="px-4 py-3 text-white">{level.price}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          
-          {/* Trading Setup Section */}
-          {data.tradingSetup && (
-            <>
-              <Separator className="bg-gray-700" />
               
-              <div>
-                <div 
-                  className="flex items-center justify-between cursor-pointer"
-                  onClick={() => setIsTradingSetupExpanded(!isTradingSetupExpanded)}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="bg-gray-800 p-2 rounded-full">
-                      {data.tradingSetup.type === 'long' ? (
-                        <CircleArrowUp className="h-5 w-5 text-bullish" />
-                      ) : data.tradingSetup.type === 'short' ? (
-                        <CircleArrowDown className="h-5 w-5 text-bearish" />
-                      ) : (
-                        <span className="h-5 w-5 rounded-full bg-neutral"></span>
-                      )}
-                    </div>
-                    <h3 className="text-white text-lg">Recommended Trading Setup</h3>
-                  </div>
-                  <div className="flex items-center">
-                    <Badge className={data.tradingSetup.type === 'long' ? 'bg-bullish' : data.tradingSetup.type === 'short' ? 'bg-bearish' : 'bg-neutral'}>
-                      {data.tradingSetup.type.toUpperCase()}
-                    </Badge>
-                    <span className="ml-2">
-                      {isTradingSetupExpanded ? 
-                        <ChevronUp className="h-5 w-5 text-gray-400" /> : 
-                        <ChevronDown className="h-5 w-5 text-gray-400" />
-                      }
-                    </span>
-                  </div>
+              {/* 1. Trend Direction */}
+              <div className="space-y-2">
+                <div className="text-lg font-semibold">1. Trend Direction:</div>
+                <div className="pl-4">
+                  <p>Overall trend: {data.trendDirection.charAt(0).toUpperCase() + data.trendDirection.slice(1)}</p>
+                  <p className="mt-2">{data.marketAnalysis}</p>
                 </div>
-                
-                {isTradingSetupExpanded && (
-                  <div className="mt-4 space-y-4">
-                    <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
-                      <p className="font-medium mb-2 text-white">Setup Description</p>
-                      <p className="text-chart-text">{data.tradingSetup.description}</p>
-                      <div className="mt-3">
-                        <div className="w-full bg-gray-700 h-1.5 rounded-full mt-2">
-                          <div 
-                            className={`h-1.5 rounded-full ${data.tradingSetup.type === 'long' ? 'bg-bullish' : data.tradingSetup.type === 'short' ? 'bg-bearish' : 'bg-neutral'}`}
-                            style={{ width: `${data.tradingSetup.confidence}%` }}
-                          ></div>
-                        </div>
-                        <div className="flex justify-between mt-1">
-                          <span className="text-xs text-gray-500">Confidence</span>
-                          <span className="text-xs text-white">{data.tradingSetup.confidence}%</span>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      {data.tradingSetup.entryPrice && (
-                        <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
-                          <h4 className="text-chart-text mb-1">Entry Price</h4>
-                          <p className="text-white text-lg font-medium">{data.tradingSetup.entryPrice}</p>
-                        </div>
-                      )}
-                      
-                      {data.tradingSetup.stopLoss && (
-                        <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
-                          <h4 className="text-bearish mb-1">Stop Loss</h4>
-                          <p className="text-white text-lg font-medium">{data.tradingSetup.stopLoss}</p>
-                        </div>
-                      )}
-                      
-                      {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
-                        <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
-                          <h4 className="text-bullish mb-1">Take Profit Targets</h4>
-                          <div className="flex flex-col gap-1">
-                            {data.tradingSetup.takeProfits.map((tp, index) => (
-                              <p key={index} className="text-white font-medium">
-                                TP{index + 1}: {tp}
-                              </p>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {data.tradingSetup.entryTrigger && (
-                      <div className="bg-gray-800/40 rounded-lg p-4 border border-gray-700">
-                        <h4 className="text-white mb-2 font-medium">Entry Trigger</h4>
-                        <p className="text-chart-text">{data.tradingSetup.entryTrigger}</p>
-                      </div>
-                    )}
-                    
-                    {data.tradingSetup.riskRewardRatio && (
-                      <div className="bg-gray-800/30 rounded-lg p-3 border border-gray-700">
-                        <div className="flex justify-between">
-                          <span className="text-chart-text">Risk/Reward Ratio:</span>
-                          <span className="text-white font-medium">{data.tradingSetup.riskRewardRatio}</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-            </>
-          )}
-          
-          {data.tradingInsight && (
-            <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
-              <h3 className="text-white text-lg mb-2">Trading Insight</h3>
-              <p className="text-chart-text">{data.tradingInsight}</p>
-            </div>
-          )}
-          
-          {data.entryLevel && !data.tradingSetup && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
-                <h4 className="text-chart-text mb-1">Entry Price</h4>
-                <p className="text-white text-lg font-medium">{data.entryLevel}</p>
-              </div>
-              {data.stopLoss && (
-                <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
-                  <h4 className="text-bearish mb-1">Stop Loss</h4>
-                  <p className="text-white text-lg font-medium">{data.stopLoss}</p>
-                </div>
-              )}
-              {data.takeProfits && data.takeProfits.length > 0 && (
-                <div className="bg-gray-800/30 rounded-lg p-4 border border-gray-700">
-                  <h4 className="text-bullish mb-1">Take Profit</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {data.takeProfits.map((tp, index) => (
-                      <p key={index} className="text-white text-lg font-medium">
-                        {tp}{index < data.takeProfits!.length - 1 && ', '}
+              
+              {/* 2. Key Support Levels */}
+              <div className="space-y-2">
+                <div className="text-lg font-semibold">2. Key Support Levels:</div>
+                <div className="pl-4">
+                  {getSupportLevels().length > 0 ? (
+                    getSupportLevels().map((level, index) => (
+                      <p key={index} className="text-bullish">
+                        {level.price}: {level.name.replace('Support:', '').trim()}
                       </p>
-                    ))}
+                    ))
+                  ) : (
+                    <p>No specific support levels identified.</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* 3. Key Resistance Levels */}
+              <div className="space-y-2">
+                <div className="text-lg font-semibold">3. Key Resistance Levels:</div>
+                <div className="pl-4">
+                  {getResistanceLevels().length > 0 ? (
+                    getResistanceLevels().map((level, index) => (
+                      <p key={index} className="text-bearish">
+                        {level.price}: {level.name.replace('Resistance:', '').trim()}
+                      </p>
+                    ))
+                  ) : (
+                    <p>No specific resistance levels identified.</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* 4. Chart Patterns */}
+              <div className="space-y-2">
+                <div className="text-lg font-semibold">4. Chart Patterns:</div>
+                <div className="pl-4">
+                  {data.chartPatterns.length > 0 ? (
+                    data.chartPatterns.map((pattern, index) => (
+                      <div key={index} className="mb-3">
+                        <p className={`font-medium ${
+                          pattern.signal === 'bullish' ? 'text-bullish' : 
+                          pattern.signal === 'bearish' ? 'text-bearish' : 'text-neutral'
+                        }`}>
+                          {pattern.name}:
+                        </p>
+                        <p>Pattern with {pattern.confidence}% confidence indicating a {pattern.signal} signal.</p>
+                        {pattern.status && <p>Status: {pattern.status}</p>}
+                      </div>
+                    ))
+                  ) : (
+                    <p>No significant chart patterns identified.</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* 5. Technical Indicators */}
+              <div className="space-y-2">
+                <div className="text-lg font-semibold">5. Technical Indicators:</div>
+                <div className="pl-4">
+                  {data.marketFactors.length > 0 ? (
+                    data.marketFactors.map((factor, index) => (
+                      <p key={index} className={
+                        factor.sentiment === 'bullish' ? 'text-bullish' : 
+                        factor.sentiment === 'bearish' ? 'text-bearish' : 'text-neutral'
+                      }>
+                        {factor.name}: {factor.description}
+                      </p>
+                    ))
+                  ) : (
+                    <p>No technical indicator data available.</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* 6. Trading Insights */}
+              <div className="space-y-2">
+                <div className="text-lg font-semibold">6. Trading Insights:</div>
+                <div className="pl-4 space-y-3">
+                  {data.tradingSetup && (
+                    <>
+                      {data.tradingSetup.type === 'long' && (
+                        <div>
+                          <p className="text-bullish font-medium">Bullish Scenario:</p>
+                          <p>{data.tradingSetup.description}</p>
+                          {data.tradingSetup.entryPrice && <p>Entry: {data.tradingSetup.entryPrice}</p>}
+                          {data.tradingSetup.stopLoss && <p>Stop Loss: {data.tradingSetup.stopLoss}</p>}
+                          {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
+                            <p>Take Profit: {data.tradingSetup.takeProfits.join(', ')}</p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {data.tradingSetup.type === 'short' && (
+                        <div>
+                          <p className="text-bearish font-medium">Bearish Scenario:</p>
+                          <p>{data.tradingSetup.description}</p>
+                          {data.tradingSetup.entryPrice && <p>Entry: {data.tradingSetup.entryPrice}</p>}
+                          {data.tradingSetup.stopLoss && <p>Stop Loss: {data.tradingSetup.stopLoss}</p>}
+                          {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
+                            <p>Take Profit: {data.tradingSetup.takeProfits.join(', ')}</p>
+                          )}
+                        </div>
+                      )}
+                      
+                      {data.tradingSetup.type === 'neutral' && (
+                        <div>
+                          <p className="font-medium">Neutral/Consolidation Scenario:</p>
+                          <p>{data.tradingSetup.description}</p>
+                        </div>
+                      )}
+                    </>
+                  )}
+                  
+                  {data.tradingInsight && !data.tradingSetup && (
+                    <p>{data.tradingInsight}</p>
+                  )}
+                  
+                  {!data.tradingInsight && !data.tradingSetup && (
+                    <p>No specific trading insights available.</p>
+                  )}
+                </div>
+              </div>
+              
+              {/* Summary Table */}
+              <div className="space-y-2">
+                <div className="text-lg font-semibold">Summary Table:</div>
+                <div className="pl-4">
+                  <div className="grid grid-cols-2 gap-2 border border-gray-700 rounded-md overflow-hidden">
+                    <div className="bg-gray-800 p-2">Factor</div>
+                    <div className="bg-gray-800 p-2">Observation</div>
+                    
+                    <div className="border-t border-gray-700 p-2">Trend</div>
+                    <div className="border-t border-gray-700 p-2">{data.trendDirection.charAt(0).toUpperCase() + data.trendDirection.slice(1)}</div>
+                    
+                    <div className="border-t border-gray-700 p-2">Key Support Levels</div>
+                    <div className="border-t border-gray-700 p-2">
+                      {getSupportLevels().length > 0 ? 
+                        getSupportLevels().map(level => level.price).join(', ') : 
+                        'None identified'
+                      }
+                    </div>
+                    
+                    <div className="border-t border-gray-700 p-2">Key Resistance Levels</div>
+                    <div className="border-t border-gray-700 p-2">
+                      {getResistanceLevels().length > 0 ? 
+                        getResistanceLevels().map(level => level.price).join(', ') : 
+                        'None identified'
+                      }
+                    </div>
+                    
+                    <div className="border-t border-gray-700 p-2">Chart Patterns</div>
+                    <div className="border-t border-gray-700 p-2">
+                      {data.chartPatterns.length > 0 ? 
+                        data.chartPatterns.map(pattern => `${pattern.name} (${pattern.signal})`).join(', ') : 
+                        'None identified'
+                      }
+                    </div>
+                    
+                    <div className="border-t border-gray-700 p-2">Trading Bias</div>
+                    <div className="border-t border-gray-700 p-2">
+                      {data.overallSentiment.charAt(0).toUpperCase() + data.overallSentiment.slice(1)}
+                    </div>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
-          )}
+          </ScrollArea>
         </CardContent>
-        
-        <CardFooter>
-          <Button className="w-full flex items-center gap-2" variant="outline">
-            <Download className="h-4 w-4" /> Download Analysis
-          </Button>
-        </CardFooter>
       </Card>
     </div>
   );
