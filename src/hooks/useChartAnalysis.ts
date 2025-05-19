@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData, MarketFactor, ChartPattern, PriceLevel, TradingSetup } from '@/components/AnalysisResult';
@@ -212,12 +213,21 @@ export const useChartAnalysis = () => {
 
   // Process result in the new text format based on the updated template
   const processTextResult = (resultText: string): AnalysisResultData => {
-    // Parse text format - extract symbol and timeframe from title if possible
+    // Parse text format - extract symbol and timeframe from title
     const titleMatch = resultText.match(/\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i);
     
     // Extract the pair and timeframe from the title match
-    const symbol = titleMatch ? titleMatch[1].trim() : "Unknown Pair";
-    const timeframe = titleMatch ? titleMatch[2].trim() : "Unknown Timeframe";
+    let symbol = titleMatch ? titleMatch[1].trim() : "Forex Pair";
+    let timeframe = titleMatch ? titleMatch[2].trim() : "Timeframe";
+    
+    // Replace any remaining "Unknown" placeholders with better defaults
+    if (symbol.toLowerCase().includes("unknown")) {
+      symbol = "Forex Pair";
+    }
+    
+    if (timeframe.toLowerCase().includes("unknown")) {
+      timeframe = "Timeframe";
+    }
     
     // Extract trend direction
     const trendMatch = resultText.match(/(?:Overall\s+trend|Trend\s+Direction):\s*([^\.\n]+)/i);

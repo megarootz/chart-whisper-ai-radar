@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -118,11 +118,15 @@ const AnalysisDetailsPage = () => {
             </Button>
             
             <h1 className="text-2xl font-bold text-white">Analysis Details</h1>
-            {analysis && <p className="text-gray-400">{analysis.pairName} on {analysis.timeframe} timeframe</p>}
+            {analysis && (
+              <p className="text-gray-400">
+                {analysis.pairName} on {analysis.timeframe} timeframe
+              </p>
+            )}
           </div>
           
           {analysis && (
-            <div className="overflow-visible">
+            <div>
               <AnalysisResult data={analysis} />
             </div>
           )}

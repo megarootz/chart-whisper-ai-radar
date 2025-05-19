@@ -29,14 +29,14 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert forex and technical analysis specialist. Analyze chart images with precision and provide detailed analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content. Ensure you include all sections with full details. IMPORTANT: Detect and identify the actual trading pair (like EUR/USD, BTC/USD, etc.) and timeframe (like 1H, 4H, Daily) from the chart image. Never use placeholder values."
+          content: "You are an expert forex and technical analysis specialist. Analyze chart images with precision and provide detailed analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content. Ensure you include all sections with full details. VERY IMPORTANT: Begin by identifying the actual trading pair (like EUR/USD, BTC/USD, etc.) and timeframe (like 1H, 4H, Daily) from the chart image. These MUST be explicitly extracted from the chart image before continuing with analysis. NEVER use 'Unknown Pair' or 'Unknown Timeframe' as placeholders."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this chart. First, identify the trading pair and timeframe from the image. Then provide technical analysis including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
+              text: `Analyze this chart. First, identify the specific trading pair and timeframe from the image (look for labels, titles, or indicators in the chart). Then provide technical analysis including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
 
 [DETECTED-PAIR-NAME] Technical Analysis ([DETECTED-TIMEFRAME] Chart)
 

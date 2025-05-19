@@ -1,22 +1,18 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import Header from '@/components/Header';
 import ChartUploader from '@/components/ChartUploader';
 import AnalysisResult from '@/components/AnalysisResult';
 import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 const Index = () => {
   const { isAnalyzing, analysisResult, analyzeChart } = useChartAnalysis();
   const isMobile = useIsMobile();
-  const [pairName, setPairName] = useState('');
-  const [timeframe, setTimeframe] = useState('');
   
   const handleChartUpload = (file: File) => {
-    // Use empty strings for pair name and timeframe to allow auto-detection
+    // Use empty strings for pair name and timeframe to allow AI detection
     analyzeChart(file, '', '');
   };
 
@@ -43,7 +39,7 @@ const Index = () => {
           )}
           
           {analysisResult && (
-            <div className="overflow-visible">
+            <div>
               <AnalysisResult data={analysisResult} />
             </div>
           )}
