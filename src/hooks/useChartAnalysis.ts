@@ -180,7 +180,7 @@ export const useChartAnalysis = () => {
       console.log("Raw API Response content:", resultText.substring(0, 100) + "...");
       
       // Process response as text format using the new template structure
-      const analysisData = processTextResult(resultText, pairName, timeframe);
+      const analysisData = processTextResult(resultText);
       
       // Save the analysis result
       setAnalysisResult(analysisData);
@@ -211,13 +211,13 @@ export const useChartAnalysis = () => {
   };
 
   // Process result in the new text format based on the updated template
-  const processTextResult = (resultText: string, defaultPairName: string, defaultTimeframe: string): AnalysisResultData => {
+  const processTextResult = (resultText: string): AnalysisResultData => {
     // Parse text format - extract symbol and timeframe from title if possible
     const titleMatch = resultText.match(/\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i);
     
-    // Always use the user-provided values instead of auto-detect
-    const symbol = defaultPairName;
-    const timeframe = defaultTimeframe;
+    // Extract the pair and timeframe from the title match
+    const symbol = titleMatch ? titleMatch[1].trim() : "Unknown Pair";
+    const timeframe = titleMatch ? titleMatch[2].trim() : "Unknown Timeframe";
     
     // Extract trend direction
     const trendMatch = resultText.match(/(?:Overall\s+trend|Trend\s+Direction):\s*([^\.\n]+)/i);
@@ -335,7 +335,7 @@ export const useChartAnalysis = () => {
     };
   };
   
-  // Helper function to extract price levels from text
+  // Helper functions for extraction
   const extractPriceLevels = (text: string, isResistance: boolean): PriceLevel[] => {
     const levels: PriceLevel[] = [];
     
@@ -373,7 +373,6 @@ export const useChartAnalysis = () => {
     return levels;
   };
   
-  // Helper function to extract chart patterns from text
   const extractChartPatterns = (text: string): ChartPattern[] => {
     const patterns: ChartPattern[] = [];
     
@@ -440,7 +439,6 @@ export const useChartAnalysis = () => {
     return patterns;
   };
   
-  // Helper function to extract market factors from technical indicators text
   const extractMarketFactors = (text: string): MarketFactor[] => {
     const marketFactors: MarketFactor[] = [];
     

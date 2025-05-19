@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -67,8 +68,8 @@ const AnalyzePage = () => {
         return;
       }
       
-      // Use "Auto-detect" as placeholder - the AI will detect from the image
-      analyzeChart(file, "Auto-detect", "Auto-detect");
+      // The AI will detect the pair and timeframe from the image
+      analyzeChart(file, "", "");
     }
   };
   

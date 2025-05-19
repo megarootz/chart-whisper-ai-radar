@@ -16,11 +16,8 @@ const Index = () => {
   const [timeframe, setTimeframe] = useState('');
   
   const handleChartUpload = (file: File) => {
-    // Use the user-provided pair name and timeframe
-    const finalPairName = pairName.trim() || "Unknown Pair";
-    const finalTimeframe = timeframe.trim() || "Unknown Timeframe";
-    
-    analyzeChart(file, finalPairName, finalTimeframe);
+    // Use empty strings for pair name and timeframe to allow auto-detection
+    analyzeChart(file, '', '');
   };
 
   return (
@@ -37,32 +34,6 @@ const Index = () => {
             </p>
           </div>
           
-          {/* Chart information inputs */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="pair-name" className="text-white">Trading Pair (required)</Label>
-              <Input 
-                id="pair-name" 
-                placeholder="e.g. EUR/USD, BTCUSD, XAU/USD" 
-                value={pairName} 
-                onChange={e => setPairName(e.target.value)} 
-                className="bg-chart-card text-white border-gray-700 focus:border-primary"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="timeframe" className="text-white">Timeframe (required)</Label>
-              <Input 
-                id="timeframe" 
-                placeholder="e.g. 1H, 4H, Daily, Weekly" 
-                value={timeframe} 
-                onChange={e => setTimeframe(e.target.value)} 
-                className="bg-chart-card text-white border-gray-700 focus:border-primary"
-                required
-              />
-            </div>
-          </div>
-          
           <ChartUploader onUpload={handleChartUpload} />
           
           {isAnalyzing && (
@@ -71,7 +42,11 @@ const Index = () => {
             </div>
           )}
           
-          {analysisResult && <AnalysisResult data={analysisResult} />}
+          {analysisResult && (
+            <div className="overflow-visible">
+              <AnalysisResult data={analysisResult} />
+            </div>
+          )}
         </div>
       </main>
       {!isMobile && <Footer />}

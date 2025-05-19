@@ -121,11 +121,11 @@ const HistoryPage = () => {
                   <div className="p-5">
                     <div className="flex justify-between items-start mb-4">
                       <div>
-                        <h3 className="text-white font-medium text-lg mb-1">{analysis.pairName}</h3>
+                        <h3 className="text-white font-medium text-lg mb-1">{analysis.pairName || "Unknown Pair"}</h3>
                         <div className="flex flex-wrap items-center text-gray-400 text-sm">
                           <span className="mr-2">{analysis.overallSentiment}</span>
                           <span className="mr-2">•</span>
-                          <span className="mr-2">{analysis.timeframe}</span>
+                          <span className="mr-2">{analysis.timeframe || "Unknown Timeframe"}</span>
                           <span className="mr-2">•</span>
                           <span>{formatDate(analysis.created_at)}</span>
                         </div>

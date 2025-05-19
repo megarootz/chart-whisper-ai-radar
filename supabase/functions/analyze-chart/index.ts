@@ -29,16 +29,16 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert forex and technical analysis specialist. Analyze chart images with precision and provide detailed analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content. Ensure you include all sections with full details."
+          content: "You are an expert forex and technical analysis specialist. Analyze chart images with precision and provide detailed analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content. Ensure you include all sections with full details. IMPORTANT: Detect and identify the actual trading pair (like EUR/USD, BTC/USD, etc.) and timeframe (like 1H, 4H, Daily) from the chart image. Never use placeholder values."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this ${pairName} chart on ${timeframe} timeframe. Identify key technical elements including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
+              text: `Analyze this chart. First, identify the trading pair and timeframe from the image. Then provide technical analysis including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
 
-[${pairName}] Technical Analysis (${timeframe} Chart)
+[DETECTED-PAIR-NAME] Technical Analysis ([DETECTED-TIMEFRAME] Chart)
 
 1. Trend Direction:
 Overall trend: [Bullish/Bearish/Neutral]
