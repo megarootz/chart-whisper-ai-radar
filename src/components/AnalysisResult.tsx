@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -116,10 +115,10 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               </div>
               <div>
                 <div className="text-xl font-bold text-primary">
-                  {data.pairName}
+                  {data.pairName || "Unknown Pair"}
                 </div>
                 <div className="text-gray-400 text-sm">
-                  {data.timeframe} Chart
+                  {data.timeframe || "Unknown Timeframe"} Chart
                 </div>
               </div>
             </div>

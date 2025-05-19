@@ -213,43 +213,78 @@ export const useChartAnalysis = () => {
 
   // Process result in the new text format based on the updated template
   const processTextResult = (resultText: string): AnalysisResultData => {
-    // Improved parsing of title section to extract pair name and timeframe
-    const titleMatch = resultText.match(/\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i) || 
-                      resultText.match(/([A-Z\/]{3,10})\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i);
+    // Enhanced regex patterns for accurate pair detection
+    const titlePatterns = [
+      // Standard format in brackets with Technical Analysis
+      /\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i,
+      
+      // Standard format without brackets
+      /([A-Z0-9\/]{3,10})\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i,
+      
+      // Direct pair and timeframe at start of text
+      /^([A-Z0-9\/]{3,10})\s+.*?\s+\(([0-9]+[Hh]|[A-Z][a-z]+)\)/i,
+      
+      // Pair name at beginning of text
+      /^([A-Z0-9\/]{3,10})\s+/
+    ];
     
-    // More robust extraction with fallbacks
-    let symbol = "Forex Pair";
-    let timeframe = "Timeframe";
+    // Try each pattern to extract pair and timeframe
+    let symbol = "";
+    let timeframe = "";
     
-    // Try to extract from title first
-    if (titleMatch) {
-      symbol = titleMatch[1].trim();
-      timeframe = titleMatch[2].trim();
-    } else {
-      // Secondary extraction methods if title format isn't found
-      // Look for currency pair patterns
-      const currencyPairMatch = resultText.match(/\b([A-Z]{3}\/[A-Z]{3}|[A-Z]{6})\b/);
-      if (currencyPairMatch) {
-        symbol = currencyPairMatch[1];
-        // Format consistently if needed
-        if (symbol.length === 6 && !symbol.includes('/')) {
-          symbol = `${symbol.substring(0, 3)}/${symbol.substring(3, 6)}`;
+    for (const pattern of titlePatterns) {
+      const match = resultText.match(pattern);
+      if (match) {
+        symbol = match[1].trim();
+        if (match[2]) {
+          timeframe = match[2].trim();
+        }
+        break;
+      }
+    }
+    
+    // If still no pair found, use these stronger extraction methods for pairs
+    if (!symbol) {
+      // Look for standard forex/crypto/commodity pairs with slash
+      const pairMatch = resultText.match(/\b([A-Z]{3}\/[A-Z]{3}|[A-Z]{3,4}\/USD[T]?|[A-Z0-9]{3,6}\/[A-Z0-9]{3,6})\b/);
+      if (pairMatch) {
+        symbol = pairMatch[1];
+      } else {
+        // Look for major currency pairs without slash
+        const currencyPairMatch = resultText.match(/\b(EUR|USD|GBP|JPY|AUD|NZD|CAD|CHF|XAU|XAG|BTC|ETH)[A-Z]{3}\b/i);
+        if (currencyPairMatch) {
+          const fullPair = currencyPairMatch[0].toUpperCase();
+          const baseCurrency = currencyPairMatch[1].toUpperCase();
+          const quoteCurrency = fullPair.substring(baseCurrency.length);
+          symbol = `${baseCurrency}/${quoteCurrency}`;
         }
       }
-      
-      // Look for timeframe indicators
+    }
+    
+    // If still no timeframe found, look for standard timeframes
+    if (!timeframe) {
       const timeframeMatch = resultText.match(/\b(1[mh]|5[mh]|15[mh]|30[mh]|1h|4h|daily|weekly|monthly)\b/i);
       if (timeframeMatch) {
         timeframe = timeframeMatch[1];
       }
     }
     
-    // Clean up pair format if needed (e.g., AUDUSD to AUD/USD)
+    // Default values if nothing is found
+    if (!symbol) {
+      symbol = "Unknown Pair";
+    }
+    
+    if (!timeframe) {
+      timeframe = "Unknown Timeframe";
+    }
+    
+    // Format the pair correctly if it's not already in the proper format
+    // Add slash if missing for standard pairs
     if (symbol.length === 6 && !symbol.includes('/') && !/\s/.test(symbol)) {
       symbol = `${symbol.substring(0, 3)}/${symbol.substring(3, 6)}`;
     }
     
-    // Capitalize both pair and timeframe for consistency
+    // Ensure correct capitalization
     symbol = symbol.toUpperCase();
     timeframe = timeframe.charAt(0).toUpperCase() + timeframe.slice(1).toLowerCase();
     

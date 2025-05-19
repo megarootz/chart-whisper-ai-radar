@@ -50,7 +50,21 @@ const AnalysisDetailsPage = () => {
       
       if (data && data.analysis_data) {
         // Properly cast the JSON data to AnalysisResultData
-        setAnalysis(data.analysis_data as unknown as AnalysisResultData);
+        const analysisData = data.analysis_data as unknown as AnalysisResultData;
+        
+        // Double-check and ensure pair name has the right format
+        if (analysisData.pairName) {
+          // Make sure pair is properly formatted if it's a standard 6-character pair
+          if (analysisData.pairName.length === 6 && !analysisData.pairName.includes('/') && 
+              /^[A-Z]+$/.test(analysisData.pairName)) {
+            analysisData.pairName = `${analysisData.pairName.substring(0, 3)}/${analysisData.pairName.substring(3, 6)}`;
+          }
+          
+          // Ensure proper capitalization
+          analysisData.pairName = analysisData.pairName.toUpperCase();
+        }
+        
+        setAnalysis(analysisData);
       } else {
         console.error("Analysis not found");
         toast({
@@ -117,11 +131,18 @@ const AnalysisDetailsPage = () => {
               Back to History
             </Button>
             
-            <h1 className="text-2xl font-bold text-white">Analysis Details</h1>
-            {analysis && analysis.pairName && analysis.timeframe && (
-              <p className="text-gray-400">
-                {analysis.pairName} on {analysis.timeframe} timeframe
-              </p>
+            <h1 className="text-2xl font-bold text-white mb-2">Analysis Details</h1>
+            {analysis && (
+              <div className="flex items-center">
+                <span className="text-primary text-xl font-semibold mr-2">
+                  {analysis.pairName}
+                </span>
+                {analysis.timeframe && (
+                  <span className="text-gray-400">
+                    {analysis.timeframe} Timeframe
+                  </span>
+                )}
+              </div>
             )}
           </div>
           

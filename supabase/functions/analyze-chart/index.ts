@@ -29,14 +29,14 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert forex and technical analysis specialist. Your FIRST task is to clearly identify the exact trading pair (e.g., EUR/USD, BTC/USD, AUDUSD) and timeframe (e.g., 1H, 4H, Daily) from the chart image. This is MANDATORY - you must extract these from the image before proceeding with analysis. The pair and timeframe MUST be prominently displayed at the beginning of your response in the exact format shown in the image. After identifying the pair and timeframe, provide detailed technical analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content."
+          content: "You are an expert forex, commodities, metals, and cryptocurrency technical analysis specialist. Your PRIMARY and MOST IMPORTANT task is to ACCURATELY identify the EXACT trading pair and timeframe from the chart image. NEVER guess or make up a generic pair name. You MUST extract the specific symbol as it appears on the chart.\n\nIdentify both the FULL PAIR SYMBOL (e.g., EUR/USD, GBP/JPY, XAU/USD, BTC/USDT) and the TIMEFRAME (e.g., 1H, 4H, Daily).\n\nRules for pair identification:\n- For Forex: Use standard notation like EUR/USD, USD/JPY, GBP/USD with correct case sensitivity\n- For Metals: Use standard codes like XAU/USD (Gold), XAG/USD (Silver)\n- For Cryptos: Use standard notation like BTC/USDT, ETH/USD\n- For Indices: Use exact index symbols like US30, SPX500\n- NEVER abbreviate pairs (e.g., use GBP/JPY not 'YEN')\n- EXACT FORMATTING is essential - maintain all slashes, digits and capitalization\n\nThe pair and timeframe MUST be the first thing you identify, before any analysis. After accurately identifying the pair and timeframe, provide detailed technical analysis."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this chart. FIRST AND MOST IMPORTANTLY, identify the specific trading pair (e.g., EUR/USD) and timeframe (e.g., 1H) from the image - look for labels, titles, or indicators in the chart. Then provide technical analysis including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
+              text: `Analyze this chart. CRITICALLY IMPORTANT: Start by identifying the EXACT trading pair symbol and timeframe from the image. Look at the title, labels, and any text on the chart. NEVER make up generic pair names - extract the EXACT pair symbol as shown (e.g., EUR/USD, XAU/USD, BTC/USDT). Format your response exactly like this:
 
 [DETECTED-PAIR-NAME] Technical Analysis ([DETECTED-TIMEFRAME] Chart)
 
