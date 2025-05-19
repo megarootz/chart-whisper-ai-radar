@@ -29,14 +29,14 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert forex and technical analysis specialist. Analyze chart images with precision and provide detailed analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content. Ensure you include all sections with full details. VERY IMPORTANT: Begin by identifying the actual trading pair (like EUR/USD, BTC/USD, etc.) and timeframe (like 1H, 4H, Daily) from the chart image. These MUST be explicitly extracted from the chart image before continuing with analysis. NEVER use 'Unknown Pair' or 'Unknown Timeframe' as placeholders."
+          content: "You are an expert forex and technical analysis specialist. Your FIRST task is to clearly identify the exact trading pair (e.g., EUR/USD, BTC/USD, AUDUSD) and timeframe (e.g., 1H, 4H, Daily) from the chart image. This is MANDATORY - you must extract these from the image before proceeding with analysis. The pair and timeframe MUST be prominently displayed at the beginning of your response in the exact format shown in the image. After identifying the pair and timeframe, provide detailed technical analysis based solely on what you see in the chart. Format your response exactly according to the template provided by the user. Be specific and avoid generic placeholder content."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this chart. First, identify the specific trading pair and timeframe from the image (look for labels, titles, or indicators in the chart). Then provide technical analysis including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
+              text: `Analyze this chart. FIRST AND MOST IMPORTANTLY, identify the specific trading pair (e.g., EUR/USD) and timeframe (e.g., 1H) from the image - look for labels, titles, or indicators in the chart. Then provide technical analysis including trend direction, support and resistance levels, chart patterns, and trading insights. Format your response exactly like this:
 
 [DETECTED-PAIR-NAME] Technical Analysis ([DETECTED-TIMEFRAME] Chart)
 
@@ -83,7 +83,7 @@ Neutral / Consolidation Scenario:
           ]
         }
       ],
-      temperature: 0.3,
+      temperature: 0.2,
       max_tokens: 1300
     };
 

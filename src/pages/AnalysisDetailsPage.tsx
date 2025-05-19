@@ -118,7 +118,7 @@ const AnalysisDetailsPage = () => {
             </Button>
             
             <h1 className="text-2xl font-bold text-white">Analysis Details</h1>
-            {analysis && (
+            {analysis && analysis.pairName && analysis.timeframe && (
               <p className="text-gray-400">
                 {analysis.pairName} on {analysis.timeframe} timeframe
               </p>

@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -95,13 +96,32 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
     <div className="space-y-4 animate-fade-in">
       <Card className="w-full bg-chart-card border-gray-700">
         <CardHeader>
-          <CardTitle className="text-white">Analysis Results</CardTitle>
+          <CardTitle className="text-white flex items-center">
+            <div className="mr-2 bg-primary/20 p-1.5 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div>Analysis Results</div>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6 text-white">
-            {/* Analysis Header - Display pair and timeframe */}
-            <div className="text-xl font-bold text-primary mb-4">
-              {data.pairName} Technical Analysis ({data.timeframe} Chart)
+            {/* Analysis Header - Display pair and timeframe prominently */}
+            <div className="flex items-center mb-4 border-b border-gray-700 pb-4">
+              <div className="bg-blue-900/30 p-2 rounded mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
+                </svg>
+              </div>
+              <div>
+                <div className="text-xl font-bold text-primary">
+                  {data.pairName}
+                </div>
+                <div className="text-gray-400 text-sm">
+                  {data.timeframe} Chart
+                </div>
+              </div>
             </div>
             
             {/* 1. Trend Direction */}

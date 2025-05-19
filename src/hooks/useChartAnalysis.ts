@@ -213,21 +213,45 @@ export const useChartAnalysis = () => {
 
   // Process result in the new text format based on the updated template
   const processTextResult = (resultText: string): AnalysisResultData => {
-    // Parse text format - extract symbol and timeframe from title
-    const titleMatch = resultText.match(/\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i);
+    // Improved parsing of title section to extract pair name and timeframe
+    const titleMatch = resultText.match(/\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i) || 
+                      resultText.match(/([A-Z\/]{3,10})\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i);
     
-    // Extract the pair and timeframe from the title match
-    let symbol = titleMatch ? titleMatch[1].trim() : "Forex Pair";
-    let timeframe = titleMatch ? titleMatch[2].trim() : "Timeframe";
+    // More robust extraction with fallbacks
+    let symbol = "Forex Pair";
+    let timeframe = "Timeframe";
     
-    // Replace any remaining "Unknown" placeholders with better defaults
-    if (symbol.toLowerCase().includes("unknown")) {
-      symbol = "Forex Pair";
+    // Try to extract from title first
+    if (titleMatch) {
+      symbol = titleMatch[1].trim();
+      timeframe = titleMatch[2].trim();
+    } else {
+      // Secondary extraction methods if title format isn't found
+      // Look for currency pair patterns
+      const currencyPairMatch = resultText.match(/\b([A-Z]{3}\/[A-Z]{3}|[A-Z]{6})\b/);
+      if (currencyPairMatch) {
+        symbol = currencyPairMatch[1];
+        // Format consistently if needed
+        if (symbol.length === 6 && !symbol.includes('/')) {
+          symbol = `${symbol.substring(0, 3)}/${symbol.substring(3, 6)}`;
+        }
+      }
+      
+      // Look for timeframe indicators
+      const timeframeMatch = resultText.match(/\b(1[mh]|5[mh]|15[mh]|30[mh]|1h|4h|daily|weekly|monthly)\b/i);
+      if (timeframeMatch) {
+        timeframe = timeframeMatch[1];
+      }
     }
     
-    if (timeframe.toLowerCase().includes("unknown")) {
-      timeframe = "Timeframe";
+    // Clean up pair format if needed (e.g., AUDUSD to AUD/USD)
+    if (symbol.length === 6 && !symbol.includes('/') && !/\s/.test(symbol)) {
+      symbol = `${symbol.substring(0, 3)}/${symbol.substring(3, 6)}`;
     }
+    
+    // Capitalize both pair and timeframe for consistency
+    symbol = symbol.toUpperCase();
+    timeframe = timeframe.charAt(0).toUpperCase() + timeframe.slice(1).toLowerCase();
     
     // Extract trend direction
     const trendMatch = resultText.match(/(?:Overall\s+trend|Trend\s+Direction):\s*([^\.\n]+)/i);
