@@ -1,5 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatTradingPair } from '@/utils/tradingPairUtils';
 
 export interface MarketFactor {
   name: string;
@@ -62,6 +63,9 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
     return data.priceLevels.filter(level => level.name.toLowerCase().includes('resist'));
   };
 
+  // Format the trading pair using our utility
+  const formattedPairName = formatTradingPair(data.pairName);
+
   // Helper function to render bulleted list items from text content
   const renderBulletPoints = (text: string) => {
     if (!text) return null;
@@ -115,7 +119,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               </div>
               <div>
                 <div className="text-xl font-bold text-primary">
-                  {data.pairName || "Unknown Pair"}
+                  {formattedPairName}
                 </div>
                 <div className="text-gray-400 text-sm">
                   {data.timeframe || "Unknown Timeframe"} Chart

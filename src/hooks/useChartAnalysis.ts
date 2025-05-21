@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData, MarketFactor, ChartPattern, PriceLevel, TradingSetup } from '@/components/AnalysisResult';
@@ -7,6 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { uploadChartImage } from '@/utils/storageUtils';
 import { Json } from '@/integrations/supabase/types';
 import { useAnalysis } from '@/contexts/AnalysisContext';
+import { formatTradingPair } from '@/utils/tradingPairUtils';
 
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -278,14 +278,10 @@ export const useChartAnalysis = () => {
       timeframe = "Unknown Timeframe";
     }
     
-    // Format the pair correctly if it's not already in the proper format
-    // Add slash if missing for standard pairs
-    if (symbol.length === 6 && !symbol.includes('/') && !/\s/.test(symbol)) {
-      symbol = `${symbol.substring(0, 3)}/${symbol.substring(3, 6)}`;
-    }
+    // Format the pair correctly using our utility function
+    symbol = formatTradingPair(symbol);
     
-    // Ensure correct capitalization
-    symbol = symbol.toUpperCase();
+    // Ensure correct capitalization for timeframe
     timeframe = timeframe.charAt(0).toUpperCase() + timeframe.slice(1).toLowerCase();
     
     // Extract trend direction

@@ -10,6 +10,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { formatTradingPair } from '@/utils/tradingPairUtils';
 
 const AnalysisDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -52,16 +53,9 @@ const AnalysisDetailsPage = () => {
         // Properly cast the JSON data to AnalysisResultData
         const analysisData = data.analysis_data as unknown as AnalysisResultData;
         
-        // Double-check and ensure pair name has the right format
+        // Format the pair name using the utility function
         if (analysisData.pairName) {
-          // Make sure pair is properly formatted if it's a standard 6-character pair
-          if (analysisData.pairName.length === 6 && !analysisData.pairName.includes('/') && 
-              /^[A-Z]+$/.test(analysisData.pairName)) {
-            analysisData.pairName = `${analysisData.pairName.substring(0, 3)}/${analysisData.pairName.substring(3, 6)}`;
-          }
-          
-          // Ensure proper capitalization
-          analysisData.pairName = analysisData.pairName.toUpperCase();
+          analysisData.pairName = formatTradingPair(analysisData.pairName);
         }
         
         setAnalysis(analysisData);

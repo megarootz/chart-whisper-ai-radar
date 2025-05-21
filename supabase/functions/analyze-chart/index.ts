@@ -29,14 +29,16 @@ serve(async (req) => {
       messages: [
         {
           role: "system",
-          content: "You are an expert forex, commodities, metals, and cryptocurrency technical analysis specialist. Your PRIMARY and MOST IMPORTANT task is to ACCURATELY identify the EXACT trading pair and timeframe from the chart image. NEVER guess or make up a generic pair name. You MUST extract the specific symbol as it appears on the chart.\n\nIdentify both the FULL PAIR SYMBOL (e.g., EUR/USD, GBP/JPY, XAU/USD, BTC/USDT) and the TIMEFRAME (e.g., 1H, 4H, Daily).\n\nRules for pair identification:\n- For Forex: Use standard notation like EUR/USD, USD/JPY, GBP/USD with correct case sensitivity\n- For Metals: Use standard codes like XAU/USD (Gold), XAG/USD (Silver)\n- For Cryptos: Use standard notation like BTC/USDT, ETH/USD\n- For Indices: Use exact index symbols like US30, SPX500\n- NEVER abbreviate pairs (e.g., use GBP/JPY not 'YEN')\n- EXACT FORMATTING is essential - maintain all slashes, digits and capitalization\n\nThe pair and timeframe MUST be the first thing you identify, before any analysis. After accurately identifying the pair and timeframe, provide detailed technical analysis."
+          content: "You are an expert forex, commodities, metals, and cryptocurrency technical analysis specialist. Your PRIMARY and MOST IMPORTANT task is to ACCURATELY identify the EXACT trading pair and timeframe from the chart image. You MUST return the trading pair in standard abbreviated format (e.g., BTC/USDT, EUR/USD, XAU/USD).\n\n1. For cryptocurrencies:\n- Always use abbreviations: BTC for Bitcoin, ETH for Ethereum, XRP for Ripple, etc.\n- Always include both parts of the pair with a slash: BTC/USDT, ETH/BTC, etc.\n- NEVER write just 'Bitcoin' or 'Tetherus' - always use the symbol format\n\n2. For forex:\n- Use standard ISO currency codes: EUR/USD, GBP/JPY, USD/CAD, etc.\n- Always maintain correct capitalization\n\n3. For commodities and metals:\n- Use standard codes: XAU/USD (Gold), XAG/USD (Silver), etc.\n\nIf you see a name like 'Bitcoin/Tetherus', convert it to 'BTC/USDT'. If you see 'Ethereum', convert it to 'ETH'. Always write pairs in the format BASE/QUOTE with the slash character.\n\nThe pair and timeframe MUST be the first thing you identify in your analysis, before any other details."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this chart. CRITICALLY IMPORTANT: Start by identifying the EXACT trading pair symbol and timeframe from the image. Look at the title, labels, and any text on the chart. NEVER make up generic pair names - extract the EXACT pair symbol as shown (e.g., EUR/USD, XAU/USD, BTC/USDT). Format your response exactly like this:
+              text: `Analyze this chart. CRITICALLY IMPORTANT: Start by identifying the EXACT trading pair symbol and timeframe from the image. Look at the title, labels, and any text on the chart. Format the pair in standard trading notation with abbreviations (e.g., BTC/USDT, EUR/USD, XAU/USD) - NEVER use full names like "Bitcoin" or single names like "Tetherus". Always include both the base and quote currency with a slash between them.
+
+Format your response exactly like this:
 
 [DETECTED-PAIR-NAME] Technical Analysis ([DETECTED-TIMEFRAME] Chart)
 
