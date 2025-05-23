@@ -23,57 +23,51 @@ serve(async (req) => {
 
     const { base64Image, pairName, timeframe } = await req.json();
     
-    // Prepare request for OpenRouter API with optimized prompt
+    // Optimized and focused prompt for better accuracy within token limits
     const requestData = {
-      model: "openai/gpt-4.1-mini", // Using the gpt-4.1-mini model
+      model: "openai/gpt-4.1-mini",
       messages: [
         {
           role: "system",
-          content: "You are an expert forex, commodities, metals, and cryptocurrency technical analysis specialist. Your PRIMARY and MOST IMPORTANT task is to ACCURATELY identify the EXACT trading pair and timeframe from the chart image. You MUST return the trading pair in standard abbreviated format (e.g., BTC/USDT, EUR/USD, XAU/USD).\n\n1. For cryptocurrencies:\n- Always use abbreviations: BTC for Bitcoin, ETH for Ethereum, XRP for Ripple, etc.\n- Always include both parts of the pair with a slash: BTC/USDT, ETH/BTC, etc.\n- NEVER write just 'Bitcoin' or 'Tetherus' - always use the symbol format\n\n2. For forex:\n- Use standard ISO currency codes: EUR/USD, GBP/JPY, USD/CAD, etc.\n- Always maintain correct capitalization\n\n3. For commodities and metals:\n- Use standard codes: XAU/USD (Gold), XAG/USD (Silver), etc.\n\nIf you see a name like 'Bitcoin/Tetherus', convert it to 'BTC/USDT'. If you see 'Ethereum', convert it to 'ETH'. Always write pairs in the format BASE/QUOTE with the slash character.\n\nThe pair and timeframe MUST be the first thing you identify in your analysis, before any other details."
+          content: "You are an expert technical analyst. Analyze charts with precision. CRITICAL: First identify the exact trading pair in standard format (BTC/USDT, EUR/USD, XAU/USD) and timeframe. Be concise but thorough."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this chart. CRITICALLY IMPORTANT: Start by identifying the EXACT trading pair symbol and timeframe from the image. Look at the title, labels, and any text on the chart. Format the pair in standard trading notation with abbreviations (e.g., BTC/USDT, EUR/USD, XAU/USD) - NEVER use full names like "Bitcoin" or single names like "Tetherus". Always include both the base and quote currency with a slash between them.
+              text: `Analyze this chart. Format response EXACTLY as shown:
 
-Format your response exactly like this:
-
-[DETECTED-PAIR-NAME] Technical Analysis ([DETECTED-TIMEFRAME] Chart)
+[TRADING-PAIR] Technical Analysis ([TIMEFRAME] Chart)
 
 1. Trend Direction:
 Overall trend: [Bullish/Bearish/Neutral]
-
-[Describe the key price movement visible on the chart with specific details]
-
-[Note any recent change in direction with specific details]
-
-Currently, the price appears to be [describe current price action in detail]
+[Brief trend description with key price movement]
 
 2. Key Support Levels:
-[List multiple specific price levels with detailed descriptions for each]
+Level 1: [price] - [description]
+Level 2: [price] - [description]
+Level 3: [price] - [description]
+[Continue up to 5 levels if visible]
 
 3. Key Resistance Levels:
-[List multiple specific price levels with detailed descriptions for each]
+Level 1: [price] - [description]
+Level 2: [price] - [description]
+Level 3: [price] - [description]
+[Continue up to 5 levels if visible]
 
 4. Chart Patterns:
-[Name specific patterns visible on the chart with detailed technical implications]
-[Include complete analysis of pattern formation and implications]
+[Pattern name and description OR "No significant patterns detected"]
 
-5. Technical Indicators (inferred from price action):
-[Provide detailed analysis of indicators and their signals]
-[Include specific insights about momentum, volume, etc]
+5. Technical Indicators:
+[List 2-3 key indicators with current signals]
 
 6. Trading Insights:
-Bullish Scenario:
-[Detailed entry, target and stop conditions]
+Bullish Scenario: [Entry, target, stop conditions]
+Bearish Scenario: [Entry, target, stop conditions]
+Neutral Scenario: [Range trading strategy]
 
-Bearish Scenario:
-[Detailed entry, target and stop conditions]
-
-Neutral / Consolidation Scenario:
-[Range trading strategies and breakout watch levels]`
+Keep total response under 800 tokens. Focus on actionable levels near current price.`
             },
             {
               type: "image_url",
@@ -85,11 +79,12 @@ Neutral / Consolidation Scenario:
           ]
         }
       ],
-      temperature: 0.2,
-      max_tokens: 1300
+      temperature: 0.1,
+      max_tokens: 800,
+      top_p: 0.9
     };
 
-    console.log("Sending request to OpenRouter API with model:", requestData.model);
+    console.log("Sending optimized request to OpenRouter API");
     
     // Create headers with proper authentication
     const headers = {
@@ -98,8 +93,6 @@ Neutral / Consolidation Scenario:
       'HTTP-Referer': 'https://chartanalysis.app',
       'X-Title': 'Forex Chart Analyzer'
     };
-    
-    console.log("Request headers prepared");
     
     // Call OpenRouter API
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -112,10 +105,23 @@ Neutral / Consolidation Scenario:
     
     // Get full response text
     const responseText = await response.text();
-    console.log("Response received:", responseText.substring(0, 200) + "...");
+    console.log("Response received, length:", responseText.length);
     
     if (!response.ok) {
       throw new Error(`Failed to analyze chart: ${response.status} - ${responseText}`);
+    }
+    
+    // Parse response to check token usage
+    try {
+      const responseData = JSON.parse(responseText);
+      if (responseData.usage) {
+        console.log("Token usage:", responseData.usage);
+        if (responseData.usage.total_tokens > 2000) {
+          console.warn("Token usage exceeded 2000:", responseData.usage.total_tokens);
+        }
+      }
+    } catch (parseError) {
+      console.log("Could not parse response for token counting");
     }
     
     // Return the raw response to the client

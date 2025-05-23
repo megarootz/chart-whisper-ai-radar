@@ -211,102 +211,76 @@ export const useChartAnalysis = () => {
     }
   };
 
-  // Process result in the new text format based on the updated template
+  // Process result with improved parsing for better accuracy
   const processTextResult = (resultText: string): AnalysisResultData => {
-    // Enhanced regex patterns for accurate pair detection
+    console.log("Processing analysis result:", resultText.substring(0, 200));
+    
+    // Enhanced regex patterns for more accurate pair and timeframe detection
     const titlePatterns = [
-      // Standard format in brackets with Technical Analysis
-      /\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i,
-      
-      // Standard format without brackets
-      /([A-Z0-9\/]{3,10})\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i,
-      
-      // Direct pair and timeframe at start of text
-      /^([A-Z0-9\/]{3,10})\s+.*?\s+\(([0-9]+[Hh]|[A-Z][a-z]+)\)/i,
-      
-      // Pair name at beginning of text
-      /^([A-Z0-9\/]{3,10})\s+/
+      /\[([A-Z0-9\/]{3,12})\]\s+Technical\s+Analysis\s+\(\s*([^)]+)\s*Chart\)/i,
+      /^([A-Z]{3}\/[A-Z]{3,4})\s+Technical\s+Analysis\s+\(\s*([^)]+)\s*Chart\)/i,
+      /([A-Z]{3,4}\/[A-Z]{3,4})\s+.*?\s+\(([^)]+)\s*Chart\)/i
     ];
     
-    // Try each pattern to extract pair and timeframe
     let symbol = "";
     let timeframe = "";
     
+    // Extract pair and timeframe with improved accuracy
     for (const pattern of titlePatterns) {
       const match = resultText.match(pattern);
       if (match) {
         symbol = match[1].trim();
-        if (match[2]) {
-          timeframe = match[2].trim();
-        }
+        timeframe = match[2].trim();
         break;
       }
     }
     
-    // If still no pair found, use these stronger extraction methods for pairs
+    // Fallback extraction if title pattern fails
     if (!symbol) {
-      // Look for standard forex/crypto/commodity pairs with slash
-      const pairMatch = resultText.match(/\b([A-Z]{3}\/[A-Z]{3}|[A-Z]{3,4}\/USD[T]?|[A-Z0-9]{3,6}\/[A-Z0-9]{3,6})\b/);
+      const pairMatch = resultText.match(/\b([A-Z]{3}\/[A-Z]{3,4}|[A-Z]{3,4}\/USD[T]?)\b/);
       if (pairMatch) {
         symbol = pairMatch[1];
-      } else {
-        // Look for major currency pairs without slash
-        const currencyPairMatch = resultText.match(/\b(EUR|USD|GBP|JPY|AUD|NZD|CAD|CHF|XAU|XAG|BTC|ETH)[A-Z]{3}\b/i);
-        if (currencyPairMatch) {
-          const fullPair = currencyPairMatch[0].toUpperCase();
-          const baseCurrency = currencyPairMatch[1].toUpperCase();
-          const quoteCurrency = fullPair.substring(baseCurrency.length);
-          symbol = `${baseCurrency}/${quoteCurrency}`;
-        }
       }
     }
     
-    // If still no timeframe found, look for standard timeframes
     if (!timeframe) {
-      const timeframeMatch = resultText.match(/\b(1[mh]|5[mh]|15[mh]|30[mh]|1h|4h|daily|weekly|monthly)\b/i);
+      const timeframeMatch = resultText.match(/\b(1[Mm]|5[Mm]|15[Mm]|30[Mm]|1[Hh]|4[Hh]|[Dd]aily|[Ww]eekly|[Mm]onthly)\b/i);
       if (timeframeMatch) {
         timeframe = timeframeMatch[1];
       }
     }
     
-    // Default values if nothing is found
-    if (!symbol) {
-      symbol = "Unknown Pair";
-    }
+    // Default values
+    symbol = symbol || "Unknown Pair";
+    timeframe = timeframe || "Unknown Timeframe";
     
-    if (!timeframe) {
-      timeframe = "Unknown Timeframe";
-    }
-    
-    // Format the pair correctly using our utility function
+    // Format the pair correctly
     symbol = formatTradingPair(symbol);
     
-    // Ensure correct capitalization for timeframe
-    timeframe = timeframe.charAt(0).toUpperCase() + timeframe.slice(1).toLowerCase();
-    
-    // Extract trend direction
-    const trendMatch = resultText.match(/(?:Overall\s+trend|Trend\s+Direction):\s*([^\.\n]+)/i);
+    // Extract trend direction with improved accuracy
+    const trendMatch = resultText.match(/Overall\s+trend:\s*([^\n.]+)/i);
     const trendDirection = trendMatch ? 
       (trendMatch[1].toLowerCase().includes('bullish') ? 'bullish' : 
        trendMatch[1].toLowerCase().includes('bearish') ? 'bearish' : 'neutral') : 
       'neutral';
     
-    // Extract market analysis - get full trend section
+    // Extract market analysis from trend section
     const trendSectionMatch = resultText.match(/1\.\s+Trend\s+Direction:([\s\S]+?)(?=2\.\s+Key\s+Support|$)/i);
-    const marketAnalysis = trendSectionMatch ? trendSectionMatch[1].trim() : '';
+    const marketAnalysis = trendSectionMatch ? 
+      trendSectionMatch[1].replace(/Overall\s+trend:\s*[^\n.]+/i, '').trim() : '';
     
-    // Extract support levels
+    // Extract support levels with improved parsing
     const supportSection = resultText.match(/2\.\s+Key\s+Support\s+Levels:([\s\S]+?)(?=3\.\s+Key\s+Resistance|$)/i);
-    const supportLevels = supportSection ? extractPriceLevels(supportSection[1], false) : [];
+    const supportLevels = supportSection ? extractKeyLevels(supportSection[1], false) : [];
     
-    // Extract resistance levels
+    // Extract resistance levels with improved parsing
     const resistanceSection = resultText.match(/3\.\s+Key\s+Resistance\s+Levels:([\s\S]+?)(?=4\.\s+Chart\s+Patterns|$)/i);
-    const resistanceLevels = resistanceSection ? extractPriceLevels(resistanceSection[1], true) : [];
+    const resistanceLevels = resistanceSection ? extractKeyLevels(resistanceSection[1], true) : [];
     
     // Combine all price levels
     const priceLevels = [...supportLevels, ...resistanceLevels];
     
-    // Extract chart patterns
+    // Extract chart patterns with better detection
     const patternsSection = resultText.match(/4\.\s+Chart\s+Patterns:([\s\S]+?)(?=5\.\s+Technical\s+Indicators|$)/i);
     const chartPatterns = patternsSection ? extractChartPatterns(patternsSection[1]) : [];
     
@@ -316,70 +290,56 @@ export const useChartAnalysis = () => {
       extractMarketFactors(indicatorsSection[1]) : [];
     
     // Extract trading insights
-    const insightsSection = resultText.match(/6\.\s+Trading\s+Insights:([\s\S]+?)(?=Summary|$)/i);
+    const insightsSection = resultText.match(/6\.\s+Trading\s+Insights:([\s\S]+?)$/i);
     const tradingInsight = insightsSection ? insightsSection[1].trim() : '';
     
-    // Extract bullish scenario
-    const bullishSection = resultText.match(/Bullish\s+Scenario:([\s\S]+?)(?=Bearish\s+Scenario|Neutral|$)/i);
-    const bullishDetails = bullishSection ? bullishSection[1].trim() : '';
+    // Extract bullish, bearish, and neutral scenarios
+    const bullishMatch = resultText.match(/Bullish\s+Scenario:\s*([^\n]+)/i);
+    const bearishMatch = resultText.match(/Bearish\s+Scenario:\s*([^\n]+)/i);
+    const neutralMatch = resultText.match(/Neutral\s+Scenario:\s*([^\n]+)/i);
     
-    // Extract bearish scenario
-    const bearishSection = resultText.match(/Bearish\s+Scenario:([\s\S]+?)(?=Neutral|Bullish|$)/i);
-    const bearishDetails = bearishSection ? bearishSection[1].trim() : '';
+    // Determine overall sentiment based on trend and scenarios
+    let overallSentiment: 'bullish' | 'bearish' | 'neutral' | 'mildly bullish' | 'mildly bearish' = trendDirection as any;
     
-    // Extract neutral scenario
-    const neutralSection = resultText.match(/Neutral\s*\/?\s*Consolidation\s+Scenario:([\s\S]+?)(?=Bullish|Bearish|$)/i);
-    const neutralDetails = neutralSection ? neutralSection[1].trim() : '';
-    
-    // Determine overall sentiment
-    let overallSentiment: 'bullish' | 'bearish' | 'neutral' | 'mildly bullish' | 'mildly bearish';
-    
-    if (resultText.toLowerCase().includes('trading bias: bullish')) {
-      overallSentiment = 'bullish';
-    } else if (resultText.toLowerCase().includes('trading bias: bearish')) {
-      overallSentiment = 'bearish';
-    } else if (resultText.toLowerCase().includes('trading bias: neutral')) {
-      overallSentiment = 'neutral';
-    } else {
-      // Default to trend direction
-      overallSentiment = trendDirection as any;
-    }
-    
-    // Create trading setup based on scenarios
+    // Create trading setup based on the strongest scenario
     let tradingSetup: TradingSetup | undefined;
     
-    if (bullishDetails && trendDirection !== 'bearish') {
-      // Extract entry/target/stop from bullish scenario
-      const stopMatch = bullishDetails.match(/stop[\s-]*loss[^0-9]+([0-9,.]+)/i);
-      const targetMatch = bullishDetails.match(/(?:target|resistance)[^0-9]+([0-9,.]+)/i);
+    if (bullishMatch && trendDirection !== 'bearish') {
+      const bullishText = bullishMatch[1];
+      const entryMatch = bullishText.match(/entry[:\s]*([0-9,.]+)/i);
+      const stopMatch = bullishText.match(/stop[:\s]*([0-9,.]+)/i);
+      const targetMatch = bullishText.match(/target[:\s]*([0-9,.]+)/i);
       
       tradingSetup = {
         type: 'long',
-        description: bullishDetails,
-        confidence: 70,
+        description: bullishText,
+        confidence: 75,
         timeframe,
+        entryPrice: entryMatch ? entryMatch[1] : undefined,
         stopLoss: stopMatch ? stopMatch[1] : undefined,
         takeProfits: targetMatch ? [targetMatch[1]] : [],
         riskRewardRatio: "1:2",
       };
-    } else if (bearishDetails && trendDirection !== 'bullish') {
-      // Extract entry/target/stop from bearish scenario
-      const stopMatch = bearishDetails.match(/stop[\s-]*loss[^0-9]+([0-9,.]+)/i);
-      const targetMatch = bearishDetails.match(/(?:target|support)[^0-9]+([0-9,.]+)/i);
+    } else if (bearishMatch && trendDirection !== 'bullish') {
+      const bearishText = bearishMatch[1];
+      const entryMatch = bearishText.match(/entry[:\s]*([0-9,.]+)/i);
+      const stopMatch = bearishText.match(/stop[:\s]*([0-9,.]+)/i);
+      const targetMatch = bearishText.match(/target[:\s]*([0-9,.]+)/i);
       
       tradingSetup = {
         type: 'short',
-        description: bearishDetails,
-        confidence: 70,
+        description: bearishText,
+        confidence: 75,
         timeframe,
+        entryPrice: entryMatch ? entryMatch[1] : undefined,
         stopLoss: stopMatch ? stopMatch[1] : undefined,
         takeProfits: targetMatch ? [targetMatch[1]] : [],
         riskRewardRatio: "1:2",
       };
-    } else if (neutralDetails) {
+    } else if (neutralMatch) {
       tradingSetup = {
         type: 'neutral',
-        description: neutralDetails,
+        description: neutralMatch[1],
         confidence: 70,
         timeframe,
       };
@@ -389,7 +349,7 @@ export const useChartAnalysis = () => {
       pairName: symbol,
       timeframe: timeframe,
       overallSentiment,
-      confidenceScore: 70,
+      confidenceScore: 75,
       marketAnalysis,
       trendDirection: trendDirection as any,
       marketFactors: technicalIndicators,
@@ -398,6 +358,48 @@ export const useChartAnalysis = () => {
       tradingSetup,
       tradingInsight
     };
+  };
+  
+  // Improved helper function for extracting key levels
+  const extractKeyLevels = (text: string, isResistance: boolean): PriceLevel[] => {
+    const levels: PriceLevel[] = [];
+    
+    // Pattern to match "Level X: price - description"
+    const levelPattern = /Level\s+(\d+):\s*([0-9,.\s-]+)\s*[-–]\s*([^\n]+)/g;
+    let match;
+    
+    while ((match = levelPattern.exec(text)) !== null && levels.length < 5) {
+      const levelNumber = match[1];
+      const priceRange = match[2].trim();
+      const description = match[3].trim();
+      
+      levels.push({
+        name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
+        price: priceRange,
+        direction: isResistance ? 'up' : 'down'
+      });
+    }
+    
+    // Fallback pattern for other formats
+    if (levels.length === 0) {
+      const altPattern = /([0-9,.\s-]+)\s*[-–]\s*([^\n]+)/g;
+      
+      while ((match = altPattern.exec(text)) !== null && levels.length < 5) {
+        const priceRange = match[1].trim();
+        const description = match[2].trim();
+        
+        // Skip if it doesn't look like a price
+        if (!/[0-9]/.test(priceRange)) continue;
+        
+        levels.push({
+          name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
+          price: priceRange,
+          direction: isResistance ? 'up' : 'down'
+        });
+      }
+    }
+    
+    return levels;
   };
   
   // Helper functions for extraction
