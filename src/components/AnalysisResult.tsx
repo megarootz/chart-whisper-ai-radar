@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatTradingPair } from '@/utils/tradingPairUtils';
@@ -57,11 +56,11 @@ export interface AnalysisResultData {
 const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
   // Function to get support and resistance levels
   const getSupportLevels = () => {
-    return data.priceLevels.filter(level => level.name.toLowerCase().includes('support')).slice(0, 5);
+    return data.priceLevels.filter(level => level.name.toLowerCase().includes('support'));
   };
   
   const getResistanceLevels = () => {
-    return data.priceLevels.filter(level => level.name.toLowerCase().includes('resist')).slice(0, 5);
+    return data.priceLevels.filter(level => level.name.toLowerCase().includes('resist'));
   };
 
   // Format the trading pair using our utility
@@ -142,13 +141,13 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               <div className="text-lg font-semibold">2. Key Support Levels:</div>
               <div className="pl-4">
                 {getSupportLevels().length > 0 ? (
-                  <div className="space-y-2">
+                  <ul className="list-disc ml-6 space-y-2">
                     {getSupportLevels().map((level, index) => (
-                      <div key={index}>
-                        <span className="text-bullish font-medium">{level.price}:</span> {level.name.replace('Support:', '').trim()}
-                      </div>
+                      <li key={index} className="text-bullish">
+                        <span className="font-medium">{level.price}:</span> {level.name.replace('Support:', '').trim()}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 ) : (
                   <p>No specific support levels identified.</p>
                 )}
@@ -160,13 +159,13 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               <div className="text-lg font-semibold">3. Key Resistance Levels:</div>
               <div className="pl-4">
                 {getResistanceLevels().length > 0 ? (
-                  <div className="space-y-2">
+                  <ul className="list-disc ml-6 space-y-2">
                     {getResistanceLevels().map((level, index) => (
-                      <div key={index}>
-                        <span className="text-bearish font-medium">{level.price}:</span> {level.name.replace('Resistance:', '').trim()}
-                      </div>
+                      <li key={index} className="text-bearish">
+                        <span className="font-medium">{level.price}:</span> {level.name.replace('Resistance:', '').trim()}
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 ) : (
                   <p>No specific resistance levels identified.</p>
                 )}
