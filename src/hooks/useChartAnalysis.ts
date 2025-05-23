@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData, MarketFactor, ChartPattern, PriceLevel, TradingSetup } from '@/components/AnalysisResult';
@@ -24,7 +25,6 @@ export const useChartAnalysis = () => {
       }
       
       // Convert AnalysisResultData to a JSON-compatible object
-      // This fixes the type error by ensuring the data matches the Json type expected by Supabase
       const analysisDataJson: Json = JSON.parse(JSON.stringify(analysisData));
       
       console.log("Saving analysis to database:", {
@@ -180,8 +180,8 @@ export const useChartAnalysis = () => {
       const resultText = responseData.choices[0].message.content || '';
       console.log("Raw API Response content:", resultText.substring(0, 100) + "...");
       
-      // Process response as text format using the new template structure
-      const analysisData = processTextResult(resultText);
+      // Process response as text format using the previous template structure
+      const analysisData = processOriginalTextResult(resultText);
       
       // Save the analysis result
       setAnalysisResult(analysisData);
@@ -210,9 +210,9 @@ export const useChartAnalysis = () => {
       setIsAnalyzing(false);
     }
   };
-
-  // Process result in the new text format based on the updated template
-  const processTextResult = (resultText: string): AnalysisResultData => {
+  
+  // Reverting to the original text processing logic
+  const processOriginalTextResult = (resultText: string): AnalysisResultData => {
     // Enhanced regex patterns for accurate pair detection
     const titlePatterns = [
       // Standard format in brackets with Technical Analysis
@@ -295,13 +295,86 @@ export const useChartAnalysis = () => {
     const trendSectionMatch = resultText.match(/1\.\s+Trend\s+Direction:([\s\S]+?)(?=2\.\s+Key\s+Support|$)/i);
     const marketAnalysis = trendSectionMatch ? trendSectionMatch[1].trim() : '';
     
-    // Extract support levels
+    // *** REVERT TO ORIGINAL SUPPORT/RESISTANCE EXTRACTION METHOD ***
+    // Extract support levels using the original method (starting with number first)
+    const supportLevels: PriceLevel[] = [];
     const supportSection = resultText.match(/2\.\s+Key\s+Support\s+Levels:([\s\S]+?)(?=3\.\s+Key\s+Resistance|$)/i);
-    const supportLevels = supportSection ? extractPriceLevels(supportSection[1], false) : [];
     
-    // Extract resistance levels
+    if (supportSection) {
+      // Look for price patterns with formats like "123.456:" or "123.456 -"
+      const priceMatches = supportSection[1].match(/(\d+(?:[,.]\d+)?)\s*(?::|:?\s+-)\s*([^\n]+)/g);
+      
+      if (priceMatches) {
+        priceMatches.forEach(match => {
+          const parts = match.match(/(\d+(?:[,.]\d+)?)\s*(?::|:?\s+-)\s*([^\n]+)/);
+          if (parts) {
+            const price = parts[1].trim();
+            const description = parts[2].trim();
+            
+            supportLevels.push({
+              name: `Support: ${description}`,
+              price: price,
+              direction: 'down'
+            });
+          }
+        });
+      } else {
+        // Fallback to bullet point extraction if needed
+        const bulletMatches = supportSection[1].match(/(?:•|\-|\*)\s+([^\n:]+?):\s*([^\n]+)/g);
+        if (bulletMatches) {
+          bulletMatches.forEach(match => {
+            const parts = match.match(/(?:•|\-|\*)\s+([^\n:]+?):\s*([^\n]+)/);
+            if (parts) {
+              supportLevels.push({
+                name: `Support: ${parts[2].trim()}`,
+                price: parts[1].trim(),
+                direction: 'down'
+              });
+            }
+          });
+        }
+      }
+    }
+    
+    // Extract resistance levels using the original method (starting with number first)
+    const resistanceLevels: PriceLevel[] = [];
     const resistanceSection = resultText.match(/3\.\s+Key\s+Resistance\s+Levels:([\s\S]+?)(?=4\.\s+Chart\s+Patterns|$)/i);
-    const resistanceLevels = resistanceSection ? extractPriceLevels(resistanceSection[1], true) : [];
+    
+    if (resistanceSection) {
+      // Look for price patterns with formats like "123.456:" or "123.456 -"
+      const priceMatches = resistanceSection[1].match(/(\d+(?:[,.]\d+)?)\s*(?::|:?\s+-)\s*([^\n]+)/g);
+      
+      if (priceMatches) {
+        priceMatches.forEach(match => {
+          const parts = match.match(/(\d+(?:[,.]\d+)?)\s*(?::|:?\s+-)\s*([^\n]+)/);
+          if (parts) {
+            const price = parts[1].trim();
+            const description = parts[2].trim();
+            
+            resistanceLevels.push({
+              name: `Resistance: ${description}`,
+              price: price,
+              direction: 'up'
+            });
+          }
+        });
+      } else {
+        // Fallback to bullet point extraction if needed
+        const bulletMatches = resistanceSection[1].match(/(?:•|\-|\*)\s+([^\n:]+?):\s*([^\n]+)/g);
+        if (bulletMatches) {
+          bulletMatches.forEach(match => {
+            const parts = match.match(/(?:•|\-|\*)\s+([^\n:]+?):\s*([^\n]+)/);
+            if (parts) {
+              resistanceLevels.push({
+                name: `Resistance: ${parts[2].trim()}`,
+                price: parts[1].trim(),
+                direction: 'up'
+              });
+            }
+          });
+        }
+      }
+    }
     
     // Combine all price levels
     const priceLevels = [...supportLevels, ...resistanceLevels];
@@ -319,17 +392,112 @@ export const useChartAnalysis = () => {
     const insightsSection = resultText.match(/6\.\s+Trading\s+Insights:([\s\S]+?)(?=Summary|$)/i);
     const tradingInsight = insightsSection ? insightsSection[1].trim() : '';
     
-    // Extract bullish scenario
-    const bullishSection = resultText.match(/Bullish\s+Scenario:([\s\S]+?)(?=Bearish\s+Scenario|Neutral|$)/i);
-    const bullishDetails = bullishSection ? bullishSection[1].trim() : '';
+    // *** REVERT TO ORIGINAL TRADING SETUP EXTRACTION METHOD ***
+    // Extract bullish scenario with more precise pattern matching
+    const bullishSection = resultText.match(/Bullish\s+Scenario:\s*([\s\S]+?)(?=\s*Bearish\s+Scenario:|Neutral|$)/i);
+    let bullishSetup: TradingSetup | undefined;
     
-    // Extract bearish scenario
-    const bearishSection = resultText.match(/Bearish\s+Scenario:([\s\S]+?)(?=Neutral|Bullish|$)/i);
-    const bearishDetails = bearishSection ? bearishSection[1].trim() : '';
+    if (bullishSection) {
+      const bullishDetails = bullishSection[1].trim();
+      
+      // Extract entry price using original pattern
+      const entryMatch = bullishDetails.match(/(?:Entry|Enter)[^0-9]*([0-9.,]+)/i);
+      
+      // Extract target(s)
+      const targetMatches = bullishDetails.match(/(?:Target|Take\s+Profit)[^0-9]*([0-9.,]+)/ig);
+      const targets: string[] = [];
+      
+      if (targetMatches) {
+        targetMatches.forEach(match => {
+          const targetNum = match.match(/(?:Target|Take\s+Profit)[^0-9]*([0-9.,]+)/i);
+          if (targetNum) targets.push(targetNum[1]);
+        });
+      }
+      
+      // Extract stop loss
+      const stopMatch = bullishDetails.match(/(?:Stop|SL)[^0-9]*([0-9.,]+)/i);
+      
+      if (entryMatch || targetMatches?.length || stopMatch) {
+        bullishSetup = {
+          type: 'long',
+          description: bullishDetails.split('\n')[0], // First line as description
+          confidence: 75,
+          timeframe,
+          entryPrice: entryMatch ? entryMatch[1] : undefined,
+          stopLoss: stopMatch ? stopMatch[1] : undefined,
+          takeProfits: targets.length > 0 ? targets : undefined,
+          riskRewardRatio: "1:2",
+        };
+      }
+    }
+    
+    // Extract bearish scenario with more precise pattern matching
+    const bearishSection = resultText.match(/Bearish\s+Scenario:\s*([\s\S]+?)(?=\s*Bullish\s+Scenario:|Neutral|$)/i);
+    let bearishSetup: TradingSetup | undefined;
+    
+    if (bearishSection && !bearishSection[1].toLowerCase().includes('no bearish scenario')) {
+      const bearishDetails = bearishSection[1].trim();
+      
+      // Extract entry price using original pattern
+      const entryMatch = bearishDetails.match(/(?:Entry|Enter)[^0-9]*([0-9.,]+)/i);
+      
+      // Extract target(s)
+      const targetMatches = bearishDetails.match(/(?:Target|Take\s+Profit)[^0-9]*([0-9.,]+)/ig);
+      const targets: string[] = [];
+      
+      if (targetMatches) {
+        targetMatches.forEach(match => {
+          const targetNum = match.match(/(?:Target|Take\s+Profit)[^0-9]*([0-9.,]+)/i);
+          if (targetNum) targets.push(targetNum[1]);
+        });
+      }
+      
+      // Extract stop loss
+      const stopMatch = bearishDetails.match(/(?:Stop|SL)[^0-9]*([0-9.,]+)/i);
+      
+      if (entryMatch || targetMatches?.length || stopMatch) {
+        bearishSetup = {
+          type: 'short',
+          description: bearishDetails.split('\n')[0], // First line as description
+          confidence: 75,
+          timeframe,
+          entryPrice: entryMatch ? entryMatch[1] : undefined,
+          stopLoss: stopMatch ? stopMatch[1] : undefined,
+          takeProfits: targets.length > 0 ? targets : undefined,
+          riskRewardRatio: "1:2",
+        };
+      }
+    }
     
     // Extract neutral scenario
-    const neutralSection = resultText.match(/Neutral\s*\/?\s*Consolidation\s+Scenario:([\s\S]+?)(?=Bullish|Bearish|$)/i);
-    const neutralDetails = neutralSection ? neutralSection[1].trim() : '';
+    const neutralSection = resultText.match(/Neutral\s*\/?\s*Consolidation\s+Scenario:\s*([\s\S]+?)(?=\s*Bullish\s+Scenario:|Bearish\s+Scenario:|$)/i);
+    let neutralSetup: TradingSetup | undefined;
+    
+    if (neutralSection && !neutralSection[1].toLowerCase().includes('no consolidation scenario')) {
+      neutralSetup = {
+        type: 'neutral',
+        description: neutralSection[1].trim().split('\n')[0], // First line as description
+        confidence: 70,
+        timeframe,
+      };
+    }
+    
+    // Select the most appropriate trading setup based on trend direction
+    let tradingSetup: TradingSetup | undefined;
+    
+    if (trendDirection === 'bullish' && bullishSetup) {
+      tradingSetup = bullishSetup;
+    } else if (trendDirection === 'bearish' && bearishSetup) {
+      tradingSetup = bearishSetup;
+    } else if (trendDirection === 'neutral' && neutralSetup) {
+      tradingSetup = neutralSetup;
+    } else if (bullishSetup) {
+      tradingSetup = bullishSetup;
+    } else if (bearishSetup) {
+      tradingSetup = bearishSetup;
+    } else if (neutralSetup) {
+      tradingSetup = neutralSetup;
+    }
     
     // Determine overall sentiment
     let overallSentiment: 'bullish' | 'bearish' | 'neutral' | 'mildly bullish' | 'mildly bearish';
@@ -345,46 +513,6 @@ export const useChartAnalysis = () => {
       overallSentiment = trendDirection as any;
     }
     
-    // Create trading setup based on scenarios
-    let tradingSetup: TradingSetup | undefined;
-    
-    if (bullishDetails && trendDirection !== 'bearish') {
-      // Extract entry/target/stop from bullish scenario
-      const stopMatch = bullishDetails.match(/stop[\s-]*loss[^0-9]+([0-9,.]+)/i);
-      const targetMatch = bullishDetails.match(/(?:target|resistance)[^0-9]+([0-9,.]+)/i);
-      
-      tradingSetup = {
-        type: 'long',
-        description: bullishDetails,
-        confidence: 70,
-        timeframe,
-        stopLoss: stopMatch ? stopMatch[1] : undefined,
-        takeProfits: targetMatch ? [targetMatch[1]] : [],
-        riskRewardRatio: "1:2",
-      };
-    } else if (bearishDetails && trendDirection !== 'bullish') {
-      // Extract entry/target/stop from bearish scenario
-      const stopMatch = bearishDetails.match(/stop[\s-]*loss[^0-9]+([0-9,.]+)/i);
-      const targetMatch = bearishDetails.match(/(?:target|support)[^0-9]+([0-9,.]+)/i);
-      
-      tradingSetup = {
-        type: 'short',
-        description: bearishDetails,
-        confidence: 70,
-        timeframe,
-        stopLoss: stopMatch ? stopMatch[1] : undefined,
-        takeProfits: targetMatch ? [targetMatch[1]] : [],
-        riskRewardRatio: "1:2",
-      };
-    } else if (neutralDetails) {
-      tradingSetup = {
-        type: 'neutral',
-        description: neutralDetails,
-        confidence: 70,
-        timeframe,
-      };
-    }
-    
     return {
       pairName: symbol,
       timeframe: timeframe,
@@ -396,48 +524,12 @@ export const useChartAnalysis = () => {
       chartPatterns,
       priceLevels,
       tradingSetup,
-      tradingInsight
+      tradingInsight,
+      date: new Date().toISOString().split('T')[0]
     };
   };
   
   // Helper functions for extraction
-  const extractPriceLevels = (text: string, isResistance: boolean): PriceLevel[] => {
-    const levels: PriceLevel[] = [];
-    
-    // Extract bullet points or numbered list items
-    const bulletPattern = /(?:•|\-|\*|[0-9]+\.)\s+([0-9,.\s-]+)(?:zone|level|area)?:?\s+([^\n]+)/g;
-    let match;
-    
-    while ((match = bulletPattern.exec(text)) !== null) {
-      const priceRange = match[1].trim();
-      const description = match[2].trim();
-      
-      levels.push({
-        name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
-        price: priceRange,
-        direction: isResistance ? 'up' : 'down'
-      });
-    }
-    
-    // If no bullets found, try to extract price ranges directly
-    if (levels.length === 0) {
-      const pricePattern = /([0-9,.\s-]+)(?:zone|level|area)?:?\s+([^\n]+)/g;
-      
-      while ((match = pricePattern.exec(text)) !== null) {
-        const priceRange = match[1].trim();
-        const description = match[2].trim();
-        
-        levels.push({
-          name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
-          price: priceRange,
-          direction: isResistance ? 'up' : 'down'
-        });
-      }
-    }
-    
-    return levels;
-  };
-  
   const extractChartPatterns = (text: string): ChartPattern[] => {
     const patterns: ChartPattern[] = [];
     
