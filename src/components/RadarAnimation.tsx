@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
@@ -67,8 +66,8 @@ const RadarAnimation = ({ isOpen = true }) => {
 
   return (
     <Dialog open={isOpen}>
-      <DialogContent className="bg-black/95 border-2 border-blue-500/30 backdrop-blur-xl p-0 sm:max-w-5xl max-w-[98vw] max-h-[98vh] overflow-hidden shadow-2xl shadow-blue-500/20">
-        <div className="relative w-full min-h-[600px] sm:min-h-[700px] lg:min-h-[800px] flex flex-col items-center justify-center bg-gradient-to-br from-gray-900 via-black to-gray-900 p-4 sm:p-6 lg:p-8">
+      <DialogContent className="bg-black border-2 border-blue-500/30 backdrop-blur-xl p-0 sm:max-w-5xl max-w-[98vw] max-h-[98vh] overflow-hidden shadow-2xl shadow-blue-500/20">
+        <div className="relative w-full min-h-[600px] sm:min-h-[700px] lg:min-h-[800px] flex flex-col items-center justify-center bg-black p-4 sm:p-6 lg:p-8">
           
           {/* Animated Grid Background */}
           <div className="absolute inset-0 opacity-10">
