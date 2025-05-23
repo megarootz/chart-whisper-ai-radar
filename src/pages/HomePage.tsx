@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -5,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { ChartCandlestick, BarChart2, TrendingUp, History, Award, Zap } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import TickmillBanner from '@/components/TickmillBanner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -26,6 +28,13 @@ const HomePage = () => {
       <Header />
       
       <main className="flex-grow flex flex-col">
+        {/* Banner Section */}
+        <section className={`${isMobile ? 'px-3 pt-4' : 'px-4 pt-8'}`}>
+          <div className="container mx-auto max-w-6xl">
+            <TickmillBanner />
+          </div>
+        </section>
+
         {/* Hero Section */}
         <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-24 px-4'}`}>
           <div className="container mx-auto max-w-6xl">
