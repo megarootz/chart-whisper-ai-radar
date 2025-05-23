@@ -24,7 +24,6 @@ export const useChartAnalysis = () => {
       }
       
       // Convert AnalysisResultData to a JSON-compatible object
-      // This fixes the type error by ensuring the data matches the Json type expected by Supabase
       const analysisDataJson: Json = JSON.parse(JSON.stringify(analysisData));
       
       console.log("Saving analysis to database:", {
@@ -57,7 +56,6 @@ export const useChartAnalysis = () => {
       } else {
         console.log("Analysis saved to database successfully", data);
         
-        // Add the newly saved analysis to the history context
         if (data) {
           addToHistory({
             id: data.id,
@@ -90,7 +88,6 @@ export const useChartAnalysis = () => {
     try {
       if (!userId) return false;
       
-      // Check if chart_images bucket exists
       const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
       
       if (bucketsError) {
@@ -98,7 +95,6 @@ export const useChartAnalysis = () => {
         return false;
       }
       
-      // If bucket doesn't exist, create it
       if (!buckets?.find(bucket => bucket.name === 'chart_images')) {
         console.log("Creating chart_images bucket...");
         const { error: createError } = await supabase.storage.createBucket('chart_images', {
@@ -126,7 +122,6 @@ export const useChartAnalysis = () => {
     try {
       setIsAnalyzing(true);
       
-      // Check if user is logged in
       if (!user) {
         throw new Error('You must be logged in to analyze charts');
       }
@@ -137,19 +132,16 @@ export const useChartAnalysis = () => {
       // Upload image to Supabase storage
       let chartUrl: string | undefined;
       try {
-        // Initialize storage bucket if needed
         await initializeStorage(user.id);
-        
         chartUrl = await uploadChartImage(file, user.id);
         console.log('Chart image uploaded successfully:', chartUrl);
       } catch (uploadError) {
         console.error('Failed to upload chart image:', uploadError);
-        // Continue with analysis even if image upload fails
       }
       
       console.log("Calling Supabase Edge Function to analyze chart");
       
-      // Call our Supabase Edge Function instead of making the API call directly
+      // Call our Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("analyze-chart", {
         body: {
           base64Image,
@@ -169,24 +161,21 @@ export const useChartAnalysis = () => {
 
       console.log("Edge function response received:", data);
       
-      // Parse the API response
       const responseData = data as any;
       
       if (!responseData.choices || responseData.choices.length === 0) {
         throw new Error('No response content from API');
       }
 
-      // Parse the text response to extract JSON
+      // Parse the text response
       const resultText = responseData.choices[0].message.content || '';
       console.log("Raw API Response content:", resultText.substring(0, 100) + "...");
       
-      // Process response as text format using the new template structure
-      const analysisData = processTextResult(resultText);
+      // Process response with enhanced parsing for precise price levels
+      const analysisData = processEnhancedTextResult(resultText);
       
       // Save the analysis result
       setAnalysisResult(analysisData);
-      
-      // Update the latest analysis in the context
       setLatestAnalysis(analysisData);
       
       // Save the analysis to Supabase
@@ -211,11 +200,11 @@ export const useChartAnalysis = () => {
     }
   };
 
-  // Process result with improved parsing for better accuracy
-  const processTextResult = (resultText: string): AnalysisResultData => {
-    console.log("Processing analysis result:", resultText.substring(0, 200));
+  // Enhanced processing function for precise price level extraction
+  const processEnhancedTextResult = (resultText: string): AnalysisResultData => {
+    console.log("Processing enhanced analysis result:", resultText.substring(0, 200));
     
-    // Enhanced regex patterns for more accurate pair and timeframe detection
+    // Extract trading pair and timeframe
     const titlePatterns = [
       /\[([A-Z0-9\/]{3,12})\]\s+Technical\s+Analysis\s+\(\s*([^)]+)\s*Chart\)/i,
       /^([A-Z]{3}\/[A-Z]{3,4})\s+Technical\s+Analysis\s+\(\s*([^)]+)\s*Chart\)/i,
@@ -225,7 +214,6 @@ export const useChartAnalysis = () => {
     let symbol = "";
     let timeframe = "";
     
-    // Extract pair and timeframe with improved accuracy
     for (const pattern of titlePatterns) {
       const match = resultText.match(pattern);
       if (match) {
@@ -235,73 +223,63 @@ export const useChartAnalysis = () => {
       }
     }
     
-    // Fallback extraction if title pattern fails
+    // Fallback extraction
     if (!symbol) {
       const pairMatch = resultText.match(/\b([A-Z]{3}\/[A-Z]{3,4}|[A-Z]{3,4}\/USD[T]?)\b/);
-      if (pairMatch) {
-        symbol = pairMatch[1];
-      }
+      if (pairMatch) symbol = pairMatch[1];
     }
     
     if (!timeframe) {
       const timeframeMatch = resultText.match(/\b(1[Mm]|5[Mm]|15[Mm]|30[Mm]|1[Hh]|4[Hh]|[Dd]aily|[Ww]eekly|[Mm]onthly)\b/i);
-      if (timeframeMatch) {
-        timeframe = timeframeMatch[1];
-      }
+      if (timeframeMatch) timeframe = timeframeMatch[1];
     }
     
-    // Default values
     symbol = symbol || "Unknown Pair";
     timeframe = timeframe || "Unknown Timeframe";
-    
-    // Format the pair correctly
     symbol = formatTradingPair(symbol);
     
-    // Extract trend direction with improved accuracy
+    // Extract trend direction
     const trendMatch = resultText.match(/Overall\s+trend:\s*([^\n.]+)/i);
     const trendDirection = trendMatch ? 
       (trendMatch[1].toLowerCase().includes('bullish') ? 'bullish' : 
        trendMatch[1].toLowerCase().includes('bearish') ? 'bearish' : 'neutral') : 
       'neutral';
     
-    // Extract market analysis from trend section
+    // Extract market analysis
     const trendSectionMatch = resultText.match(/1\.\s+Trend\s+Direction:([\s\S]+?)(?=2\.\s+Key\s+Support|$)/i);
     const marketAnalysis = trendSectionMatch ? 
       trendSectionMatch[1].replace(/Overall\s+trend:\s*[^\n.]+/i, '').trim() : '';
     
-    // Extract support levels with improved parsing
+    // Extract support levels with precise price extraction
     const supportSection = resultText.match(/2\.\s+Key\s+Support\s+Levels:([\s\S]+?)(?=3\.\s+Key\s+Resistance|$)/i);
-    const supportLevels = supportSection ? extractKeyLevels(supportSection[1], false) : [];
+    const supportLevels = supportSection ? extractPrecisePriceLevels(supportSection[1], false) : [];
     
-    // Extract resistance levels with improved parsing
+    // Extract resistance levels with precise price extraction
     const resistanceSection = resultText.match(/3\.\s+Key\s+Resistance\s+Levels:([\s\S]+?)(?=4\.\s+Chart\s+Patterns|$)/i);
-    const resistanceLevels = resistanceSection ? extractKeyLevels(resistanceSection[1], true) : [];
+    const resistanceLevels = resistanceSection ? extractPrecisePriceLevels(resistanceSection[1], true) : [];
     
-    // Combine all price levels
     const priceLevels = [...supportLevels, ...resistanceLevels];
     
-    // Extract chart patterns with better detection
+    // Extract chart patterns
     const patternsSection = resultText.match(/4\.\s+Chart\s+Patterns:([\s\S]+?)(?=5\.\s+Technical\s+Indicators|$)/i);
     const chartPatterns = patternsSection ? extractChartPatterns(patternsSection[1]) : [];
     
     // Extract technical indicators
     const indicatorsSection = resultText.match(/5\.\s+Technical\s+Indicators[^:]*:([\s\S]+?)(?=6\.\s+Trading\s+Insights|$)/i);
-    const technicalIndicators = indicatorsSection ? 
-      extractMarketFactors(indicatorsSection[1]) : [];
+    const technicalIndicators = indicatorsSection ? extractMarketFactors(indicatorsSection[1]) : [];
     
-    // Extract trading insights
+    // Extract trading insights with precise price extraction
     const insightsSection = resultText.match(/6\.\s+Trading\s+Insights:([\s\S]+?)$/i);
     const tradingInsight = insightsSection ? insightsSection[1].trim() : '';
     
-    // Extract bullish, bearish, and neutral scenarios
+    // Extract scenarios with precise price extraction
     const bullishMatch = resultText.match(/Bullish\s+Scenario:\s*([^\n]+)/i);
     const bearishMatch = resultText.match(/Bearish\s+Scenario:\s*([^\n]+)/i);
     const neutralMatch = resultText.match(/Neutral\s+Scenario:\s*([^\n]+)/i);
     
-    // Determine overall sentiment based on trend and scenarios
     let overallSentiment: 'bullish' | 'bearish' | 'neutral' | 'mildly bullish' | 'mildly bearish' = trendDirection as any;
     
-    // Create trading setup based on the strongest scenario
+    // Create trading setup with precise price extraction
     let tradingSetup: TradingSetup | undefined;
     
     if (bullishMatch && trendDirection !== 'bearish') {
@@ -360,42 +338,45 @@ export const useChartAnalysis = () => {
     };
   };
   
-  // Improved helper function for extracting key levels
-  const extractKeyLevels = (text: string, isResistance: boolean): PriceLevel[] => {
+  // Enhanced function for extracting precise numerical price levels
+  const extractPrecisePriceLevels = (text: string, isResistance: boolean): PriceLevel[] => {
     const levels: PriceLevel[] = [];
     
-    // Pattern to match "Level X: price - description"
-    const levelPattern = /Level\s+(\d+):\s*([0-9,.\s-]+)\s*[-–]\s*([^\n]+)/g;
+    // Enhanced pattern to match "Level X: EXACT_PRICE - description"
+    const levelPattern = /Level\s+(\d+):\s*([0-9]+\.?[0-9]*)\s*[-–]\s*([^\n]+)/g;
     let match;
     
     while ((match = levelPattern.exec(text)) !== null && levels.length < 5) {
       const levelNumber = match[1];
-      const priceRange = match[2].trim();
+      const exactPrice = match[2];
       const description = match[3].trim();
       
-      levels.push({
-        name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
-        price: priceRange,
-        direction: isResistance ? 'up' : 'down'
-      });
-    }
-    
-    // Fallback pattern for other formats
-    if (levels.length === 0) {
-      const altPattern = /([0-9,.\s-]+)\s*[-–]\s*([^\n]+)/g;
-      
-      while ((match = altPattern.exec(text)) !== null && levels.length < 5) {
-        const priceRange = match[1].trim();
-        const description = match[2].trim();
-        
-        // Skip if it doesn't look like a price
-        if (!/[0-9]/.test(priceRange)) continue;
-        
+      // Validate that we have a proper numerical price
+      if (/^\d+\.?\d*$/.test(exactPrice)) {
         levels.push({
           name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
-          price: priceRange,
+          price: exactPrice,
           direction: isResistance ? 'up' : 'down'
         });
+      }
+    }
+    
+    // Alternative pattern for direct price extraction
+    if (levels.length === 0) {
+      const altPattern = /([0-9]+\.?[0-9]*)\s*[-–]\s*([^\n]+)/g;
+      
+      while ((match = altPattern.exec(text)) !== null && levels.length < 5) {
+        const exactPrice = match[1];
+        const description = match[2].trim();
+        
+        // Validate numerical price and skip if description contains non-price info
+        if (/^\d+\.?\d*$/.test(exactPrice) && !description.toLowerCase().includes('ema') && !description.toLowerCase().includes('dynamic')) {
+          levels.push({
+            name: isResistance ? `Resistance: ${description}` : `Support: ${description}`,
+            price: exactPrice,
+            direction: isResistance ? 'up' : 'down'
+          });
+        }
       }
     }
     
@@ -443,7 +424,6 @@ export const useChartAnalysis = () => {
   const extractChartPatterns = (text: string): ChartPattern[] => {
     const patterns: ChartPattern[] = [];
     
-    // Look for pattern names and descriptions
     const patternRegex = /(?:•|\-|\*|[0-9]+\.)\s+([^:]+)(?::|Formation|Pattern)([^\n]+)?/g;
     let match;
     
@@ -451,7 +431,6 @@ export const useChartAnalysis = () => {
       const patternName = match[1].trim();
       const description = match[2] ? match[2].trim() : '';
       
-      // Determine if bullish or bearish
       let signal: 'bullish' | 'bearish' | 'neutral' = 'neutral';
       if ((patternName + description).toLowerCase().includes('bullish')) {
         signal = 'bullish';
@@ -461,15 +440,13 @@ export const useChartAnalysis = () => {
       
       patterns.push({
         name: patternName,
-        confidence: 70, // Default confidence
+        confidence: 70,
         signal,
         status: (patternName + description).toLowerCase().includes('forming') ? 'forming' : 'complete'
       });
     }
     
-    // If no patterns found with regex, check if there are complete sections
     if (patterns.length === 0) {
-      // Check for known pattern types
       const patternTypes = [
         'Double Top', 'Double Bottom', 'Head and Shoulders', 
         'Inverse Head and Shoulders', 'Triangle', 
@@ -478,14 +455,12 @@ export const useChartAnalysis = () => {
       
       for (const pattern of patternTypes) {
         if (text.includes(pattern)) {
-          // Find the surrounding text
           const patternIndex = text.indexOf(pattern);
           const surroundingText = text.substring(
             Math.max(0, patternIndex - 50), 
             Math.min(text.length, patternIndex + pattern.length + 200)
           );
           
-          // Determine sentiment
           let signal: 'bullish' | 'bearish' | 'neutral' = 'neutral';
           if (surroundingText.toLowerCase().includes('bullish')) {
             signal = 'bullish';
@@ -509,15 +484,12 @@ export const useChartAnalysis = () => {
   const extractMarketFactors = (text: string): MarketFactor[] => {
     const marketFactors: MarketFactor[] = [];
     
-    // Extract bullet points
     const lines = text.split('\n');
     for (let line of lines) {
       line = line.trim();
       if (line && (line.startsWith('•') || line.startsWith('-') || line.startsWith('*'))) {
-        // Remove the bullet and trim
         line = line.substring(1).trim();
         
-        // Determine sentiment
         let sentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral';
         if (line.toLowerCase().includes('bullish') || 
             line.toLowerCase().includes('overbought')) {
@@ -527,14 +499,12 @@ export const useChartAnalysis = () => {
           sentiment = 'bearish';
         }
         
-        // Try to extract indicator name
         const colonPos = line.indexOf(':');
         let name = 'Technical Indicator';
         if (colonPos > 0) {
           name = line.substring(0, colonPos).trim();
           line = line.substring(colonPos + 1).trim();
         } else {
-          // Try to find common indicator names
           const indicators = ['RSI', 'MACD', 'Moving Average', 'MA', 'Stochastic', 'Volume'];
           for (const ind of indicators) {
             if (line.includes(ind)) {
@@ -552,12 +522,10 @@ export const useChartAnalysis = () => {
       }
     }
     
-    // If no bullet points found, try to extract paragraphs
     if (marketFactors.length === 0) {
       const paragraphs = text.split('\n\n');
       for (const para of paragraphs) {
         if (para.trim()) {
-          // Determine sentiment
           let sentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral';
           if (para.toLowerCase().includes('bullish') || 
               para.toLowerCase().includes('overbought')) {
@@ -567,7 +535,6 @@ export const useChartAnalysis = () => {
             sentiment = 'bearish';
           }
           
-          // Try to extract indicator name
           let name = 'Technical Indicator';
           const indicators = ['RSI', 'MACD', 'Moving Average', 'MA', 'Stochastic', 'Volume'];
           for (const ind of indicators) {

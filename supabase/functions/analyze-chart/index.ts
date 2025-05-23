@@ -23,38 +23,40 @@ serve(async (req) => {
 
     const { base64Image, pairName, timeframe } = await req.json();
     
-    // Optimized and focused prompt for better accuracy within token limits
+    // Enhanced prompt for precise price level extraction
     const requestData = {
-      model: "openai/gpt-4.1-mini",
+      model: "openai/gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "You are an expert technical analyst. Analyze charts with precision. CRITICAL: First identify the exact trading pair in standard format (BTC/USDT, EUR/USD, XAU/USD) and timeframe. Be concise but thorough."
+          content: "You are an expert technical analyst. Analyze charts with precision and provide EXACT NUMERICAL PRICE LEVELS. Always identify the trading pair and timeframe first. Focus on providing specific price values, not general descriptions."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this chart. Format response EXACTLY as shown:
+              text: `Analyze this chart and provide EXACT NUMERICAL PRICE LEVELS. Format response EXACTLY as shown:
 
 [TRADING-PAIR] Technical Analysis ([TIMEFRAME] Chart)
 
 1. Trend Direction:
 Overall trend: [Bullish/Bearish/Neutral]
-[Brief trend description with key price movement]
+[Brief trend analysis with current price context]
 
 2. Key Support Levels:
-Level 1: [price] - [description]
-Level 2: [price] - [description]
-Level 3: [price] - [description]
-[Continue up to 5 levels if visible]
+Level 1: [EXACT PRICE] - [brief description]
+Level 2: [EXACT PRICE] - [brief description]
+Level 3: [EXACT PRICE] - [brief description]
+Level 4: [EXACT PRICE] - [brief description]
+Level 5: [EXACT PRICE] - [brief description]
 
 3. Key Resistance Levels:
-Level 1: [price] - [description]
-Level 2: [price] - [description]
-Level 3: [price] - [description]
-[Continue up to 5 levels if visible]
+Level 1: [EXACT PRICE] - [brief description]
+Level 2: [EXACT PRICE] - [brief description]
+Level 3: [EXACT PRICE] - [brief description]
+Level 4: [EXACT PRICE] - [brief description]
+Level 5: [EXACT PRICE] - [brief description]
 
 4. Chart Patterns:
 [Pattern name and description OR "No significant patterns detected"]
@@ -63,11 +65,18 @@ Level 3: [price] - [description]
 [List 2-3 key indicators with current signals]
 
 6. Trading Insights:
-Bullish Scenario: [Entry, target, stop conditions]
-Bearish Scenario: [Entry, target, stop conditions]
-Neutral Scenario: [Range trading strategy]
+Bullish Scenario: [Entry price, target prices, stop loss with EXACT numbers]
+Bearish Scenario: [Entry price, target prices, stop loss with EXACT numbers]
+Neutral Scenario: [Range trading strategy with EXACT price levels]
 
-Keep total response under 800 tokens. Focus on actionable levels near current price.`
+CRITICAL REQUIREMENTS:
+- ALL support and resistance levels MUST be EXACT NUMERICAL PRICES (e.g., 1.2345, 192.50, 0.8765)
+- NO vague descriptions like "EMA support" or "dynamic level"
+- Extract precise price levels from the chart's price axis
+- Provide up to 5 support and 5 resistance levels if visible
+- All trading scenarios must include EXACT entry, stop, and target prices
+
+Keep response under 750 tokens. Focus on precise numerical analysis.`
             },
             {
               type: "image_url",
@@ -80,11 +89,11 @@ Keep total response under 800 tokens. Focus on actionable levels near current pr
         }
       ],
       temperature: 0.1,
-      max_tokens: 800,
+      max_tokens: 750,
       top_p: 0.9
     };
 
-    console.log("Sending optimized request to OpenRouter API");
+    console.log("Sending enhanced request to OpenRouter API for precise price levels");
     
     // Create headers with proper authentication
     const headers = {
