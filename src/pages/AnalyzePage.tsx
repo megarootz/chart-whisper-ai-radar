@@ -23,10 +23,9 @@ const AnalyzePage = () => {
   const analysisResultRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   
-  // Effect to scroll to results when they become available (no delay)
+  // Effect to scroll to results when they become available
   useEffect(() => {
     if (analysisResult && analysisResultRef.current) {
-      // Immediate scroll without delay
       const resultRect = analysisResultRef.current.getBoundingClientRect();
       const headerOffset = 80;
       const scrollPosition = window.scrollY + resultRect.top - headerOffset;
@@ -188,8 +187,8 @@ const AnalyzePage = () => {
             </div>
           </div>
           
-          {/* Radar Animation Modal when analyzing */}
-          {isAnalyzing && <RadarAnimation />}
+          {/* Radar Animation Modal - only show when analyzing and no results yet */}
+          {isAnalyzing && !analysisResult && <RadarAnimation />}
           
           {/* Analysis Results - Show immediately when available */}
           <div className="space-y-6" ref={analysisResultRef}>
