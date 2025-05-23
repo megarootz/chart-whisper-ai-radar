@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -26,14 +27,19 @@ const AnalyzePage = () => {
   // Effect to scroll to results when they become available
   useEffect(() => {
     if (analysisResult && analysisResultRef.current) {
-      const resultRect = analysisResultRef.current.getBoundingClientRect();
-      const headerOffset = 80;
-      const scrollPosition = window.scrollY + resultRect.top - headerOffset;
-      
-      window.scrollTo({
-        top: scrollPosition,
-        behavior: 'smooth'
-      });
+      // Add a small delay to ensure DOM is updated before scrolling
+      setTimeout(() => {
+        // Calculate scroll position to ensure the trading pair is visible
+        const resultRect = analysisResultRef.current.getBoundingClientRect();
+        const headerOffset = 80; // Estimated header height
+        const scrollPosition = window.scrollY + resultRect.top - headerOffset;
+        
+        // Scroll to the calculated position to ensure trading pair is visible at the top
+        window.scrollTo({
+          top: scrollPosition,
+          behavior: 'smooth'
+        });
+      }, 500);
     }
   }, [analysisResult]);
   
@@ -53,13 +59,16 @@ const AnalyzePage = () => {
   
   const handleUpload = async () => {
     if (file) {
+      // Clear any previous results
       console.log("Starting chart analysis...");
       
+      // Check if user is logged in
       if (!user) {
         console.log("User not logged in, cannot analyze chart");
         return;
       }
       
+      // The AI will detect the pair and timeframe from the image
       analyzeChart(file, "", "");
     }
   };
@@ -110,66 +119,70 @@ const AnalyzePage = () => {
                 </div>
               )}
               
-              {/* Image Requirements */}
-              <div className="bg-gray-800/50 rounded-lg p-3 md:p-4">
-                <h3 className="text-white font-medium text-sm md:text-base mb-2">Image Requirements</h3>
-                <div className="space-y-2">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
-                    <p className="text-gray-400 text-xs md:text-sm">Clear, high-resolution chart images</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Image Requirements */}
+                <div className="bg-gray-800/50 rounded-lg p-3 md:p-4">
+                  <h3 className="text-white font-medium text-sm md:text-base mb-2">Image Requirements</h3>
+                  <div className="space-y-2">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
+                      <p className="text-gray-400 text-xs md:text-sm">Clear, high-resolution chart images</p>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
+                      <p className="text-gray-400 text-xs md:text-sm">Candlestick patterns should be visible</p>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
+                      <p className="text-gray-400 text-xs md:text-sm">Include time frame if possible</p>
+                    </div>
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
+                      <p className="text-gray-400 text-xs md:text-sm">Include indicators if relevant</p>
+                    </div>
                   </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
-                    <p className="text-gray-400 text-xs md:text-sm">Candlestick patterns should be visible</p>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
-                    <p className="text-gray-400 text-xs md:text-sm">Include time frame if possible</p>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
-                    <p className="text-gray-400 text-xs md:text-sm">Include indicators if relevant</p>
+                </div>
+                
+                {/* Analysis Tips */}
+                <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3 md:p-4">
+                  <div className="flex items-start">
+                    <Info className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-yellow-400 font-medium text-sm md:text-base mb-1">Analysis Tips</h4>
+                      <ul className="text-gray-400 text-xs md:text-sm space-y-1 md:space-y-2">
+                        <li>• For best results, ensure candlesticks are clearly visible</li>
+                        <li>• Images with price labels help improve accuracy</li>
+                        <li>• Our AI works with all major currency pairs and timeframes</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
               </div>
               
-              {/* Analysis Tips */}
-              <div className="bg-yellow-900/20 border border-yellow-800/50 rounded-lg p-3 md:p-4">
-                <div className="flex items-start">
-                  <Info className="h-4 w-4 md:h-5 md:w-5 text-yellow-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-yellow-400 font-medium text-sm md:text-base mb-1">Analysis Tips</h4>
-                    <ul className="text-gray-400 text-xs md:text-sm space-y-1 md:space-y-2">
-                      <li>• For best results, ensure candlesticks are clearly visible</li>
-                      <li>• Images with price labels help improve accuracy</li>
-                      <li>• Our AI works with all major currency pairs and timeframes</li>
-                    </ul>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Auto-Detection Info */}
+                <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 md:p-4">
+                  <div className="flex items-start">
+                    <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">Auto-Detection Enabled</h4>
+                      <p className="text-gray-400 text-xs md:text-sm">
+                        Trading pair and timeframe will be automatically detected from your chart image. No manual entry needed.
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-              
-              {/* Auto-Detection Info */}
-              <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 md:p-4">
-                <div className="flex items-start">
-                  <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">Auto-Detection Enabled</h4>
-                    <p className="text-gray-400 text-xs md:text-sm">
-                      Trading pair and timeframe will be automatically detected from your chart image. No manual entry needed.
-                    </p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Timeframe Info */}
-              <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 md:p-4">
-                <div className="flex items-start">
-                  <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">Timeframe Info</h4>
-                    <p className="text-gray-400 text-xs md:text-sm">
-                      The AI will adapt stop loss and take profit levels based on the detected timeframe of your chart.
-                    </p>
+                
+                {/* Timeframe Info */}
+                <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3 md:p-4">
+                  <div className="flex items-start">
+                    <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">Timeframe Info</h4>
+                      <p className="text-gray-400 text-xs md:text-sm">
+                        The AI will adapt stop loss and take profit levels based on the detected timeframe of your chart.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -187,10 +200,10 @@ const AnalyzePage = () => {
             </div>
           </div>
           
-          {/* Radar Animation Modal - only show when analyzing and no results yet */}
-          {isAnalyzing && !analysisResult && <RadarAnimation />}
+          {/* Radar Animation Modal when analyzing */}
+          {isAnalyzing && <RadarAnimation />}
           
-          {/* Analysis Results - Show immediately when available */}
+          {/* Analysis Results */}
           <div className="space-y-6" ref={analysisResultRef}>
             {analysisResult ? (
               <>
