@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Download, Share, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -146,19 +146,10 @@ const HistoryPage = () => {
                     
                     <p className={`text-gray-400 ${isMobile ? 'text-xs mb-3' : 'text-sm mb-4'}`}>{analysis.marketAnalysis}</p>
                     
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-start items-center">
                       <Link to={`/analysis/${analysis.id}`} className={`text-primary hover:underline ${isMobile ? 'text-xs' : 'text-sm'}`}>
                         View Details
                       </Link>
-                      
-                      <div className="flex space-x-2">
-                        <button className={`${isMobile ? 'p-1' : 'p-2'} text-gray-400 hover:text-white`}>
-                          <Download className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                        </button>
-                        <button className={`${isMobile ? 'p-1' : 'p-2'} text-gray-400 hover:text-white`}>
-                          <Share className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
-                        </button>
-                      </div>
                     </div>
                   </div>
                 </div>
