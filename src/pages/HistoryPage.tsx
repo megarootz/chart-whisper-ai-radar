@@ -75,20 +75,20 @@ const HistoryPage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className={`flex-grow py-8 px-6 ${isMobile ? 'pb-24' : ''}`}>
-        <div className="container mx-auto max-w-6xl">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-white">Analysis History</h1>
-            <p className="text-gray-400">Review and manage your previous chart analyses</p>
+      <main className={`flex-grow ${isMobile ? 'py-4 px-3 pb-24' : 'py-8 px-6'}`}>
+        <div className={`${isMobile ? 'max-w-full' : 'container mx-auto max-w-6xl'}`}>
+          <div className={`${isMobile ? 'mb-4' : 'mb-6'}`}>
+            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white`}>Analysis History</h1>
+            <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Review and manage your previous chart analyses</p>
           </div>
           
-          <div className="mb-8 flex justify-between items-center">
+          <div className={`${isMobile ? 'mb-4' : 'mb-8'} flex ${isMobile ? 'flex-col space-y-3' : 'justify-between items-center'}`}>
             <div className="flex items-center space-x-2">
-              <span className="text-gray-400 text-sm">Filter by date:</span>
+              <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>Filter by date:</span>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
-                className="bg-chart-card border border-gray-700 rounded text-white text-sm py-2 px-3"
+                className={`bg-chart-card border border-gray-700 rounded text-white ${isMobile ? 'text-xs py-1.5 px-2' : 'text-sm py-2 px-3'}`}
               >
                 <option value="all">All time</option>
                 <option value="today">Today</option>
@@ -97,45 +97,45 @@ const HistoryPage = () => {
               </select>
             </div>
             
-            <div className="text-gray-400 text-sm">
+            <div className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
               Showing {filteredHistory.length} of {analysisHistory.length} analyses
             </div>
           </div>
           
           {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-2 text-gray-400">Loading your analysis history...</span>
+            <div className={`flex justify-center items-center ${isMobile ? 'py-8' : 'py-12'}`}>
+              <Loader2 className={`${isMobile ? 'h-6 w-6' : 'h-8 w-8'} animate-spin text-primary`} />
+              <span className={`ml-2 text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Loading your analysis history...</span>
             </div>
           ) : filteredHistory.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-gray-400">No analysis history found. Start by analyzing a chart!</p>
-              <Button asChild className="mt-4">
+            <div className={`text-center ${isMobile ? 'py-8' : 'py-12'}`}>
+              <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>No analysis history found. Start by analyzing a chart!</p>
+              <Button asChild className={`${isMobile ? 'mt-3 text-sm' : 'mt-4'}`}>
                 <Link to="/analyze">Analyze a Chart</Link>
               </Button>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className={`space-y-${isMobile ? '3' : '4'}`}>
               {filteredHistory.map((analysis, index) => (
                 <div key={analysis.id || index} className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
-                  <div className="p-5">
-                    <div className="flex justify-between items-start mb-4">
+                  <div className={`${isMobile ? 'p-3' : 'p-5'}`}>
+                    <div className={`flex justify-between items-start ${isMobile ? 'mb-3' : 'mb-4'}`}>
                       <div>
-                        <h3 className="text-white font-medium text-lg mb-1">
+                        <h3 className={`text-white font-medium ${isMobile ? 'text-base mb-1' : 'text-lg mb-1'}`}>
                           {analysis.pairName || "Unknown Pair"}
                           {analysis.timeframe && (
-                            <span className="text-primary ml-2 text-sm">
+                            <span className={`text-primary ml-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                               {analysis.timeframe}
                             </span>
                           )}
                         </h3>
-                        <div className="flex flex-wrap items-center text-gray-400 text-sm">
+                        <div className={`flex flex-wrap items-center text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
                           <span className="mr-2">{analysis.overallSentiment}</span>
                           <span className="mr-2">•</span>
                           <span>{formatDate(analysis.created_at)}</span>
                         </div>
                       </div>
-                      <div className={`px-3 py-1 text-xs font-medium rounded-full ${
+                      <div className={`px-2 py-1 text-xs font-medium rounded-full ${
                         analysis.overallSentiment?.toLowerCase().includes('bullish') ? 'bg-green-900 text-green-400' : 
                         analysis.overallSentiment?.toLowerCase().includes('bearish') ? 'bg-red-900 text-red-400' : 
                         'bg-yellow-900 text-yellow-400'
@@ -144,19 +144,19 @@ const HistoryPage = () => {
                       </div>
                     </div>
                     
-                    <p className="text-gray-400 text-sm mb-4">{analysis.marketAnalysis}</p>
+                    <p className={`text-gray-400 ${isMobile ? 'text-xs mb-3' : 'text-sm mb-4'}`}>{analysis.marketAnalysis}</p>
                     
                     <div className="flex justify-between items-center">
-                      <Link to={`/analysis/${analysis.id}`} className="text-primary hover:underline text-sm">
+                      <Link to={`/analysis/${analysis.id}`} className={`text-primary hover:underline ${isMobile ? 'text-xs' : 'text-sm'}`}>
                         View Details
                       </Link>
                       
                       <div className="flex space-x-2">
-                        <button className="p-2 text-gray-400 hover:text-white">
-                          <Download className="h-4 w-4" />
+                        <button className={`${isMobile ? 'p-1' : 'p-2'} text-gray-400 hover:text-white`}>
+                          <Download className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                         </button>
-                        <button className="p-2 text-gray-400 hover:text-white">
-                          <Share className="h-4 w-4" />
+                        <button className={`${isMobile ? 'p-1' : 'p-2'} text-gray-400 hover:text-white`}>
+                          <Share className={`${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
                         </button>
                       </div>
                     </div>

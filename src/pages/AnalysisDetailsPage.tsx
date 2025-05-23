@@ -78,10 +78,10 @@ const AnalysisDetailsPage = () => {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col">
         <Header />
-        <main className="flex-grow py-8 px-6">
-          <div className="container mx-auto max-w-6xl">
-            <div className="text-center py-12">
-              <p className="text-gray-400">Loading analysis details...</p>
+        <main className={`flex-grow ${isMobile ? 'py-4 px-3' : 'py-8 px-6'}`}>
+          <div className={`${isMobile ? 'max-w-full' : 'container mx-auto max-w-6xl'}`}>
+            <div className={`text-center ${isMobile ? 'py-8' : 'py-12'}`}>
+              <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Loading analysis details...</p>
             </div>
           </div>
         </main>
@@ -94,11 +94,11 @@ const AnalysisDetailsPage = () => {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col">
         <Header />
-        <main className="flex-grow py-8 px-6">
-          <div className="container mx-auto max-w-6xl">
-            <div className="text-center py-12">
-              <p className="text-gray-400">Analysis not found or you don't have permission to view it.</p>
-              <Button asChild className="mt-4">
+        <main className={`flex-grow ${isMobile ? 'py-4 px-3' : 'py-8 px-6'}`}>
+          <div className={`${isMobile ? 'max-w-full' : 'container mx-auto max-w-6xl'}`}>
+            <div className={`text-center ${isMobile ? 'py-8' : 'py-12'}`}>
+              <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Analysis not found or you don't have permission to view it.</p>
+              <Button asChild className={`${isMobile ? 'mt-3 text-sm' : 'mt-4'}`}>
                 <Link to="/history">Back to History</Link>
               </Button>
             </div>
@@ -113,26 +113,26 @@ const AnalysisDetailsPage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className={`flex-grow py-8 px-6 ${isMobile ? 'pb-24' : ''}`}>
-        <div className="container mx-auto max-w-6xl">
-          <div className="mb-6">
+      <main className={`flex-grow ${isMobile ? 'py-4 px-3 pb-24' : 'py-8 px-6'}`}>
+        <div className={`${isMobile ? 'max-w-full' : 'container mx-auto max-w-6xl'}`}>
+          <div className={`${isMobile ? 'mb-4' : 'mb-6'}`}>
             <Button 
               variant="ghost" 
-              className="text-white hover:text-primary mb-4"
+              className={`text-white hover:text-primary ${isMobile ? 'mb-3 text-sm' : 'mb-4'}`}
               onClick={() => navigate('/history')}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className={`mr-2 ${isMobile ? 'h-3 w-3' : 'h-4 w-4'}`} />
               Back to History
             </Button>
             
-            <h1 className="text-2xl font-bold text-white mb-2">Analysis Details</h1>
+            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white ${isMobile ? 'mb-1' : 'mb-2'}`}>Analysis Details</h1>
             {analysis && (
               <div className="flex items-center">
-                <span className="text-primary text-xl font-semibold mr-2">
+                <span className={`text-primary ${isMobile ? 'text-lg' : 'text-xl'} font-semibold mr-2`}>
                   {analysis.pairName}
                 </span>
                 {analysis.timeframe && (
-                  <span className="text-gray-400">
+                  <span className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>
                     {analysis.timeframe} Timeframe
                   </span>
                 )}
