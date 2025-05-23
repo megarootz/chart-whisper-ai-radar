@@ -213,6 +213,18 @@
   }
 }
 
+/* Radar-specific animations */
+@keyframes radar-bounce {
+  0%, 100% { 
+    transform: translateY(0); 
+    opacity: 0.7;
+  }
+  50% { 
+    transform: translateY(-8px); 
+    opacity: 1;
+  }
+}
+
 .animate-float {
   animation: float 6s ease-in-out infinite;
 }
@@ -223,6 +235,10 @@
 
 .animate-glow {
   animation: glow 3s ease-in-out infinite;
+}
+
+.animate-radar-bounce {
+  animation: radar-bounce 1.4s ease-in-out infinite;
 }
 
 /* Custom glassmorphism effect */
