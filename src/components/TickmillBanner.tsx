@@ -4,6 +4,10 @@ import { ExternalLink, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const TickmillBanner = () => {
+  const handleOpenAccount = () => {
+    window.open('https://my.tickmill.com?utm_campaign=ib_link&utm_content=IB36882052&utm_medium=Open+Account&utm_source=link&lp=https%3A%2F%2Fmy.tickmill.com%2Fen%2Fsign-up', '_blank');
+  };
+
   return (
     <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6 overflow-hidden relative">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -21,8 +25,9 @@ const TickmillBanner = () => {
         </div>
         
         <Button 
-          className="shrink-0 bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20" 
-          onClick={() => window.open('https://my.tickmill.com?utm_campaign=ib_link&utm_content=IB36882052&utm_medium=Open+Account&utm_source=link&lp=https%3A%2F%2Fmy.tickmill.com%2Fen%2Fsign-up', '_blank')}
+          type="button"
+          className="shrink-0 bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 cursor-pointer z-10 relative" 
+          onClick={handleOpenAccount}
         >
           Open Account <ExternalLink className="ml-1.5 h-4 w-4" />
         </Button>
