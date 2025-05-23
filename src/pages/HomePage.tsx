@@ -35,7 +35,7 @@ const HomePage = () => {
       
       <main className="flex-grow flex flex-col relative z-10">
         {/* Hero Section */}
-        <section className={`${isMobile ? 'py-8 px-4' : 'py-16 md:py-24 px-4'} relative`}>
+        <section className={isMobile ? 'py-8 px-4 relative' : 'py-16 md:py-24 px-4 relative'}>
           <div className="container mx-auto max-w-7xl">
             <div className="text-center space-y-6 md:space-y-8">
               {/* Badge */}
@@ -46,13 +46,13 @@ const HomePage = () => {
               
               {/* Main Headline */}
               <div className="space-y-4 animate-fade-in">
-                <h1 className={`${isMobile ? 'text-3xl' : 'text-4xl md:text-6xl lg:text-7xl'} font-bold text-white leading-tight`}>
+                <h1 className={isMobile ? 'text-3xl font-bold text-white leading-tight' : 'text-4xl md:text-6xl lg:text-7xl font-bold text-white leading-tight'}>
                   Transform Your{' '}
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-blue-400">
                     Trading Game
                   </span>
                 </h1>
-                <p className={`${isMobile ? 'text-lg' : 'text-xl md:text-2xl'} text-gray-300 max-w-4xl mx-auto leading-relaxed`}>
+                <p className={isMobile ? 'text-lg text-gray-300 max-w-4xl mx-auto leading-relaxed' : 'text-xl md:text-2xl text-gray-300 max-w-4xl mx-auto leading-relaxed'}>
                   Upload forex charts and receive instant, professional-grade technical analysis with precise entry points, stop losses, and profit targets powered by advanced AI.
                 </p>
               </div>
@@ -84,7 +84,7 @@ const HomePage = () => {
                   <div className="text-sm text-gray-400">Accuracy Rate</div>
                 </div>
                 <div className="text-center space-y-2 animate-slide-in">
-                  <div className="text-2xl md:text-3xl font-bold text-primary">< 5s</div>
+                  <div className="text-2xl md:text-3xl font-bold text-primary">&lt; 5s</div>
                   <div className="text-sm text-gray-400">Analysis Time</div>
                 </div>
                 <div className="text-center space-y-2 animate-slide-in col-span-2 md:col-span-1">
@@ -97,14 +97,14 @@ const HomePage = () => {
         </section>
         
         {/* Features Section */}
-        <section id="features" className={`${isMobile ? 'py-12 px-4' : 'py-20 px-4'} bg-black/20 backdrop-blur-sm`}>
+        <section id="features" className={isMobile ? 'py-12 px-4 bg-black/20 backdrop-blur-sm' : 'py-20 px-4 bg-black/20 backdrop-blur-sm'}>
           <div className="container mx-auto max-w-7xl">
             <div className="text-center mb-12 md:mb-16">
               <div className="inline-flex items-center gap-2 bg-gray-800/50 rounded-full px-4 py-2 text-sm text-gray-300 mb-6">
                 <Target className="w-4 h-4 text-primary" />
                 Advanced Features
               </div>
-              <h2 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'} font-bold text-white mb-4`}>
+              <h2 className={isMobile ? 'text-2xl font-bold text-white mb-4' : 'text-3xl md:text-4xl font-bold text-white mb-4'}>
                 Professional Analysis at Your Fingertips
               </h2>
               <p className="text-gray-400 max-w-3xl mx-auto text-lg">
@@ -154,7 +154,7 @@ const HomePage = () => {
         </section>
         
         {/* CTA Section */}
-        <section className={`${isMobile ? 'py-12 px-4' : 'py-20 px-4'} relative`}>
+        <section className={isMobile ? 'py-12 px-4 relative' : 'py-20 px-4 relative'}>
           <div className="container mx-auto max-w-5xl">
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-gray-900/90 to-gray-800/90 backdrop-blur-sm border border-gray-700 shadow-2xl">
               {/* Background pattern */}
@@ -162,16 +162,16 @@ const HomePage = () => {
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-primary/20 to-transparent"></div>
               </div>
               
-              <div className={`relative ${isMobile ? 'p-8' : 'p-12 md:p-16'} text-center space-y-6`}>
+              <div className={isMobile ? 'relative p-8 text-center space-y-6' : 'relative p-12 md:p-16 text-center space-y-6'}>
                 <div className="inline-flex items-center gap-2 bg-primary/10 rounded-full px-4 py-2 text-sm text-primary font-medium mb-4">
                   <Award className="w-4 h-4" />
                   Ready to Trade Smarter?
                 </div>
                 
-                <h2 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'} font-bold text-white leading-tight`}>
+                <h2 className={isMobile ? 'text-2xl font-bold text-white leading-tight' : 'text-3xl md:text-4xl font-bold text-white leading-tight'}>
                   Join Thousands of Successful Traders
                 </h2>
-                <p className={`text-gray-300 ${isMobile ? 'text-base' : 'text-lg'} max-w-2xl mx-auto`}>
+                <p className={isMobile ? 'text-base text-gray-300 max-w-2xl mx-auto' : 'text-lg text-gray-300 max-w-2xl mx-auto'}>
                   Stop second-guessing your trades. Get professional-grade chart analysis in seconds and make confident trading decisions.
                 </p>
                 
@@ -218,14 +218,14 @@ const FeatureCard = ({
       className="bg-gray-900/40 backdrop-blur-sm border border-gray-800/50 hover:border-primary/30 transition-all duration-500 hover:shadow-glow card-hover-effect group"
       style={{ animationDelay: `${delay}ms` }}
     >
-      <CardContent className={`${isMobile ? 'p-6' : 'p-8'} space-y-4`}>
+      <CardContent className={isMobile ? 'p-6 space-y-4' : 'p-8 space-y-4'}>
         <div className="bg-gradient-to-br from-primary/20 to-blue-500/20 w-16 h-16 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
           {icon}
         </div>
-        <h3 className={`${isMobile ? 'text-lg' : 'text-xl'} font-semibold text-white group-hover:text-primary transition-colors duration-300`}>
+        <h3 className={isMobile ? 'text-lg font-semibold text-white group-hover:text-primary transition-colors duration-300' : 'text-xl font-semibold text-white group-hover:text-primary transition-colors duration-300'}>
           {title}
         </h3>
-        <p className={`text-gray-400 ${isMobile ? 'text-sm' : 'text-base'} leading-relaxed`}>
+        <p className={isMobile ? 'text-sm text-gray-400 leading-relaxed' : 'text-base text-gray-400 leading-relaxed'}>
           {description}
         </p>
       </CardContent>
