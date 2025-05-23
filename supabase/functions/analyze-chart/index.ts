@@ -2,7 +2,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-// API key is securely stored in Supabase's environment variables
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
 
 const corsHeaders = {
@@ -11,7 +10,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -23,79 +21,58 @@ serve(async (req) => {
 
     const { base64Image, pairName, timeframe } = await req.json();
     
-    // Enhanced prompt for precise price level extraction
+    // Drastically simplified and optimized prompt
     const requestData = {
       model: "openai/gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: "You are an expert technical analyst. Analyze charts with precision and provide EXACT NUMERICAL PRICE LEVELS. Always identify the trading pair and timeframe first. Focus on providing specific price values, not general descriptions."
+          content: "You are a forex technical analyst. Provide EXACT numerical price levels only."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this chart and provide EXACT NUMERICAL PRICE LEVELS. Format response EXACTLY as shown:
+              text: `Analyze this ${pairName} ${timeframe} chart. Format EXACTLY:
 
-[TRADING-PAIR] Technical Analysis ([TIMEFRAME] Chart)
+TREND: [Bullish/Bearish/Neutral]
 
-1. Trend Direction:
-Overall trend: [Bullish/Bearish/Neutral]
-[Brief trend analysis with current price context]
+SUPPORT:
+1. [EXACT PRICE]
+2. [EXACT PRICE]
+3. [EXACT PRICE]
 
-2. Key Support Levels:
-Level 1: [EXACT PRICE] - [brief description]
-Level 2: [EXACT PRICE] - [brief description]
-Level 3: [EXACT PRICE] - [brief description]
-Level 4: [EXACT PRICE] - [brief description]
-Level 5: [EXACT PRICE] - [brief description]
+RESISTANCE:
+1. [EXACT PRICE]
+2. [EXACT PRICE]
+3. [EXACT PRICE]
 
-3. Key Resistance Levels:
-Level 1: [EXACT PRICE] - [brief description]
-Level 2: [EXACT PRICE] - [brief description]
-Level 3: [EXACT PRICE] - [brief description]
-Level 4: [EXACT PRICE] - [brief description]
-Level 5: [EXACT PRICE] - [brief description]
+PATTERN: [Pattern name OR "None"]
 
-4. Chart Patterns:
-[Pattern name and description OR "No significant patterns detected"]
+INDICATORS: [Brief 1-2 sentence summary]
 
-5. Technical Indicators:
-[List 2-3 key indicators with current signals]
+TRADE: Entry [PRICE] | Stop [PRICE] | Target [PRICE]
 
-6. Trading Insights:
-Bullish Scenario: [Entry price, target prices, stop loss with EXACT numbers]
-Bearish Scenario: [Entry price, target prices, stop loss with EXACT numbers]
-Neutral Scenario: [Range trading strategy with EXACT price levels]
-
-CRITICAL REQUIREMENTS:
-- ALL support and resistance levels MUST be EXACT NUMERICAL PRICES (e.g., 1.2345, 192.50, 0.8765)
-- NO vague descriptions like "EMA support" or "dynamic level"
-- Extract precise price levels from the chart's price axis
-- Provide up to 5 support and 5 resistance levels if visible
-- All trading scenarios must include EXACT entry, stop, and target prices
-
-Keep response under 750 tokens. Focus on precise numerical analysis.`
+Keep under 150 words total. EXACT numerical prices only.`
             },
             {
               type: "image_url",
               image_url: {
                 url: base64Image,
-                detail: "high"
+                detail: "low"
               }
             }
           ]
         }
       ],
       temperature: 0.1,
-      max_tokens: 750,
+      max_tokens: 200,
       top_p: 0.9
     };
 
-    console.log("Sending enhanced request to OpenRouter API for precise price levels");
+    console.log("Sending optimized request to OpenRouter API");
     
-    // Create headers with proper authentication
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
@@ -103,7 +80,6 @@ Keep response under 750 tokens. Focus on precise numerical analysis.`
       'X-Title': 'Forex Chart Analyzer'
     };
     
-    // Call OpenRouter API
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: 'POST',
       headers,
@@ -112,7 +88,6 @@ Keep response under 750 tokens. Focus on precise numerical analysis.`
 
     console.log("API Response status:", response.status);
     
-    // Get full response text
     const responseText = await response.text();
     console.log("Response received, length:", responseText.length);
     
@@ -120,20 +95,20 @@ Keep response under 750 tokens. Focus on precise numerical analysis.`
       throw new Error(`Failed to analyze chart: ${response.status} - ${responseText}`);
     }
     
-    // Parse response to check token usage
     try {
       const responseData = JSON.parse(responseText);
       if (responseData.usage) {
         console.log("Token usage:", responseData.usage);
         if (responseData.usage.total_tokens > 2000) {
-          console.warn("Token usage exceeded 2000:", responseData.usage.total_tokens);
+          console.error("Token usage still exceeding 2000:", responseData.usage.total_tokens);
+        } else {
+          console.log("Token usage within limit:", responseData.usage.total_tokens);
         }
       }
     } catch (parseError) {
       console.log("Could not parse response for token counting");
     }
     
-    // Return the raw response to the client
     return new Response(responseText, {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
