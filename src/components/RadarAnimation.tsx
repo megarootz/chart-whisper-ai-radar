@@ -1,18 +1,27 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Radar, Zap, Activity } from 'lucide-react';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 const RadarAnimation = ({ isOpen = true }) => {
   const [rotation, setRotation] = useState(0);
-  const [pulseIntensity, setPulseIntensity] = useState(0);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [detectedItems, setDetectedItems] = useState<string[]>([]);
   const animationRef = useRef<number>();
-  const pulseRef = useRef<number>();
+  const scanRef = useRef<number>();
 
-  // Smooth radar rotation
+  const tradingDataTypes = [
+    "Trend Direction",
+    "Support Levels", 
+    "Resistance Levels",
+    "Chart Patterns",
+    "Technical Indicators",
+    "Trading Insights"
+  ];
+
+  // Radar rotation animation
   useEffect(() => {
     const animate = () => {
-      setRotation((prev) => (prev + 1.2) % 360);
+      setRotation((prev) => (prev + 2) % 360);
       animationRef.current = requestAnimationFrame(animate);
     };
 
@@ -25,155 +34,229 @@ const RadarAnimation = ({ isOpen = true }) => {
     };
   }, []);
 
-  // Pulse effect for scanning
+  // Scanning progress and detection simulation
   useEffect(() => {
-    const pulse = () => {
-      setPulseIntensity((prev) => (prev + 0.05) % (Math.PI * 2));
-      pulseRef.current = requestAnimationFrame(pulse);
+    const scanAnimation = () => {
+      setScanProgress((prev) => {
+        const newProgress = (prev + 0.8) % 100;
+        
+        // Simulate detection of trading data
+        if (newProgress < prev) {
+          const randomItem = tradingDataTypes[Math.floor(Math.random() * tradingDataTypes.length)];
+          setDetectedItems(current => {
+            if (!current.includes(randomItem) && current.length < tradingDataTypes.length) {
+              return [...current, randomItem];
+            }
+            return current;
+          });
+        }
+        
+        return newProgress;
+      });
+      scanRef.current = requestAnimationFrame(scanAnimation);
     };
 
-    pulseRef.current = requestAnimationFrame(pulse);
+    scanRef.current = requestAnimationFrame(scanAnimation);
 
     return () => {
-      if (pulseRef.current) {
-        cancelAnimationFrame(pulseRef.current);
+      if (scanRef.current) {
+        cancelAnimationFrame(scanRef.current);
       }
     };
   }, []);
 
-  const pulseScale = 1 + Math.sin(pulseIntensity) * 0.1;
+  const radarSize = "w-80 h-80 sm:w-96 sm:h-96 lg:w-[500px] lg:h-[500px]";
 
   return (
     <Dialog open={isOpen}>
-      <DialogContent className="bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-xl border border-primary/20 p-0 sm:max-w-2xl max-w-[95vw] overflow-hidden">
-        <div className="relative w-full h-[600px] sm:h-[700px] flex flex-col items-center justify-center">
+      <DialogContent className="bg-gradient-to-br from-slate-950/98 via-blue-950/95 to-slate-900/98 backdrop-blur-xl border border-cyan-500/30 p-0 sm:max-w-4xl max-w-[95vw] overflow-hidden">
+        <div className="relative w-full h-[700px] sm:h-[800px] lg:h-[900px] flex flex-col items-center justify-center">
           
-          {/* Background Grid Pattern */}
+          {/* Tech Grid Background */}
           <div className="absolute inset-0 opacity-20">
             <div className="absolute inset-0" style={{
               backgroundImage: `
-                linear-gradient(rgba(124, 58, 237, 0.1) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(124, 58, 237, 0.1) 1px, transparent 1px)
+                linear-gradient(rgba(6, 182, 212, 0.3) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(6, 182, 212, 0.3) 1px, transparent 1px)
               `,
-              backgroundSize: '40px 40px'
+              backgroundSize: '30px 30px'
             }}></div>
           </div>
 
-          {/* Main Radar Container */}
-          <div className="relative w-80 h-80 sm:w-96 sm:h-96 md:w-[450px] md:h-[450px]">
+          {/* Main Radar Display */}
+          <div className={`relative ${radarSize} mb-8`}>
             
-            {/* Outer Rings */}
-            <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-pulse"></div>
-            <div className="absolute inset-6 rounded-full border border-primary/20"></div>
-            <div className="absolute inset-12 rounded-full border border-primary/15"></div>
-            <div className="absolute inset-20 rounded-full border border-primary/10"></div>
+            {/* Outer Ring with Markings */}
+            <div className="absolute inset-0 rounded-full border-2 border-cyan-400/60">
+              {/* Degree markings */}
+              {Array.from({ length: 24 }, (_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-0.5 h-4 bg-cyan-400/60"
+                  style={{
+                    top: '2px',
+                    left: '50%',
+                    transformOrigin: '50% 198px',
+                    transform: `translateX(-50%) rotate(${i * 15}deg)`
+                  }}
+                />
+              ))}
+              {/* Main cardinal points */}
+              {[0, 90, 180, 270].map((deg, i) => (
+                <div
+                  key={deg}
+                  className="absolute text-cyan-400 text-xs font-mono"
+                  style={{
+                    top: deg === 0 ? '-20px' : deg === 180 ? 'calc(100% + 8px)' : '50%',
+                    left: deg === 90 ? 'calc(100% + 8px)' : deg === 270 ? '-24px' : '50%',
+                    transform: `translate(${deg === 90 ? '0' : deg === 270 ? '0' : '-50%'}, ${deg === 0 || deg === 180 ? '0' : '-50%'})`
+                  }}
+                >
+                  {['000', '090', '180', '270'][i]}
+                </div>
+              ))}
+            </div>
             
-            {/* Glowing Center */}
-            <div 
-              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gradient-to-r from-primary to-blue-400 animate-pulse"
-              style={{
-                boxShadow: `
-                  0 0 40px rgba(124, 58, 237, 0.8),
-                  0 0 80px rgba(124, 58, 237, 0.4),
-                  inset 0 0 20px rgba(255, 255, 255, 0.2)
-                `,
-                transform: `translate(-50%, -50%) scale(${pulseScale})`
-              }}
-            >
-              <div className="absolute inset-2 rounded-full bg-white/20 flex items-center justify-center">
-                <Activity className="w-6 h-6 sm:w-8 sm:h-8 text-white animate-pulse" />
+            {/* Inner Radar Rings */}
+            <div className="absolute inset-6 rounded-full border border-cyan-400/30"></div>
+            <div className="absolute inset-12 rounded-full border border-cyan-400/20"></div>
+            <div className="absolute inset-20 rounded-full border border-cyan-400/15"></div>
+            <div className="absolute inset-28 rounded-full border border-cyan-400/10"></div>
+            
+            {/* Radar Lines */}
+            <div className="absolute inset-0">
+              {/* Horizontal line */}
+              <div className="absolute top-1/2 left-0 w-full h-px bg-cyan-400/30 transform -translate-y-0.5"></div>
+              {/* Vertical line */}
+              <div className="absolute top-0 left-1/2 w-px h-full bg-cyan-400/30 transform -translate-x-0.5"></div>
+            </div>
+
+            {/* Central Hub */}
+            <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400">
+              <div className="absolute inset-1 rounded-full bg-white/30 flex items-center justify-center">
+                <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
               </div>
             </div>
 
-            {/* Radar Sweep */}
+            {/* Rotating Radar Sweep */}
             <div 
-              className="absolute inset-0 origin-center"
+              className="absolute inset-0 origin-center pointer-events-none"
               style={{ transform: `rotate(${rotation}deg)` }}
             >
-              {/* Main Sweep Line */}
+              {/* Main sweep beam */}
               <div 
                 className="absolute top-0 left-1/2 w-1 h-1/2 transform -translate-x-1/2 origin-bottom"
                 style={{
                   background: `linear-gradient(to top, 
-                    rgba(124, 58, 237, 1), 
-                    rgba(124, 58, 237, 0.8) 30%, 
-                    rgba(124, 58, 237, 0.4) 60%, 
+                    rgba(6, 182, 212, 1), 
+                    rgba(6, 182, 212, 0.8) 20%, 
+                    rgba(6, 182, 212, 0.4) 40%, 
+                    rgba(6, 182, 212, 0.1) 70%,
                     transparent 100%
                   )`
                 }}
               ></div>
               
-              {/* Sweep Glow Effect */}
+              {/* Sweep glow effect */}
               <div 
-                className="absolute inset-0 rounded-full opacity-40"
+                className="absolute inset-0 rounded-full opacity-60"
                 style={{
                   background: `conic-gradient(
                     from ${rotation}deg, 
                     transparent, 
-                    rgba(124, 58, 237, 0.6) 30deg, 
-                    rgba(59, 130, 246, 0.4) 60deg, 
-                    transparent 90deg
+                    rgba(6, 182, 212, 0.3) 20deg, 
+                    rgba(34, 211, 238, 0.2) 40deg, 
+                    transparent 60deg
                   )`
                 }}
               ></div>
             </div>
 
-            {/* Scanning Particles */}
-            {[...Array(6)].map((_, i) => (
+            {/* Detected Blips */}
+            {detectedItems.map((item, i) => (
               <div
-                key={i}
-                className="absolute w-2 h-2 bg-primary rounded-full animate-ping"
+                key={item}
+                className="absolute w-3 h-3 bg-green-400 rounded-full animate-ping"
                 style={{
-                  top: `${20 + Math.sin((rotation + i * 60) * Math.PI / 180) * 30 + 30}%`,
-                  left: `${50 + Math.cos((rotation + i * 60) * Math.PI / 180) * 30}%`,
-                  animationDelay: `${i * 0.3}s`,
-                  opacity: 0.7
+                  top: `${30 + Math.sin((i * 60 + rotation) * Math.PI / 180) * 25 + 25}%`,
+                  left: `${50 + Math.cos((i * 60 + rotation) * Math.PI / 180) * 25}%`,
+                  animationDelay: `${i * 0.2}s`,
+                  opacity: 0.8
                 }}
-              ></div>
+              >
+                <div className="absolute inset-0 bg-green-400 rounded-full"></div>
+              </div>
             ))}
 
-            {/* Corner Indicators */}
-            <div className="absolute top-4 left-4 w-6 h-6 border-l-2 border-t-2 border-primary/60"></div>
-            <div className="absolute top-4 right-4 w-6 h-6 border-r-2 border-t-2 border-primary/60"></div>
-            <div className="absolute bottom-4 left-4 w-6 h-6 border-l-2 border-b-2 border-primary/60"></div>
-            <div className="absolute bottom-4 right-4 w-6 h-6 border-r-2 border-b-2 border-primary/60"></div>
+            {/* Corner Tech Elements */}
+            <div className="absolute -top-2 -left-2 w-8 h-8 border-l-2 border-t-2 border-cyan-400/80"></div>
+            <div className="absolute -top-2 -right-2 w-8 h-8 border-r-2 border-t-2 border-cyan-400/80"></div>
+            <div className="absolute -bottom-2 -left-2 w-8 h-8 border-l-2 border-b-2 border-cyan-400/80"></div>
+            <div className="absolute -bottom-2 -right-2 w-8 h-8 border-r-2 border-b-2 border-cyan-400/80"></div>
           </div>
 
           {/* Status Display */}
-          <div className="mt-8 sm:mt-12 text-center space-y-4 px-6">
+          <div className="text-center space-y-6 px-6 max-w-4xl">
             <div className="flex items-center justify-center gap-3 mb-6">
-              <Zap className="w-6 h-6 text-primary animate-pulse" />
-              <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-wider">
-                AI ANALYZING
+              <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white tracking-wider font-mono">
+                SCANNING CHART DATA
               </h2>
-              <Zap className="w-6 h-6 text-primary animate-pulse" />
+              <div className="w-3 h-3 bg-cyan-400 rounded-full animate-pulse"></div>
             </div>
             
-            <div className="space-y-3">
-              <div className="flex items-center justify-center gap-2 text-primary font-medium">
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
-                <span className="text-sm sm:text-base">Neural Networks Processing</span>
-                <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
+            {/* Scan Progress */}
+            <div className="space-y-4">
+              <div className="bg-slate-800/50 rounded-lg p-4 border border-cyan-500/30">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-cyan-400 font-mono text-sm">SCAN PROGRESS</span>
+                  <span className="text-cyan-400 font-mono text-sm">{Math.round(scanProgress)}%</span>
+                </div>
+                <div className="w-full bg-slate-700 rounded-full h-2">
+                  <div 
+                    className="bg-gradient-to-r from-cyan-400 to-blue-400 h-2 rounded-full transition-all duration-100"
+                    style={{ width: `${scanProgress}%` }}
+                  ></div>
+                </div>
               </div>
-              
-              <p className="text-gray-300 text-sm sm:text-base max-w-md mx-auto leading-relaxed">
-                Advanced AI algorithms are analyzing chart patterns, support & resistance levels, and market opportunities
-              </p>
+
+              {/* Detection Display */}
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {tradingDataTypes.map((dataType, index) => (
+                  <div 
+                    key={dataType}
+                    className={`p-3 rounded-lg border transition-all duration-500 ${
+                      detectedItems.includes(dataType)
+                        ? 'bg-green-900/30 border-green-400/50 text-green-400'
+                        : 'bg-slate-800/30 border-slate-600/50 text-slate-400'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${
+                        detectedItems.includes(dataType) 
+                          ? 'bg-green-400 animate-pulse' 
+                          : 'bg-slate-500'
+                      }`}></div>
+                      <span className="text-xs font-mono">{dataType}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Tech Stats */}
-            <div className="grid grid-cols-3 gap-4 mt-8 max-w-sm mx-auto">
-              <div className="text-center space-y-1">
-                <div className="text-primary font-bold text-lg sm:text-xl">98.7%</div>
-                <div className="text-gray-400 text-xs">Accuracy</div>
+            {/* System Stats */}
+            <div className="grid grid-cols-3 gap-4 mt-8 max-w-md mx-auto">
+              <div className="text-center space-y-1 p-3 bg-slate-800/30 rounded-lg border border-cyan-500/20">
+                <div className="text-cyan-400 font-bold text-lg font-mono">AI</div>
+                <div className="text-slate-400 text-xs font-mono">ENGINE</div>
               </div>
-              <div className="text-center space-y-1">
-                <div className="text-primary font-bold text-lg sm:text-xl">&lt;3s</div>
-                <div className="text-gray-400 text-xs">Speed</div>
+              <div className="text-center space-y-1 p-3 bg-slate-800/30 rounded-lg border border-cyan-500/20">
+                <div className="text-cyan-400 font-bold text-lg font-mono">&lt;3s</div>
+                <div className="text-slate-400 text-xs font-mono">SPEED</div>
               </div>
-              <div className="text-center space-y-1">
-                <div className="text-primary font-bold text-lg sm:text-xl">AI</div>
-                <div className="text-gray-400 text-xs">Powered</div>
+              <div className="text-center space-y-1 p-3 bg-slate-800/30 rounded-lg border border-cyan-500/20">
+                <div className="text-cyan-400 font-bold text-lg font-mono">99%</div>
+                <div className="text-slate-400 text-xs font-mono">ACCURACY</div>
               </div>
             </div>
           </div>
