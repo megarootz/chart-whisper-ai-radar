@@ -29,9 +29,9 @@ const Header = () => {
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+    setIsMenuOpen(false);
   };
 
-  // Updated header with a cleaner mobile layout and hidden hamburger menu
   return (
     <header className={`w-full sticky top-0 z-30 bg-black border-b border-gray-800 ${isMobile ? 'py-3 px-3' : 'py-4 px-6'}`}>
       <div className="container mx-auto flex items-center justify-between">
@@ -42,41 +42,40 @@ const Header = () => {
         </Link>
         
         {isMobile ? (
-          // Mobile view without fullscreen toggle button
           <div className="flex items-center">
-            {/* We keep the Sheet component but hide the trigger on mobile since we have bottom nav */}
-            <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
-              {/* Mobile menu button is now hidden since we use bottom navigation */}
-              <div className="hidden">
+            {/* Show menu button only if user is authenticated */}
+            {user && (
+              <Sheet open={isMenuOpen} onOpenChange={setIsMenuOpen}>
                 <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-white mr-4">
+                  <Button variant="ghost" size="icon" className="text-white">
                     <Menu className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
-              </div>
-              <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-full sm:w-[80%] pt-12 p-0">
-                <div className="flex flex-col space-y-4">
-                  <div className="flex justify-between items-center absolute top-2 right-2">
-                    <Button variant="ghost" size="sm" onClick={() => setIsMenuOpen(false)}>
-                      <X className="h-4 w-4 text-white" />
-                    </Button>
-                  </div>
-                  
-                  <nav className="flex flex-col space-y-0">
-                    {navItems.map((item) => (
-                      <Link
-                        key={item.label}
-                        to={item.href}
-                        className="px-4 py-3 text-base text-white hover:bg-gray-800 hover:text-primary transition-colors duration-200 border-b border-gray-700"
-                        onClick={() => setIsMenuOpen(false)}
-                      >
-                        {item.label}
-                      </Link>
-                    ))}
-                  </nav>
-                  
-                  <div className="px-4 py-3">
-                    {user ? (
+                <SheetContent side="right" className="bg-chart-card border-l border-gray-700 w-full sm:w-[80%] pt-12 p-0">
+                  <div className="flex flex-col space-y-4">
+                    <div className="flex justify-between items-center absolute top-2 right-2">
+                      <Button variant="ghost" size="sm" onClick={() => setIsMenuOpen(false)}>
+                        <X className="h-4 w-4 text-white" />
+                      </Button>
+                    </div>
+                    
+                    <nav className="flex flex-col space-y-0">
+                      {navItems.map((item) => (
+                        <Link
+                          key={item.label}
+                          to={item.href}
+                          className="px-4 py-3 text-base text-white hover:bg-gray-800 hover:text-primary transition-colors duration-200 border-b border-gray-700"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          {item.label}
+                        </Link>
+                      ))}
+                    </nav>
+                    
+                    <div className="px-4 py-3 border-t border-gray-700">
+                      <div className="mb-3 text-sm text-gray-400">
+                        {user.email}
+                      </div>
                       <Button 
                         variant="outline" 
                         size="sm"
@@ -86,27 +85,13 @@ const Header = () => {
                         <LogOut className="mr-2 h-3 w-3" />
                         Sign Out
                       </Button>
-                    ) : (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        className="w-full border-gray-700 hover:bg-gray-800 text-white text-sm"
-                        onClick={() => {
-                          navigate('/auth');
-                          setIsMenuOpen(false);
-                        }}
-                      >
-                        <User className="mr-2 h-3 w-3" />
-                        Sign In
-                      </Button>
-                    )}
+                    </div>
                   </div>
-                </div>
-              </SheetContent>
-            </Sheet>
+                </SheetContent>
+              </Sheet>
+            )}
           </div>
         ) : (
-          // Desktop view (unchanged)
           <div className="flex items-center space-x-6">
             <nav className="flex items-center space-x-6">
               {navItems.map((item) => (
