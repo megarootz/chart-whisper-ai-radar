@@ -69,7 +69,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       
       if (type === 'signup' && password) {
-        // For signup, verify OTP and create account
+        // For signup, verify OTP and then update the password
         const { data, error } = await supabase.auth.verifyOtp({
           email,
           token,
@@ -77,6 +77,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         });
         
         if (error) throw error;
+
+        // Update the password after successful OTP verification
+        if (data.session) {
+          const { error: updateError } = await supabase.auth.updateUser({
+            password: password
+          });
+          
+          if (updateError) throw updateError;
+        }
         
         setSession(data.session);
         setUser(data.user);

@@ -29,23 +29,23 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Processing ${type} OTP request for email:`, email);
 
     if (type === 'signup') {
-      // For signup, use Supabase's built-in OTP
-      const { data, error } = await supabase.auth.admin.generateLink({
-        type: 'signup',
+      // For signup, send OTP using the built-in signUp method
+      const { data, error } = await supabase.auth.signUp({
         email: email,
+        password: 'temp-password-will-be-changed', // Temporary password, user will set real one after OTP verification
         options: {
           emailRedirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`
         }
       });
 
       if (error) {
-        console.error('Error generating signup link:', error);
+        console.error('Error sending signup OTP:', error);
         throw error;
       }
 
-      console.log('Signup OTP generated successfully');
+      console.log('Signup OTP sent successfully');
     } else {
-      // For password recovery, use Supabase's reset password
+      // For password recovery, use the admin generateLink method
       const { data, error } = await supabase.auth.admin.generateLink({
         type: 'recovery',
         email: email,
