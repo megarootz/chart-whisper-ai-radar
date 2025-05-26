@@ -9,6 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ChartCandlestick, Lock, Mail, User } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "@/components/ui/use-toast";
+import OTPVerification from "@/components/OTPVerification";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
@@ -17,6 +18,9 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
   const [resetSent, setResetSent] = useState(false);
+  const [showOTPVerification, setShowOTPVerification] = useState(false);
+  const [otpType, setOtpType] = useState<'signup' | 'recovery'>('signup');
+  const [pendingEmail, setPendingEmail] = useState("");
   const { signIn, signUp, signInWithGoogle, resetPassword, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -94,12 +98,15 @@ export default function AuthPage() {
     
     setIsLoading(true);
     try {
-      await signUp(email, password);
+      // Instead of directly signing up, we'll show OTP verification first
+      setPendingEmail(email);
+      setOtpType('signup');
+      setShowOTPVerification(true);
+      
       toast({
-        title: "Account created!",
-        description: "You're now signed in. Redirecting to dashboard...",
+        title: "Verification Required",
+        description: "Please check your email for a verification code.",
       });
-      // Navigation will happen through the auth state change listener in useEffect
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
@@ -141,11 +148,15 @@ export default function AuthPage() {
     
     setIsLoading(true);
     try {
-      await resetPassword(email);
-      setResetSent(true);
+      // Show OTP verification for password reset
+      setPendingEmail(email);
+      setOtpType('recovery');
+      setShowOTPVerification(true);
+      setShowResetForm(false);
+      
       toast({
-        title: "Reset Link Sent",
-        description: "Check your email for a link to reset your password.",
+        title: "Verification Required",
+        description: "Check your email for a verification code to reset your password.",
       });
     } catch (error: any) {
       console.error("Password reset error:", error);
@@ -159,11 +170,67 @@ export default function AuthPage() {
     }
   };
 
+  const handleOTPVerified = async () => {
+    if (otpType === 'signup') {
+      // Complete the signup process
+      try {
+        await signUp(email, password);
+        toast({
+          title: "Account created!",
+          description: "Your account has been verified and created successfully.",
+        });
+        setShowOTPVerification(false);
+      } catch (error: any) {
+        console.error("Final signup error:", error);
+        toast({
+          variant: "destructive",
+          title: "Account Creation Failed",
+          description: error.message || "Failed to create account after verification.",
+        });
+      }
+    } else {
+      // For password recovery, proceed to actual reset
+      try {
+        await resetPassword(pendingEmail);
+        toast({
+          title: "Reset Link Sent",
+          description: "Check your email for a link to create a new password.",
+        });
+        setShowOTPVerification(false);
+        setResetSent(true);
+      } catch (error: any) {
+        console.error("Password reset error:", error);
+        toast({
+          variant: "destructive",
+          title: "Password Reset Failed",
+          description: error.message || "Failed to send reset link.",
+        });
+      }
+    }
+  };
+
+  const handleBackFromOTP = () => {
+    setShowOTPVerification(false);
+    setPendingEmail("");
+  };
+
   // Toggle between sign-in form and reset password form
   const toggleResetForm = () => {
     setShowResetForm(!showResetForm);
     setResetSent(false);
   };
+
+  // Show OTP verification if needed
+  if (showOTPVerification) {
+    return (
+      <OTPVerification
+        email={pendingEmail}
+        type={otpType}
+        onVerified={handleOTPVerified}
+        onBack={handleBackFromOTP}
+      />
+    );
+  }
 
   // If already authenticated and not in the process of loading, show loading state
   if (user && !loading) {
@@ -209,7 +276,7 @@ export default function AuthPage() {
                 <CardDescription>
                   {resetSent 
                     ? "Check your email for a password reset link" 
-                    : "Enter your email to receive a password reset link"}
+                    : "Enter your email to receive a verification code"}
                 </CardDescription>
               </CardHeader>
               
@@ -240,7 +307,7 @@ export default function AuthPage() {
                     className="w-full bg-primary hover:bg-primary/90" 
                     disabled={isLoading}
                   >
-                    {isLoading ? "Sending..." : "Send Reset Link"}
+                    {isLoading ? "Sending..." : "Send Verification Code"}
                   </Button>
                 ) : (
                   <Button 
@@ -374,7 +441,7 @@ export default function AuthPage() {
               <form onSubmit={handleSignUp}>
                 <CardHeader>
                   <CardTitle className="text-white">Sign Up</CardTitle>
-                  <CardDescription>Create an account to start analyzing charts</CardDescription>
+                  <CardDescription>Create an account - we'll send you a verification code</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -428,7 +495,7 @@ export default function AuthPage() {
                     className="w-full bg-primary hover:bg-primary/90" 
                     disabled={isLoading}
                   >
-                    {isLoading ? "Creating account..." : "Create Account"}
+                    {isLoading ? "Sending verification..." : "Create Account"}
                   </Button>
                   
                   <div className="relative w-full my-2">
