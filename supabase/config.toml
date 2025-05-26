@@ -3,6 +3,3 @@ project_id = "npougftucphdtujkyyfz"
 
 [functions.analyze-chart]
 verify_jwt = true
-
-[functions.send-otp-email]
-verify_jwt = false

@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { initializeStorage } from '@/utils/storageUtils';
 import { toast } from '@/components/ui/use-toast';
 
-// Define the AuthContext type with resetPassword and sendOTP
+// Define the AuthContext type with resetPassword
 interface AuthContextType {
   user: User | null;
   session: Session | null;
@@ -13,9 +13,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   signInWithGoogle: () => Promise<void>; 
-  resetPassword: (email: string) => Promise<void>;
-  sendOTP: (email: string, type: 'signup' | 'recovery') => Promise<void>;
-  verifyOTP: (email: string, token: string, type: 'signup' | 'recovery', password?: string) => Promise<void>;
+  resetPassword: (email: string) => Promise<void>; // New function for password reset
 }
 
 // Create the AuthContext with a default value
@@ -27,9 +25,7 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => {},
   signOut: async () => {},
   signInWithGoogle: async () => {},
-  resetPassword: async () => {},
-  sendOTP: async () => {},
-  verifyOTP: async () => {},
+  resetPassword: async () => {}, // Default implementation for password reset
 });
 
 // Create a custom hook to use the AuthContext
@@ -42,75 +38,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // Function to send OTP
-  const sendOTP = async (email: string, type: 'signup' | 'recovery') => {
-    try {
-      setLoading(true);
-      
-      const { data, error } = await supabase.functions.invoke('send-otp-email', {
-        body: { email, type }
-      });
-      
-      if (error) throw error;
-      
-      return Promise.resolve();
-    } catch (error: any) {
-      console.error("Send OTP error", error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Function to verify OTP
-  const verifyOTP = async (email: string, token: string, type: 'signup' | 'recovery', password?: string) => {
-    try {
-      setLoading(true);
-      
-      if (type === 'signup') {
-        // For signup, verify OTP using email type
-        const { data, error } = await supabase.auth.verifyOtp({
-          email,
-          token,
-          type: 'email'
-        });
-        
-        if (error) throw error;
-
-        // After successful OTP verification for signup, update the password if provided
-        if (data.session && password) {
-          const { error: updateError } = await supabase.auth.updateUser({
-            password: password
-          });
-          
-          if (updateError) throw updateError;
-        }
-        
-        setSession(data.session);
-        setUser(data.user);
-      } else if (type === 'recovery') {
-        // For recovery, verify OTP
-        const { data, error } = await supabase.auth.verifyOtp({
-          email,
-          token,
-          type: 'recovery'
-        });
-        
-        if (error) throw error;
-        
-        setSession(data.session);
-        setUser(data.user);
-      }
-      
-      return Promise.resolve();
-    } catch (error: any) {
-      console.error("Verify OTP error", error.message);
-      throw error;
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // Function to sign up
   const signUp = async (email: string, password: string) => {
@@ -183,7 +110,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Function for password reset
+  // New function for password reset
   const resetPassword = async (email: string) => {
     try {
       setLoading(true);
@@ -297,7 +224,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     };
   }, []);
 
-  // Provide the auth context value with all functions
+  // Provide the auth context value with resetPassword function
   const value: AuthContextType = {
     user,
     session,
@@ -306,9 +233,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     signIn,
     signOut,
     signInWithGoogle,
-    resetPassword,
-    sendOTP,
-    verifyOTP,
+    resetPassword, // Add the reset password function to the context
   };
 
   return (

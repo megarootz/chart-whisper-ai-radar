@@ -9,7 +9,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { ChartCandlestick, Lock, Mail, User } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "@/components/ui/use-toast";
-import OTPVerification from "@/components/OTPVerification";
 
 export default function AuthPage() {
   const [email, setEmail] = useState("");
@@ -18,11 +17,7 @@ export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
   const [resetSent, setResetSent] = useState(false);
-  const [showOTPVerification, setShowOTPVerification] = useState(false);
-  const [otpType, setOtpType] = useState<'signup' | 'recovery'>('signup');
-  const [pendingEmail, setPendingEmail] = useState("");
-  const [pendingPassword, setPendingPassword] = useState("");
-  const { signIn, signUp, signInWithGoogle, resetPassword, sendOTP, verifyOTP, user, loading } = useAuth();
+  const { signIn, signUp, signInWithGoogle, resetPassword, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -99,17 +94,12 @@ export default function AuthPage() {
     
     setIsLoading(true);
     try {
-      // Send OTP for signup verification
-      await sendOTP(email, 'signup');
-      setPendingEmail(email);
-      setPendingPassword(password);
-      setOtpType('signup');
-      setShowOTPVerification(true);
-      
+      await signUp(email, password);
       toast({
-        title: "Verification Required",
-        description: "Please check your email for a verification code.",
+        title: "Account created!",
+        description: "You're now signed in. Redirecting to dashboard...",
       });
+      // Navigation will happen through the auth state change listener in useEffect
     } catch (error: any) {
       console.error("Signup error:", error);
       toast({
@@ -151,16 +141,11 @@ export default function AuthPage() {
     
     setIsLoading(true);
     try {
-      // Send OTP for password recovery
-      await sendOTP(email, 'recovery');
-      setPendingEmail(email);
-      setOtpType('recovery');
-      setShowOTPVerification(true);
-      setShowResetForm(false);
-      
+      await resetPassword(email);
+      setResetSent(true);
       toast({
-        title: "Verification Required",
-        description: "Check your email for a verification code to reset your password.",
+        title: "Reset Link Sent",
+        description: "Check your email for a link to reset your password.",
       });
     } catch (error: any) {
       console.error("Password reset error:", error);
@@ -174,35 +159,11 @@ export default function AuthPage() {
     }
   };
 
-  const handleOTPVerified = async () => {
-    // This will be handled in the OTPVerification component
-    setShowOTPVerification(false);
-  };
-
-  const handleBackFromOTP = () => {
-    setShowOTPVerification(false);
-    setPendingEmail("");
-    setPendingPassword("");
-  };
-
   // Toggle between sign-in form and reset password form
   const toggleResetForm = () => {
     setShowResetForm(!showResetForm);
     setResetSent(false);
   };
-
-  // Show OTP verification if needed
-  if (showOTPVerification) {
-    return (
-      <OTPVerification
-        email={pendingEmail}
-        password={pendingPassword}
-        type={otpType}
-        onVerified={handleOTPVerified}
-        onBack={handleBackFromOTP}
-      />
-    );
-  }
 
   // If already authenticated and not in the process of loading, show loading state
   if (user && !loading) {
@@ -248,7 +209,7 @@ export default function AuthPage() {
                 <CardDescription>
                   {resetSent 
                     ? "Check your email for a password reset link" 
-                    : "Enter your email to receive a verification code"}
+                    : "Enter your email to receive a password reset link"}
                 </CardDescription>
               </CardHeader>
               
@@ -279,7 +240,7 @@ export default function AuthPage() {
                     className="w-full bg-primary hover:bg-primary/90" 
                     disabled={isLoading}
                   >
-                    {isLoading ? "Sending..." : "Send Verification Code"}
+                    {isLoading ? "Sending..." : "Send Reset Link"}
                   </Button>
                 ) : (
                   <Button 
@@ -413,7 +374,7 @@ export default function AuthPage() {
               <form onSubmit={handleSignUp}>
                 <CardHeader>
                   <CardTitle className="text-white">Sign Up</CardTitle>
-                  <CardDescription>Create an account - we'll send you a verification code</CardDescription>
+                  <CardDescription>Create an account to start analyzing charts</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
@@ -467,7 +428,7 @@ export default function AuthPage() {
                     className="w-full bg-primary hover:bg-primary/90" 
                     disabled={isLoading}
                   >
-                    {isLoading ? "Sending verification..." : "Create Account"}
+                    {isLoading ? "Creating account..." : "Create Account"}
                   </Button>
                   
                   <div className="relative w-full my-2">
