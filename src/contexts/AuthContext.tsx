@@ -69,11 +69,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       
       if (type === 'signup') {
-        // For signup, verify OTP using magiclink type
+        // For signup, verify OTP using email type
         const { data, error } = await supabase.auth.verifyOtp({
           email,
           token,
-          type: 'magiclink'
+          type: 'email'
         });
         
         if (error) throw error;

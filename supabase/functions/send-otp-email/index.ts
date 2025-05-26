@@ -29,37 +29,33 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Processing ${type} OTP request for email:`, email);
 
     if (type === 'signup') {
-      // For signup, use the admin generateLink method with 'magiclink' type to send OTP
-      const { data, error } = await supabase.auth.admin.generateLink({
-        type: 'magiclink',
+      // For signup, use signInWithOtp to send OTP email
+      const { data, error } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
+          shouldCreateUser: true,
           emailRedirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`
         }
       });
 
       if (error) {
-        console.error('Error generating signup OTP:', error);
+        console.error('Error sending signup OTP:', error);
         throw error;
       }
 
-      console.log('Signup OTP sent successfully');
+      console.log('Signup OTP email sent successfully');
     } else {
-      // For password recovery, use the admin generateLink method
-      const { data, error } = await supabase.auth.admin.generateLink({
-        type: 'recovery',
-        email: email,
-        options: {
-          emailRedirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`
-        }
+      // For password recovery, use resetPasswordForEmail
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`
       });
 
       if (error) {
-        console.error('Error generating recovery link:', error);
+        console.error('Error sending recovery email:', error);
         throw error;
       }
 
-      console.log('Recovery OTP generated successfully');
+      console.log('Recovery email sent successfully');
     }
 
     return new Response(JSON.stringify({ 
