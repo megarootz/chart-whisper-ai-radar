@@ -29,17 +29,17 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Processing ${type} OTP request for email:`, email);
 
     if (type === 'signup') {
-      // For signup, send OTP using the built-in signUp method
-      const { data, error } = await supabase.auth.signUp({
+      // For signup, use the admin generateLink method with 'magiclink' type to send OTP
+      const { data, error } = await supabase.auth.admin.generateLink({
+        type: 'magiclink',
         email: email,
-        password: 'temp-password-will-be-changed', // Temporary password, user will set real one after OTP verification
         options: {
           emailRedirectTo: `${Deno.env.get('SUPABASE_URL')}/auth/v1/verify`
         }
       });
 
       if (error) {
-        console.error('Error sending signup OTP:', error);
+        console.error('Error generating signup OTP:', error);
         throw error;
       }
 

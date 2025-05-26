@@ -68,18 +68,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       setLoading(true);
       
-      if (type === 'signup' && password) {
-        // For signup, verify OTP and then update the password
+      if (type === 'signup') {
+        // For signup, verify OTP using magiclink type
         const { data, error } = await supabase.auth.verifyOtp({
           email,
           token,
-          type: 'signup'
+          type: 'magiclink'
         });
         
         if (error) throw error;
 
-        // Update the password after successful OTP verification
-        if (data.session) {
+        // After successful OTP verification for signup, update the password if provided
+        if (data.session && password) {
           const { error: updateError } = await supabase.auth.updateUser({
             password: password
           });
