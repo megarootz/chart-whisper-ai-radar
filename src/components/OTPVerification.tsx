@@ -1,7 +1,6 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
@@ -11,16 +10,17 @@ import { toast } from "@/components/ui/use-toast";
 
 interface OTPVerificationProps {
   email: string;
+  password?: string;
   type: 'signup' | 'recovery';
   onVerified: () => void;
   onBack: () => void;
 }
 
-export default function OTPVerification({ email, type, onVerified, onBack }: OTPVerificationProps) {
+export default function OTPVerification({ email, password, type, onVerified, onBack }: OTPVerificationProps) {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isResending, setIsResending] = useState(false);
-  const { signIn } = useAuth();
+  const { verifyOTP, sendOTP } = useAuth();
 
   const handleVerifyOTP = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,25 +35,16 @@ export default function OTPVerification({ email, type, onVerified, onBack }: OTP
 
     setIsLoading(true);
     try {
-      if (type === 'signup') {
-        // For signup, we need to verify the OTP and complete the signup process
-        // This would typically involve calling your backend to verify the OTP
-        // For now, we'll simulate this process
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        toast({
-          title: "Email Verified!",
-          description: "Your account has been verified successfully.",
-        });
-        onVerified();
-      } else {
-        // For password recovery, verify OTP and allow password reset
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        toast({
-          title: "Code Verified!",
-          description: "You can now reset your password.",
-        });
-        onVerified();
-      }
+      await verifyOTP(email, otp, type, password);
+      
+      toast({
+        title: type === 'signup' ? "Email Verified!" : "Code Verified!",
+        description: type === 'signup' 
+          ? "Your account has been verified successfully." 
+          : "You can now reset your password.",
+      });
+      
+      onVerified();
     } catch (error: any) {
       console.error("OTP verification error:", error);
       toast({
@@ -69,8 +60,7 @@ export default function OTPVerification({ email, type, onVerified, onBack }: OTP
   const handleResendOTP = async () => {
     setIsResending(true);
     try {
-      // Call your backend to resend OTP
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await sendOTP(email, type);
       toast({
         title: "Code Resent",
         description: "A new verification code has been sent to your email.",

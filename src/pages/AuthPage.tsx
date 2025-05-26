@@ -21,7 +21,8 @@ export default function AuthPage() {
   const [showOTPVerification, setShowOTPVerification] = useState(false);
   const [otpType, setOtpType] = useState<'signup' | 'recovery'>('signup');
   const [pendingEmail, setPendingEmail] = useState("");
-  const { signIn, signUp, signInWithGoogle, resetPassword, user, loading } = useAuth();
+  const [pendingPassword, setPendingPassword] = useState("");
+  const { signIn, signUp, signInWithGoogle, resetPassword, sendOTP, verifyOTP, user, loading } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -98,8 +99,10 @@ export default function AuthPage() {
     
     setIsLoading(true);
     try {
-      // Instead of directly signing up, we'll show OTP verification first
+      // Send OTP for signup verification
+      await sendOTP(email, 'signup');
       setPendingEmail(email);
+      setPendingPassword(password);
       setOtpType('signup');
       setShowOTPVerification(true);
       
@@ -148,7 +151,8 @@ export default function AuthPage() {
     
     setIsLoading(true);
     try {
-      // Show OTP verification for password reset
+      // Send OTP for password recovery
+      await sendOTP(email, 'recovery');
       setPendingEmail(email);
       setOtpType('recovery');
       setShowOTPVerification(true);
@@ -171,47 +175,14 @@ export default function AuthPage() {
   };
 
   const handleOTPVerified = async () => {
-    if (otpType === 'signup') {
-      // Complete the signup process
-      try {
-        await signUp(email, password);
-        toast({
-          title: "Account created!",
-          description: "Your account has been verified and created successfully.",
-        });
-        setShowOTPVerification(false);
-      } catch (error: any) {
-        console.error("Final signup error:", error);
-        toast({
-          variant: "destructive",
-          title: "Account Creation Failed",
-          description: error.message || "Failed to create account after verification.",
-        });
-      }
-    } else {
-      // For password recovery, proceed to actual reset
-      try {
-        await resetPassword(pendingEmail);
-        toast({
-          title: "Reset Link Sent",
-          description: "Check your email for a link to create a new password.",
-        });
-        setShowOTPVerification(false);
-        setResetSent(true);
-      } catch (error: any) {
-        console.error("Password reset error:", error);
-        toast({
-          variant: "destructive",
-          title: "Password Reset Failed",
-          description: error.message || "Failed to send reset link.",
-        });
-      }
-    }
+    // This will be handled in the OTPVerification component
+    setShowOTPVerification(false);
   };
 
   const handleBackFromOTP = () => {
     setShowOTPVerification(false);
     setPendingEmail("");
+    setPendingPassword("");
   };
 
   // Toggle between sign-in form and reset password form
@@ -225,6 +196,7 @@ export default function AuthPage() {
     return (
       <OTPVerification
         email={pendingEmail}
+        password={pendingPassword}
         type={otpType}
         onVerified={handleOTPVerified}
         onBack={handleBackFromOTP}
