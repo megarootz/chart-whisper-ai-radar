@@ -99,7 +99,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
   const iconClasses = isMobile ? 'w-3 h-3' : 'md:w-10 md:h-10 lg:w-12 lg:h-12';
 
   return (
-    <div className={`relative ${containerSize} flex items-center justify-center mx-auto shrink-0 max-w-full overflow-hidden`}>
+    <div className={`relative ${containerSize} flex items-center justify-center mx-auto shrink-0 max-w-full`}>
       {/* Outer glow ring */}
       <div 
         className="absolute inset-0 rounded-full border-2 border-primary/20"
@@ -124,7 +124,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
 
       {/* Rotating radar sweep */}
       <div 
-        className="absolute inset-0 origin-center overflow-hidden rounded-full"
+        className="absolute inset-0 origin-center rounded-full"
         style={{ transform: `rotate(${rotation}deg)` }}
       >
         {/* Radar line */}
