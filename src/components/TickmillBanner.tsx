@@ -9,27 +9,28 @@ const TickmillBanner = () => {
   };
 
   return (
-    <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6 overflow-hidden relative">
-      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-primary/20 p-2 rounded-full">
-            <Star className="h-5 w-5 text-primary" />
+    <div className="bg-chart-card border border-gray-700 rounded-lg p-3 md:p-6 overflow-hidden relative">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-3 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="bg-primary/20 p-1.5 md:p-2 rounded-full">
+            <Star className="h-4 w-4 md:h-5 md:w-5 text-primary" />
           </div>
           <div>
             <div className="flex items-center">
-              <p className="text-white font-medium">Highly Recommended</p>
-              <span className="text-primary font-bold ml-2">Broker</span>
+              <p className="text-white font-medium text-sm md:text-base">Highly Recommended</p>
+              <span className="text-primary font-bold ml-1 md:ml-2 text-sm md:text-base">Broker</span>
             </div>
-            <p className="text-sm text-gray-400">Low spreads &amp; fast execution built for all traders.</p>
+            <p className="text-xs md:text-sm text-gray-400">Low spreads &amp; fast execution built for all traders.</p>
           </div>
         </div>
         
         <Button 
           type="button"
-          className="shrink-0 bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 cursor-pointer z-10 relative" 
+          size="sm"
+          className="shrink-0 bg-primary hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 cursor-pointer z-10 relative text-xs md:text-sm" 
           onClick={handleOpenAccount}
         >
-          Open Account <ExternalLink className="ml-1.5 h-4 w-4" />
+          Open Account <ExternalLink className="ml-1 md:ml-1.5 h-3 w-3 md:h-4 md:w-4" />
         </Button>
       </div>
       

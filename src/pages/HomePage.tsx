@@ -29,13 +29,6 @@ const HomePage = () => {
       <Header />
       
       <main className="flex-grow flex flex-col">
-        {/* Banner Section */}
-        <section className={`${isMobile ? 'px-3 pt-4' : 'px-4 pt-8'}`}>
-          <div className="container mx-auto max-w-6xl">
-            <TickmillBanner />
-          </div>
-        </section>
-
         {/* Hero Section */}
         <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-24 px-4'}`}>
           <div className="container mx-auto max-w-6xl">
@@ -61,6 +54,13 @@ const HomePage = () => {
                 <SpinningRadar />
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Banner Section - Moved below hero */}
+        <section className={`${isMobile ? 'px-3 pb-4' : 'px-4 pb-8'}`}>
+          <div className="container mx-auto max-w-6xl">
+            <TickmillBanner />
           </div>
         </section>
         
