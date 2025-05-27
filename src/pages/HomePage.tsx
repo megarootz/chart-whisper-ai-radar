@@ -7,6 +7,7 @@ import { ChartCandlestick, BarChart2, TrendingUp, History, Award, Zap } from 'lu
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import TickmillBanner from '@/components/TickmillBanner';
+import SpinningRadar from '@/components/SpinningRadar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -56,8 +57,8 @@ const HomePage = () => {
                   </Button>
                 </div>
               </div>
-              <div className="w-full md:w-1/2">
-                
+              <div className="w-full md:w-1/2 flex justify-center items-center">
+                <SpinningRadar />
               </div>
             </div>
           </div>
