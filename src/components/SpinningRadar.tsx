@@ -93,25 +93,25 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
   }
 
   // Regular mode: Desktop and mobile non-background
-  const containerSize = isMobile ? 'w-20 h-20' : 'w-80 h-80 md:w-96 md:h-96 lg:w-[450px] lg:h-[450px]';
+  const containerSize = isMobile ? 'w-20 h-20' : 'w-96 h-96 md:w-[500px] md:h-[500px] lg:w-[600px] lg:h-[600px]';
   const sweepSize = isMobile ? 'w-8 h-8' : 'w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48';
   const iconSize = isMobile ? 12 : 40;
   const iconClasses = isMobile ? 'w-3 h-3' : 'md:w-12 md:h-12 lg:w-16 lg:h-16';
 
   return (
-    <div className={`relative ${containerSize} flex items-center justify-center mx-auto shrink-0`} style={{ padding: '2rem' }}>
+    <div className={`relative ${containerSize} flex items-center justify-center mx-auto shrink-0`}>
       {/* Outer glow ring */}
       <div 
-        className="absolute inset-8 rounded-full border-2 border-primary/20"
+        className="absolute inset-16 md:inset-20 lg:inset-24 rounded-full border-2 border-primary/20"
         style={{
           boxShadow: `0 0 ${isMobile ? 8 + pulseIntensity * 6 : 40 + pulseIntensity * 30}px rgba(124, 58, 237, ${0.2 + pulseIntensity * 0.3})`
         }}
       />
       
       {/* Middle ring */}
-      <div className={`absolute ${isMobile ? 'inset-9' : 'inset-12 md:inset-16'} rounded-full border border-primary/30 flex items-center justify-center`}>
+      <div className={`absolute ${isMobile ? 'inset-9' : 'inset-20 md:inset-24 lg:inset-28'} rounded-full border border-primary/30 flex items-center justify-center`}>
         {/* Inner ring */}
-        <div className={`absolute ${isMobile ? 'inset-1' : 'inset-6 md:inset-8'} rounded-full border border-primary/40 flex items-center justify-center`}>
+        <div className={`absolute ${isMobile ? 'inset-1' : 'inset-6 md:inset-8 lg:inset-10'} rounded-full border border-primary/40 flex items-center justify-center`}>
           {/* Center dot */}
           <div 
             className={`${isMobile ? 'w-0.5 h-0.5' : 'w-4 h-4 md:w-5 md:h-5'} bg-primary rounded-full`}
@@ -124,7 +124,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
 
       {/* Rotating radar sweep */}
       <div 
-        className="absolute inset-8 origin-center rounded-full"
+        className="absolute inset-16 md:inset-20 lg:inset-24 origin-center rounded-full"
         style={{ transform: `rotate(${rotation}deg)` }}
       >
         {/* Radar line */}
