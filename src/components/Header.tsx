@@ -34,7 +34,7 @@ const Header = () => {
   };
 
   return (
-    <header className={`w-full sticky top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-gray-800 ${isMobile ? 'py-3 px-3' : 'py-2 px-6'}`}>
+    <header className={`w-full fixed top-0 z-50 bg-black/95 backdrop-blur-sm border-b border-gray-800 ${isMobile ? 'py-3 px-3' : 'py-2 px-6'}`}>
       <div className="container mx-auto flex items-center justify-between">
         <Link to="/" className="flex items-center space-x-2 px-1 md:px-0">
           <h1 className={cn("font-bold text-primary", isMobile ? "text-xl" : "text-2xl")}>

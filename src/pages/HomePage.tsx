@@ -28,7 +28,7 @@ const HomePage = () => {
     <div className="min-h-screen flex flex-col bg-chart-bg w-full max-w-full overflow-x-hidden">
       <Header />
       
-      <main className="flex-grow flex flex-col w-full max-w-full overflow-x-hidden">
+      <main className={`flex-grow flex flex-col w-full max-w-full overflow-x-hidden ${isMobile ? 'pt-20' : 'pt-16'}`}>
         {/* Hero Section - Mobile first layout */}
         <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-24 px-4'} w-full max-w-full overflow-x-hidden`}>
           <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
@@ -88,7 +88,7 @@ const HomePage = () => {
         </section>
 
         {/* Banner Section */}
-        <section className={`${isMobile ? 'px-3 pb-6' : 'px-4 pb-8'} w-full max-w-full overflow-x-hidden`}>
+        <section className={`${isMobile ? 'px-3 pb-8' : 'px-4 pb-8'} w-full max-w-full overflow-x-hidden`}>
           <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
             <TickmillBanner />
           </div>
