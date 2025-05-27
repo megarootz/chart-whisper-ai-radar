@@ -46,11 +46,11 @@ const BottomNav = () => {
           to={item.href}
           className={cn(
             "flex flex-col items-center justify-center w-full h-full pt-1",
-            "text-[10px] font-medium transition-colors",
-            item.isActive ? "text-primary" : "text-gray-400"
+            "text-[10px] font-semibold transition-colors",
+            item.isActive ? "text-primary" : "text-gray-300"
           )}
         >
-          <item.icon className={cn("h-4 w-4 mb-0.5", item.isActive ? "text-primary" : "text-gray-400")} />
+          <item.icon className={cn("h-4 w-4 mb-0.5", item.isActive ? "text-primary" : "text-gray-300")} />
           <span>{item.label}</span>
         </Link>
       ))}
