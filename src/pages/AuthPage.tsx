@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChartCandlestick, Lock, Mail, User } from "lucide-react";
+import { Lock, Mail, User } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { toast } from "@/components/ui/use-toast";
 
@@ -194,12 +194,9 @@ export default function AuthPage() {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-md">
-          <div className="text-center mb-6">
-            <div className="flex justify-center mb-2">
-              <ChartCandlestick className="h-10 w-10 text-primary" />
-            </div>
-            <h1 className="text-2xl font-bold text-white">ForexRadar7</h1>
-            <p className="text-gray-400 mt-1">Reset your password</p>
+          <div className="text-center mb-8">
+            <h1 className="text-2xl font-bold text-primary mb-2">ForexRadar7</h1>
+            <p className="text-gray-400">Reset your password</p>
           </div>
           
           <Card className="border-gray-800 bg-chart-card">
@@ -273,12 +270,9 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-chart-bg flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-6">
-          <div className="flex justify-center mb-2">
-            <ChartCandlestick className="h-10 w-10 text-primary" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">ForexRadar7</h1>
-          <p className="text-gray-400 mt-1">Sign in to analyze your charts</p>
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-primary mb-2">ForexRadar7</h1>
+          <p className="text-gray-400">Sign in to analyze your charts</p>
         </div>
         
         <Tabs defaultValue="signin" className="w-full">
