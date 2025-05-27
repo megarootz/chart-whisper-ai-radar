@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -24,49 +25,76 @@ const HomePage = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col bg-chart-bg overflow-x-hidden">
+    <div className="min-h-screen flex flex-col bg-chart-bg overflow-x-hidden max-w-full">
       <Header />
       
-      <main className="flex-grow flex flex-col overflow-x-hidden">
-        {/* Hero Section */}
-        <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-24 px-4'} overflow-x-hidden`}>
+      <main className="flex-grow flex flex-col overflow-x-hidden max-w-full">
+        {/* Hero Section - Mobile first layout */}
+        <section className={`py-8 ${isMobile ? 'px-4' : 'py-12 md:py-24 px-4'} overflow-x-hidden max-w-full`}>
           <div className="container mx-auto max-w-6xl overflow-x-hidden">
-            <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center overflow-x-hidden">
-              <div className="w-full md:w-1/2 space-y-4 md:space-y-6">
-                <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-5xl'} font-bold text-white leading-tight`}>
-                  AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
-                </h1>
-                <p className={`${isMobile ? 'text-base' : 'text-lg'} text-gray-300`}>
-                  Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
-                </p>
-                <div className="pt-3 md:pt-4">
-                  <Button 
-                    onClick={handleGetStartedClick} 
-                    size={isMobile ? "default" : "lg"} 
-                    className="bg-primary hover:bg-primary/90 text-white font-medium"
-                  >
-                    Get Started
-                  </Button>
-                </div>
-              </div>
-              <div className="w-full md:w-1/2 flex justify-center items-center overflow-x-hidden">
-                <div className="max-w-full overflow-x-hidden">
+            {isMobile ? (
+              // Mobile layout: radar at top, text below
+              <div className="flex flex-col items-center space-y-6 overflow-x-hidden max-w-full">
+                <div className="w-full flex justify-center overflow-x-hidden">
                   <SpinningRadar />
                 </div>
+                <div className="w-full space-y-4 text-center px-2">
+                  <h1 className="text-2xl font-bold text-white leading-tight">
+                    AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
+                  </h1>
+                  <p className="text-base text-gray-300">
+                    Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
+                  </p>
+                  <div className="pt-3">
+                    <Button 
+                      onClick={handleGetStartedClick} 
+                      size="default" 
+                      className="bg-primary hover:bg-primary/90 text-white font-medium"
+                    >
+                      Get Started
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
+            ) : (
+              // Desktop layout: side by side
+              <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center overflow-x-hidden">
+                <div className="w-full md:w-1/2 space-y-4 md:space-y-6">
+                  <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
+                    AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
+                  </h1>
+                  <p className="text-lg text-gray-300">
+                    Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
+                  </p>
+                  <div className="pt-3 md:pt-4">
+                    <Button 
+                      onClick={handleGetStartedClick} 
+                      size="lg" 
+                      className="bg-primary hover:bg-primary/90 text-white font-medium"
+                    >
+                      Get Started
+                    </Button>
+                  </div>
+                </div>
+                <div className="w-full md:w-1/2 flex justify-center items-center overflow-x-hidden">
+                  <div className="max-w-full overflow-x-hidden">
+                    <SpinningRadar />
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Banner Section - Moved below hero */}
-        <section className={`${isMobile ? 'px-3 pb-4' : 'px-4 pb-8'} overflow-x-hidden`}>
+        {/* Banner Section */}
+        <section className={`${isMobile ? 'px-4 pb-6' : 'px-4 pb-8'} overflow-x-hidden max-w-full`}>
           <div className="container mx-auto max-w-6xl overflow-x-hidden">
             <TickmillBanner />
           </div>
         </section>
         
         {/* Features Section */}
-        <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-20 px-4'} bg-black/30 overflow-x-hidden`}>
+        <section className={`py-8 ${isMobile ? 'px-4' : 'py-12 md:py-20 px-4'} bg-black/30 overflow-x-hidden max-w-full`}>
           <div className="container mx-auto max-w-6xl overflow-x-hidden">
             <div className="text-center mb-8 md:mb-12">
               <h2 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold text-white mb-3 md:mb-4`}>
@@ -94,8 +122,8 @@ const HomePage = () => {
           </div>
         </section>
         
-        {/* CTA Section - Improved for mobile */}
-        <section className={`py-8 ${isMobile ? 'px-3 pb-16' : 'py-12 md:py-20 px-4'} overflow-x-hidden`}>
+        {/* CTA Section */}
+        <section className={`py-8 ${isMobile ? 'px-4 pb-16' : 'py-12 md:py-20 px-4'} overflow-x-hidden max-w-full`}>
           <div className="container mx-auto max-w-4xl overflow-x-hidden">
             <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-4 md:p-10 border border-gray-700 shadow-lg">
               <div className="text-center space-y-3 md:space-y-4">
