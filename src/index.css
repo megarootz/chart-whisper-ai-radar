@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -13,7 +14,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
 
-    --primary: 262 80% 50%;
+    --primary: 230 100% 65%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 240 5.9% 10%;
@@ -30,7 +31,7 @@
 
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 262 80% 50%;
+    --ring: 230 100% 65%;
 
     --radius: 0.5rem;
 
@@ -41,7 +42,7 @@
     --sidebar-accent: 240 4.8% 95.9%;
     --sidebar-accent-foreground: 240 5.9% 10%;
     --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 230 100% 65%;
   }
 
   .dark {
@@ -54,7 +55,7 @@
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
 
-    --primary: 262 80% 50%;
+    --primary: 230 100% 65%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 217.2 32.6% 17.5%;
@@ -71,16 +72,16 @@
 
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 262 80% 50%;
+    --ring: 230 100% 65%;
     
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary: 230 100% 65%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 240 3.7% 15.9%;
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-ring: 230 100% 65%;
   }
 }
 
@@ -92,8 +93,8 @@
   body {
     @apply bg-chart-bg text-foreground font-sans;
     background-image: 
-      radial-gradient(at 50% 0%, rgba(156, 39, 176, 0.1) 0px, transparent 50%), 
-      radial-gradient(at 100% 0%, rgba(94, 53, 177, 0.1) 0px, transparent 50%);
+      radial-gradient(at 50% 0%, rgba(82, 113, 255, 0.1) 0px, transparent 50%), 
+      radial-gradient(at 100% 0%, rgba(82, 113, 255, 0.1) 0px, transparent 50%);
     background-attachment: fixed;
     font-size: 14px;
   }

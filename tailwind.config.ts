@@ -34,7 +34,7 @@ export default {
 				background: 'hsl(var(--background))',
 				foreground: 'hsl(var(--foreground))',
 				primary: {
-					DEFAULT: '#3b82f6',
+					DEFAULT: '#5271ff',
 					foreground: 'hsl(var(--primary-foreground))'
 				},
 				secondary: {
@@ -84,7 +84,7 @@ export default {
 				sm: 'calc(var(--radius) - 4px)'
 			},
 			boxShadow: {
-				glow: '0 0 15px -3px rgba(59, 130, 246, 0.4)',
+				glow: '0 0 15px -3px rgba(82, 113, 255, 0.4)',
 				card: '0 4px 20px -5px rgba(0, 0, 0, 0.2)'
 			},
 			keyframes: {

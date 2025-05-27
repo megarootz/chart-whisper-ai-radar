@@ -42,7 +42,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
           <div 
             className="absolute inset-0 rounded-full border-2 border-primary/30"
             style={{
-              boxShadow: `0 0 ${20 + pulseIntensity * 10}px rgba(124, 58, 237, ${0.1 + pulseIntensity * 0.2})`
+              boxShadow: `0 0 ${20 + pulseIntensity * 10}px rgba(82, 113, 255, ${0.1 + pulseIntensity * 0.2})`
             }}
           />
           
@@ -54,7 +54,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
               <div 
                 className="w-2 h-2 bg-primary rounded-full"
                 style={{
-                  boxShadow: `0 0 ${6 + pulseIntensity * 8}px rgba(124, 58, 237, ${0.3 + pulseIntensity * 0.4})`
+                  boxShadow: `0 0 ${6 + pulseIntensity * 8}px rgba(82, 113, 255, ${0.3 + pulseIntensity * 0.4})`
                 }}
               />
             </div>
@@ -72,7 +72,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
             <div 
               className="absolute top-1/2 left-1/2 w-20 h-20 transform -translate-x-1/2 -translate-y-1/2 rounded-full opacity-40"
               style={{
-                background: `conic-gradient(from ${rotation}deg, transparent, rgba(124, 58, 237, 0.4) 45deg, transparent 90deg)`
+                background: `conic-gradient(from ${rotation}deg, transparent, rgba(82, 113, 255, 0.4) 45deg, transparent 90deg)`
               }}
             />
           </div>
@@ -83,7 +83,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
               size={24} 
               className="text-primary/60"
               style={{
-                filter: `drop-shadow(0 0 ${3 + pulseIntensity * 6}px rgba(124, 58, 237, ${0.2 + pulseIntensity * 0.3}))`
+                filter: `drop-shadow(0 0 ${3 + pulseIntensity * 6}px rgba(82, 113, 255, ${0.2 + pulseIntensity * 0.3}))`
               }}
             />
           </div>
@@ -104,7 +104,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
       <div 
         className="absolute inset-16 md:inset-20 lg:inset-24 rounded-full border-2 border-primary/20"
         style={{
-          boxShadow: `0 0 ${isMobile ? 8 + pulseIntensity * 6 : 40 + pulseIntensity * 30}px rgba(124, 58, 237, ${0.2 + pulseIntensity * 0.3})`
+          boxShadow: `0 0 ${isMobile ? 8 + pulseIntensity * 6 : 40 + pulseIntensity * 30}px rgba(82, 113, 255, ${0.2 + pulseIntensity * 0.3})`
         }}
       />
       
@@ -116,7 +116,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
           <div 
             className={`${isMobile ? 'w-0.5 h-0.5' : 'w-4 h-4 md:w-5 md:h-5'} bg-primary rounded-full`}
             style={{
-              boxShadow: `0 0 ${isMobile ? 3 + pulseIntensity * 4 : 15 + pulseIntensity * 20}px rgba(124, 58, 237, ${0.5 + pulseIntensity * 0.5})`
+              boxShadow: `0 0 ${isMobile ? 3 + pulseIntensity * 4 : 15 + pulseIntensity * 20}px rgba(82, 113, 255, ${0.5 + pulseIntensity * 0.5})`
             }}
           />
         </div>
@@ -134,7 +134,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
         <div 
           className={`absolute top-1/2 left-1/2 ${sweepSize} transform -translate-x-1/2 -translate-y-1/2 rounded-full opacity-60`}
           style={{
-            background: `conic-gradient(from ${rotation}deg, transparent, rgba(124, 58, 237, 0.6) 45deg, transparent 90deg)`
+            background: `conic-gradient(from ${rotation}deg, transparent, rgba(82, 113, 255, 0.6) 45deg, transparent 90deg)`
           }}
         />
       </div>
@@ -145,7 +145,7 @@ const SpinningRadar = ({ isBackground = false }: SpinningRadarProps) => {
           size={iconSize} 
           className={`text-primary ${iconClasses}`}
           style={{
-            filter: `drop-shadow(0 0 ${isMobile ? 1 + pulseIntensity * 3 : 8 + pulseIntensity * 15}px rgba(124, 58, 237, ${0.4 + pulseIntensity * 0.4}))`
+            filter: `drop-shadow(0 0 ${isMobile ? 1 + pulseIntensity * 3 : 8 + pulseIntensity * 15}px rgba(82, 113, 255, ${0.4 + pulseIntensity * 0.4}))`
           }}
         />
       </div>
