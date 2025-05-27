@@ -28,25 +28,25 @@ const HomePage = () => {
     <div className="min-h-screen flex flex-col bg-chart-bg w-full max-w-full overflow-x-hidden">
       <Header />
       
-      <main className={`flex-grow flex flex-col w-full max-w-full overflow-x-hidden ${isMobile ? 'pt-20' : 'pt-16'}`}>
+      <main className={`flex-grow flex flex-col w-full max-w-full overflow-x-hidden ${isMobile ? 'pt-16' : 'pt-16'}`}>
         {/* Hero Section - Mobile first layout */}
-        <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-24 px-4'} w-full max-w-full overflow-x-hidden`}>
+        <section className={`${isMobile ? 'py-4 px-3' : 'py-12 md:py-24 px-4'} w-full max-w-full overflow-x-hidden`}>
           <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
             {isMobile ? (
               // Mobile layout: radar as background behind text
-              <div className="relative flex flex-col items-center justify-center min-h-[60vh] w-full max-w-full overflow-hidden">
+              <div className="relative flex flex-col items-center justify-center min-h-[50vh] w-full max-w-full overflow-hidden">
                 {/* Background radar */}
                 <SpinningRadar isBackground={true} />
                 
                 {/* Content overlay */}
-                <div className="relative z-10 w-full space-y-6 text-center px-2 max-w-full">
+                <div className="relative z-10 w-full space-y-4 text-center px-2 max-w-full">
                   <h1 className="text-3xl font-bold text-white leading-tight">
                     AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
                   </h1>
                   <p className="text-base text-gray-300 max-w-sm mx-auto">
                     Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
                   </p>
-                  <div className="pt-4">
+                  <div className="pt-2">
                     <Button 
                       onClick={handleGetStartedClick} 
                       size="default" 
@@ -88,7 +88,7 @@ const HomePage = () => {
         </section>
 
         {/* Banner Section */}
-        <section className={`${isMobile ? 'px-3 pb-8' : 'px-4 pb-8'} w-full max-w-full overflow-x-hidden`}>
+        <section className={`${isMobile ? 'px-3 pb-4' : 'px-4 pb-8'} w-full max-w-full overflow-x-hidden`}>
           <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
             <TickmillBanner />
           </div>
