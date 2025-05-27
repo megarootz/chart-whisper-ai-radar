@@ -25,13 +25,13 @@ const HomePage = () => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col bg-chart-bg">
+    <div className="min-h-screen flex flex-col bg-chart-bg overflow-x-hidden">
       <Header />
       
-      <main className="flex-grow flex flex-col">
+      <main className="flex-grow flex flex-col overflow-x-hidden">
         {/* Hero Section */}
-        <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-24 px-4'}`}>
-          <div className="container mx-auto max-w-6xl">
+        <section className={`py-8 ${isMobile ? 'px-4' : 'py-12 md:py-24 px-4'}`}>
+          <div className="container mx-auto max-w-6xl overflow-x-hidden">
             <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center">
               <div className="w-full md:w-1/2 space-y-4 md:space-y-6">
                 <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-5xl'} font-bold text-white leading-tight`}>
@@ -50,33 +50,35 @@ const HomePage = () => {
                   </Button>
                 </div>
               </div>
-              <div className="w-full md:w-1/2 flex justify-center items-center">
-                <SpinningRadar />
+              <div className="w-full md:w-1/2 flex justify-center items-center overflow-x-hidden">
+                <div className="max-w-full">
+                  <SpinningRadar />
+                </div>
               </div>
             </div>
           </div>
         </section>
 
         {/* Banner Section - Moved below hero */}
-        <section className={`${isMobile ? 'px-3 pb-4' : 'px-4 pb-8'}`}>
+        <section className={`${isMobile ? 'px-4 pb-4' : 'px-4 pb-8'}`}>
           <div className="container mx-auto max-w-6xl">
             <TickmillBanner />
           </div>
         </section>
         
         {/* Features Section */}
-        <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-20 px-4'} bg-black/30`}>
+        <section className={`py-8 ${isMobile ? 'px-4' : 'py-12 md:py-20 px-4'} bg-black/30`}>
           <div className="container mx-auto max-w-6xl">
             <div className="text-center mb-8 md:mb-12">
               <h2 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold text-white mb-3 md:mb-4`}>
                 Powerful Analysis Features
               </h2>
-              <p className="text-gray-400 max-w-2xl mx-auto text-sm md:text-base">
+              <p className="text-gray-400 max-w-2xl mx-auto text-sm md:text-base px-2">
                 Our AI trading assistant analyzes your charts with professional precision to identify key patterns and opportunities.
               </p>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
               <FeatureCard icon={<ChartCandlestick className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Pattern Recognition" description="Automatically detects chart patterns like head and shoulders, double tops, flags, and more." />
               <FeatureCard icon={<BarChart2 className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Support & Resistance" description="Identifies key support and resistance levels with precision to optimize your entries and exits." />
               <FeatureCard icon={<TrendingUp className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Trend Analysis" description="Determines the overall trend direction and strength to keep you trading with the momentum." />
@@ -94,14 +96,14 @@ const HomePage = () => {
         </section>
         
         {/* CTA Section - Improved for mobile */}
-        <section className={`py-8 ${isMobile ? 'px-3 pb-16' : 'py-12 md:py-20 px-4'}`}>
+        <section className={`py-8 ${isMobile ? 'px-4 pb-16' : 'py-12 md:py-20 px-4'}`}>
           <div className="container mx-auto max-w-4xl">
             <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-4 md:p-10 border border-gray-700 shadow-lg">
               <div className="text-center space-y-3 md:space-y-4">
                 <h2 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold text-white`}>
                   Ready to elevate your trading decisions?
                 </h2>
-                <p className={`text-gray-300 ${isMobile ? 'text-sm' : 'md:text-lg'} max-w-2xl mx-auto`}>
+                <p className={`text-gray-300 ${isMobile ? 'text-sm px-2' : 'md:text-lg'} max-w-2xl mx-auto`}>
                   Stop guessing chart patterns and support levels. Let our AI provide you with professional-grade analysis in seconds.
                 </p>
                 <div className="pt-3 md:pt-4">
