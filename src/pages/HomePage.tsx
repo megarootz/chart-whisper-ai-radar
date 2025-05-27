@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -32,23 +33,24 @@ const HomePage = () => {
         <section className={`py-8 ${isMobile ? 'px-3' : 'py-12 md:py-24 px-4'} w-full max-w-full overflow-x-hidden`}>
           <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
             {isMobile ? (
-              // Mobile layout: radar at top, text below
-              <div className="flex flex-col items-center space-y-6 w-full max-w-full overflow-x-hidden">
-                <div className="w-full flex justify-center overflow-x-hidden">
-                  <SpinningRadar />
-                </div>
-                <div className="w-full space-y-4 text-center px-1 max-w-full overflow-x-hidden">
-                  <h1 className="text-2xl font-bold text-white leading-tight">
+              // Mobile layout: radar as background behind text
+              <div className="relative flex flex-col items-center justify-center min-h-[60vh] w-full max-w-full overflow-hidden">
+                {/* Background radar */}
+                <SpinningRadar isBackground={true} />
+                
+                {/* Content overlay */}
+                <div className="relative z-10 w-full space-y-6 text-center px-2 max-w-full">
+                  <h1 className="text-3xl font-bold text-white leading-tight">
                     AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
                   </h1>
-                  <p className="text-base text-gray-300">
+                  <p className="text-base text-gray-300 max-w-sm mx-auto">
                     Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
                   </p>
-                  <div className="pt-3">
+                  <div className="pt-4">
                     <Button 
                       onClick={handleGetStartedClick} 
                       size="default" 
-                      className="bg-primary hover:bg-primary/90 text-white font-medium"
+                      className="bg-primary hover:bg-primary/90 text-white font-medium px-8 py-3"
                     >
                       Get Started
                     </Button>
