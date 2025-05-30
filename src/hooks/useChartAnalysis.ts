@@ -3,7 +3,6 @@ import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData, MarketFactor, ChartPattern, PriceLevel, TradingSetup } from '@/components/AnalysisResult';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { uploadChartImage } from '@/utils/storageUtils';
 import { Json } from '@/integrations/supabase/types';
 import { useAnalysis } from '@/contexts/AnalysisContext';
 import { formatTradingPair } from '@/utils/tradingPairUtils';
@@ -15,8 +14,8 @@ export const useChartAnalysis = () => {
   const { user } = useAuth();
   const { setLatestAnalysis, addToHistory } = useAnalysis();
 
-  // Save analysis to database
-  const saveAnalysisToDatabase = async (analysisData: AnalysisResultData, chartUrl?: string) => {
+  // Save analysis to database (without chart_url)
+  const saveAnalysisToDatabase = async (analysisData: AnalysisResultData) => {
     try {
       if (!user) {
         console.log("User not logged in, cannot save analysis");
@@ -24,15 +23,13 @@ export const useChartAnalysis = () => {
       }
       
       // Convert AnalysisResultData to a JSON-compatible object
-      // This fixes the type error by ensuring the data matches the Json type expected by Supabase
       const analysisDataJson: Json = JSON.parse(JSON.stringify(analysisData));
       
       console.log("Saving analysis to database:", {
         user_id: user.id,
         analysis_data: analysisDataJson,
         pair_name: analysisData.pairName,
-        timeframe: analysisData.timeframe,
-        chart_url: chartUrl
+        timeframe: analysisData.timeframe
       });
       
       const { data, error } = await supabase
@@ -42,7 +39,7 @@ export const useChartAnalysis = () => {
           analysis_data: analysisDataJson,
           pair_name: analysisData.pairName,
           timeframe: analysisData.timeframe,
-          chart_url: chartUrl
+          chart_url: null // Explicitly set to null since we're not storing images
         })
         .select()
         .single();
@@ -85,43 +82,6 @@ export const useChartAnalysis = () => {
     }
   };
 
-  // Initialize storage bucket if it doesn't exist
-  const initializeStorage = async (userId?: string) => {
-    try {
-      if (!userId) return false;
-      
-      // Check if chart_images bucket exists
-      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-      
-      if (bucketsError) {
-        console.error("Error listing buckets:", bucketsError);
-        return false;
-      }
-      
-      // If bucket doesn't exist, create it
-      if (!buckets?.find(bucket => bucket.name === 'chart_images')) {
-        console.log("Creating chart_images bucket...");
-        const { error: createError } = await supabase.storage.createBucket('chart_images', {
-          public: true
-        });
-        
-        if (createError) {
-          console.error("Error creating bucket:", createError);
-          return false;
-        }
-        
-        console.log("chart_images bucket created successfully");
-      } else {
-        console.log("chart_images bucket already exists");
-      }
-      
-      return true;
-    } catch (error) {
-      console.error("Error initializing storage:", error);
-      return false;
-    }
-  };
-
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
       setIsAnalyzing(true);
@@ -131,25 +91,12 @@ export const useChartAnalysis = () => {
         throw new Error('You must be logged in to analyze charts');
       }
       
-      // Convert image to base64
+      // Convert image to base64 (for AI analysis only - not stored)
       const base64Image = await fileToBase64(file);
-      
-      // Upload image to Supabase storage
-      let chartUrl: string | undefined;
-      try {
-        // Initialize storage bucket if needed
-        await initializeStorage(user.id);
-        
-        chartUrl = await uploadChartImage(file, user.id);
-        console.log('Chart image uploaded successfully:', chartUrl);
-      } catch (uploadError) {
-        console.error('Failed to upload chart image:', uploadError);
-        // Continue with analysis even if image upload fails
-      }
       
       console.log("Calling Supabase Edge Function to analyze chart");
       
-      // Call our Supabase Edge Function instead of making the API call directly
+      // Call our Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("analyze-chart", {
         body: {
           base64Image,
@@ -189,8 +136,8 @@ export const useChartAnalysis = () => {
       // Update the latest analysis in the context
       setLatestAnalysis(analysisData);
       
-      // Save the analysis to Supabase
-      await saveAnalysisToDatabase(analysisData, chartUrl);
+      // Save the analysis to Supabase (without image)
+      await saveAnalysisToDatabase(analysisData);
 
       toast({
         title: "Analysis Complete",
@@ -211,7 +158,6 @@ export const useChartAnalysis = () => {
     }
   };
 
-  // Process result in the new text format based on the updated template
   const processTextResult = (resultText: string): AnalysisResultData => {
     // Enhanced regex patterns for accurate pair detection
     const titlePatterns = [
@@ -400,7 +346,6 @@ export const useChartAnalysis = () => {
     };
   };
   
-  // Helper functions for extraction
   const extractPriceLevels = (text: string, isResistance: boolean): PriceLevel[] => {
     const levels: PriceLevel[] = [];
     

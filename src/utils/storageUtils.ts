@@ -1,6 +1,10 @@
 
 import { supabase } from '@/integrations/supabase/client';
 
+// Note: These storage functions are no longer used in the application
+// Images are converted to base64 for AI analysis but not stored permanently
+// This saves storage space and improves user privacy
+
 export const initializeStorage = async (userId?: string) => {
   try {
     // Check if the bucket exists
@@ -37,7 +41,8 @@ export const initializeStorage = async (userId?: string) => {
   }
 };
 
-// Function to upload a file to the chart_images bucket with proper owner assignment
+// DEPRECATED: Function to upload a file to the chart_images bucket
+// This function is no longer used as we don't store images permanently
 export const uploadChartImage = async (file: File, userId: string) => {
   try {
     if (!userId) {
