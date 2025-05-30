@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -76,11 +75,16 @@ const AnalyzePage = () => {
   return <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className={`flex-grow py-4 ${isMobile ? 'px-0 pb-20' : 'px-4 md:py-8 md:px-6'}`}>
+      <main className={`flex-grow pt-20 ${isMobile ? 'px-0 pb-20' : 'px-4 md:py-8 md:px-6'}`} style={{ paddingTop: isMobile ? '80px' : '100px' }}>
         <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-6xl'}`}>
           <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6 mb-6">
             <div className="flex justify-between items-center mb-4 md:mb-6">
-              <h2 className="text-lg md:text-xl font-bold text-white">Chart Analysis</h2>
+              <h2 
+                className="text-lg md:text-xl font-bold text-white"
+                style={{ color: '#ffffff', fontWeight: 'bold', fontSize: isMobile ? '1.125rem' : '1.25rem' }}
+              >
+                Chart Analysis
+              </h2>
             </div>
             
             {/* Combined Upload and Preview Section */}

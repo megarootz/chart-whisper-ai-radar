@@ -1,4 +1,3 @@
-
 import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -14,11 +13,21 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className={`flex-grow py-4 ${isMobile ? 'px-3' : 'py-6 px-6'} pb-20 md:pb-24`}>
+      <main className={`flex-grow pt-20 ${isMobile ? 'px-3 pb-20' : 'py-6 px-6 pb-24'}`} style={{ paddingTop: isMobile ? '80px' : '100px' }}>
         <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-4xl'}`}>
           <div className={`mb-4 md:mb-6 ${isMobile ? 'px-1' : 'px-0'}`}>
-            <h1 className="text-xl md:text-2xl font-bold text-white mb-1 md:mb-2">Profile</h1>
-            <p className="text-gray-400 text-sm md:text-base">Manage your account and settings</p>
+            <h1 
+              className="text-xl md:text-2xl font-bold text-white mb-1 md:mb-2" 
+              style={{ color: '#ffffff', fontWeight: 'bold', fontSize: isMobile ? '1.25rem' : '1.5rem' }}
+            >
+              Profile
+            </h1>
+            <p 
+              className="text-gray-400 text-sm md:text-base"
+              style={{ color: '#9ca3af' }}
+            >
+              Manage your account and settings
+            </p>
           </div>
           
           <div className={`bg-chart-card border border-gray-700 rounded-lg overflow-hidden ${isMobile ? 'mx-0' : 'mx-0 md:mx-0'}`}>

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -78,7 +77,7 @@ const AnalysisDetailsPage = () => {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col">
         <Header />
-        <main className={`flex-grow ${isMobile ? 'py-4 px-3' : 'py-8 px-6'}`}>
+        <main className={`flex-grow pt-20 ${isMobile ? 'px-3' : 'py-8 px-6'}`} style={{ paddingTop: isMobile ? '80px' : '100px' }}>
           <div className={`${isMobile ? 'max-w-full' : 'container mx-auto max-w-6xl'}`}>
             <div className={`text-center ${isMobile ? 'py-8' : 'py-12'}`}>
               <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Loading analysis details...</p>
@@ -94,7 +93,7 @@ const AnalysisDetailsPage = () => {
     return (
       <div className="min-h-screen bg-chart-bg flex flex-col">
         <Header />
-        <main className={`flex-grow ${isMobile ? 'py-4 px-3' : 'py-8 px-6'}`}>
+        <main className={`flex-grow pt-20 ${isMobile ? 'px-3' : 'py-8 px-6'}`} style={{ paddingTop: isMobile ? '80px' : '100px' }}>
           <div className={`${isMobile ? 'max-w-full' : 'container mx-auto max-w-6xl'}`}>
             <div className={`text-center ${isMobile ? 'py-8' : 'py-12'}`}>
               <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Analysis not found or you don't have permission to view it.</p>
@@ -113,7 +112,7 @@ const AnalysisDetailsPage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className={`flex-grow ${isMobile ? 'py-4 px-3 pb-24' : 'py-8 px-6'}`}>
+      <main className={`flex-grow pt-20 ${isMobile ? 'px-3 pb-24' : 'py-8 px-6'}`} style={{ paddingTop: isMobile ? '80px' : '100px' }}>
         <div className={`${isMobile ? 'max-w-full' : 'container mx-auto max-w-6xl'}`}>
           <div className={`${isMobile ? 'mb-4' : 'mb-6'}`}>
             <Button 
@@ -125,7 +124,12 @@ const AnalysisDetailsPage = () => {
               Back to History
             </Button>
             
-            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white ${isMobile ? 'mb-1' : 'mb-2'}`}>Analysis Details</h1>
+            <h1 
+              className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white ${isMobile ? 'mb-1' : 'mb-2'}`}
+              style={{ color: '#ffffff', fontWeight: 'bold', fontSize: isMobile ? '1.25rem' : '1.5rem' }}
+            >
+              Analysis Details
+            </h1>
             {analysis && (
               <div className="flex items-center">
                 <span className={`text-primary ${isMobile ? 'text-lg' : 'text-xl'} font-semibold mr-2`}>

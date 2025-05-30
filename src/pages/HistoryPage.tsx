@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -75,11 +74,21 @@ const HistoryPage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className={`flex-grow ${isMobile ? 'py-4 px-3 pb-24' : 'py-8 px-6'}`}>
+      <main className={`flex-grow pt-20 ${isMobile ? 'px-3 pb-24' : 'py-8 px-6'}`} style={{ paddingTop: isMobile ? '80px' : '100px' }}>
         <div className={`${isMobile ? 'max-w-full' : 'container mx-auto max-w-6xl'}`}>
           <div className={`${isMobile ? 'mb-4' : 'mb-6'}`}>
-            <h1 className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white`}>Analysis History</h1>
-            <p className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}>Review and manage your previous chart analyses</p>
+            <h1 
+              className={`${isMobile ? 'text-xl' : 'text-2xl'} font-bold text-white`}
+              style={{ color: '#ffffff', fontWeight: 'bold', fontSize: isMobile ? '1.25rem' : '1.5rem' }}
+            >
+              Analysis History
+            </h1>
+            <p 
+              className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}
+              style={{ color: '#9ca3af' }}
+            >
+              Review and manage your previous chart analyses
+            </p>
           </div>
           
           <div className={`${isMobile ? 'mb-4' : 'mb-8'} flex ${isMobile ? 'flex-col space-y-3' : 'justify-between items-center'}`}>
