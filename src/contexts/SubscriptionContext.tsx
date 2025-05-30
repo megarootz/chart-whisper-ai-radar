@@ -78,8 +78,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
 
-      // Type cast the Json response to UsageData
-      const usageData = data as UsageData;
+      // Type cast the Json response to UsageData via unknown
+      const usageData = data as unknown as UsageData;
       setUsage(usageData);
       return usageData;
     } catch (error) {
@@ -102,8 +102,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
 
-      // Type cast the Json response to UsageData
-      const usageData = data as UsageData;
+      // Type cast the Json response to UsageData via unknown
+      const usageData = data as unknown as UsageData;
       setUsage(usageData);
       return usageData;
     } catch (error) {
