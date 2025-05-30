@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Json } from '@/integrations/supabase/types';
 import { useAnalysis } from '@/contexts/AnalysisContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 import { formatTradingPair } from '@/utils/tradingPairUtils';
 
 export const useChartAnalysis = () => {
@@ -13,6 +14,7 @@ export const useChartAnalysis = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const { setLatestAnalysis, addToHistory } = useAnalysis();
+  const { incrementUsage, checkUsageLimits } = useSubscription();
 
   // Save analysis to database (without chart_url)
   const saveAnalysisToDatabase = async (analysisData: AnalysisResultData) => {
@@ -90,6 +92,21 @@ export const useChartAnalysis = () => {
       if (!user) {
         throw new Error('You must be logged in to analyze charts');
       }
+
+      // Check usage limits before proceeding
+      const usageData = await checkUsageLimits();
+      if (!usageData?.can_analyze) {
+        const message = usageData?.daily_remaining === 0 
+          ? `Daily limit reached (${usageData.daily_limit}). Upgrade your plan for more analyses.`
+          : `Monthly limit reached (${usageData.monthly_limit}). Upgrade your plan for more analyses.`;
+        
+        toast({
+          title: "Usage Limit Reached",
+          description: message,
+          variant: "destructive",
+        });
+        return;
+      }
       
       // Convert image to base64 (for AI analysis only - not stored)
       const base64Image = await fileToBase64(file);
@@ -129,6 +146,9 @@ export const useChartAnalysis = () => {
       
       // Process response as text format using the new template structure
       const analysisData = processTextResult(resultText);
+      
+      // Increment usage count after successful analysis
+      await incrementUsage();
       
       // Save the analysis result
       setAnalysisResult(analysisData);

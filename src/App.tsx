@@ -9,11 +9,13 @@ import AnalyzePage from "./pages/AnalyzePage";
 import HistoryPage from "./pages/HistoryPage";
 import AnalysisDetailsPage from "./pages/AnalysisDetailsPage";
 import ProfilePage from "./pages/ProfilePage";
+import SubscriptionPage from "./pages/SubscriptionPage";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import { useIsMobile } from "./hooks/use-mobile";
 import { AuthProvider } from "./contexts/AuthContext";
+import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useState } from "react";
 import { AnalysisProvider } from "./contexts/AnalysisContext";
@@ -29,9 +31,11 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AnalysisProvider>
-              <AppRoutes />
-            </AnalysisProvider>
+            <SubscriptionProvider>
+              <AnalysisProvider>
+                <AppRoutes />
+              </AnalysisProvider>
+            </SubscriptionProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
@@ -39,7 +43,7 @@ const App = () => {
   );
 };
 
-// Separate component for all routes, now correctly wrapped inside AuthProvider
+// Separate component for all routes, now correctly wrapped inside all providers
 const AppRoutes = () => {
   const isMobile = useIsMobile();
   
@@ -77,6 +81,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/subscription" 
+          element={
+            <ProtectedRoute>
+              <SubscriptionPage />
             </ProtectedRoute>
           } 
         />
