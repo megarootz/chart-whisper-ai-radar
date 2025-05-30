@@ -6,7 +6,6 @@ import { User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import UsageDisplay from '@/components/UsageDisplay';
-import UsageDebug from '@/components/UsageDebug';
 
 const ProfilePage = () => {
   const isMobile = useIsMobile();
@@ -34,9 +33,6 @@ const ProfilePage = () => {
           </div>
 
           <UsageDisplay />
-          
-          {/* Debug component for troubleshooting - should be removed in production */}
-          <UsageDebug />
           
           <div className={`bg-chart-card border border-gray-700 rounded-lg overflow-hidden ${isMobile ? 'mx-0' : 'mx-0 md:mx-0'}`}>
             <div className="p-4 md:p-5 flex items-center">

@@ -104,14 +104,20 @@ export const useChartAnalysis = () => {
         throw new Error('Failed to check usage limits. Please try again.');
       }
       
-      if (!usageData.can_analyze) {
-        const message = usageData.daily_remaining === 0 
-          ? `Daily limit reached (${usageData.daily_count}/${usageData.daily_limit}). Upgrade your plan for more analyses.`
-          : `Monthly limit reached (${usageData.monthly_count}/${usageData.monthly_limit}). Upgrade your plan for more analyses.`;
-        
+      // Fixed logic: check if user can analyze based on correct limits
+      if (usageData.daily_count >= usageData.daily_limit) {
         toast({
-          title: "Usage Limit Reached",
-          description: message,
+          title: "Daily Limit Reached",
+          description: `You've reached your daily limit (${usageData.daily_count}/${usageData.daily_limit}). Upgrade your plan for more analyses.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (usageData.monthly_count >= usageData.monthly_limit) {
+        toast({
+          title: "Monthly Limit Reached", 
+          description: `You've reached your monthly limit (${usageData.monthly_count}/${usageData.monthly_limit}). Upgrade your plan for more analyses.`,
           variant: "destructive",
         });
         return;

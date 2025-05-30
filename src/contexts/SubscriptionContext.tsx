@@ -84,8 +84,16 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
-      setUsage(usageData);
-      return usageData;
+      
+      // Ensure the can_analyze flag is correctly set based on actual limits
+      const correctedUsageData = {
+        ...usageData,
+        can_analyze: usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit
+      };
+      
+      console.log('Corrected usage data:', correctedUsageData);
+      setUsage(correctedUsageData);
+      return correctedUsageData;
     } catch (error) {
       console.error('Error in checkUsageLimits:', error);
       return null;
@@ -112,8 +120,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
-      setUsage(usageData);
-      return usageData;
+      
+      // Ensure the can_analyze flag is correctly set after increment
+      const correctedUsageData = {
+        ...usageData,
+        can_analyze: usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit
+      };
+      
+      setUsage(correctedUsageData);
+      return correctedUsageData;
     } catch (error) {
       console.error('Error in incrementUsage:', error);
       return null;
