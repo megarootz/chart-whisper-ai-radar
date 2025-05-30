@@ -78,8 +78,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
 
-      setUsage(data);
-      return data;
+      // Type cast the Json response to UsageData
+      const usageData = data as UsageData;
+      setUsage(usageData);
+      return usageData;
     } catch (error) {
       console.error('Error in checkUsageLimits:', error);
       return null;
@@ -100,8 +102,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
 
-      setUsage(data);
-      return data;
+      // Type cast the Json response to UsageData
+      const usageData = data as UsageData;
+      setUsage(usageData);
+      return usageData;
     } catch (error) {
       console.error('Error in incrementUsage:', error);
       return null;
