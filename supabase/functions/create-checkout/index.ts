@@ -60,20 +60,14 @@ serve(async (req) => {
       logStep("No existing customer found");
     }
 
-    // Define pricing based on plan
-    const pricing = {
-      starter: {
-        amount: 999, // $9.99
-        name: "Starter Plan - 15 analyses/day, 450/month"
-      },
-      pro: {
-        amount: 1899, // $18.99
-        name: "Pro Plan - 30 analyses/day, 900/month"
-      }
+    // Use actual Stripe price IDs
+    const priceIds = {
+      starter: "price_1RUXRIF5K6hqVqXWXsYpHFE7",
+      pro: "price_1RUXSEF5K6hqVqXWwFh3SfM2"
     };
 
-    const selectedPlan = pricing[plan as keyof typeof pricing];
-    logStep("Creating checkout session", { plan, amount: selectedPlan.amount });
+    const priceId = priceIds[plan as keyof typeof priceIds];
+    logStep("Using price ID", { plan, priceId });
 
     const origin = req.headers.get("origin") || "http://localhost:3000";
     
@@ -83,15 +77,7 @@ serve(async (req) => {
       payment_method_types: ['card', 'fpx'], // Include FPX for Malaysia
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: { 
-              name: selectedPlan.name,
-              description: `Chart Analysis ${plan.charAt(0).toUpperCase() + plan.slice(1)} Plan`
-            },
-            unit_amount: selectedPlan.amount,
-            recurring: { interval: "month" },
-          },
+          price: priceId,
           quantity: 1,
         },
       ],
