@@ -76,9 +76,6 @@ serve(async (req) => {
       customer_email: customerId ? undefined : user.email,
       payment_method_types: [
         'card',
-        'apple_pay',
-        'google_pay',
-        'grabpay',
         'link'
       ],
       line_items: [
