@@ -1,7 +1,7 @@
 
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Upload, History, User } from "lucide-react";
+import { Home, Upload, History, User, DollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -17,6 +17,12 @@ const BottomNav = () => {
       href: "/",
       icon: Home,
       isActive: location.pathname === "/"
+    },
+    {
+      label: "Pricing",
+      href: "/pricing",
+      icon: DollarSign,
+      isActive: location.pathname === "/pricing"
     },
     {
       label: "Analyze",

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Menu, X, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -22,9 +21,9 @@ const Header = () => {
 
   const navItems = [
     { label: 'Home', href: '/' },
+    { label: 'Pricing', href: '/pricing' },
     { label: 'Analyze', href: '/analyze' },
     { label: 'History', href: '/history' },
-    { label: 'Profile', href: '/profile' },
   ];
 
   const handleSignOut = async () => {
@@ -143,9 +142,9 @@ const Header = () => {
   );
 };
 
-export default Header;
-
 // Helper function for className conditionals - needed since we're importing it
 const cn = (...classes: (string | boolean | undefined)[]) => {
   return classes.filter(Boolean).join(' ');
 };
+
+export default Header;

@@ -1,9 +1,11 @@
+
 import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
+import UsageDisplay from '@/components/UsageDisplay';
 
 const ProfilePage = () => {
   const isMobile = useIsMobile();
@@ -29,6 +31,8 @@ const ProfilePage = () => {
               Manage your account and settings
             </p>
           </div>
+
+          <UsageDisplay />
           
           <div className={`bg-chart-card border border-gray-700 rounded-lg overflow-hidden ${isMobile ? 'mx-0' : 'mx-0 md:mx-0'}`}>
             <div className="p-4 md:p-5 flex items-center">
