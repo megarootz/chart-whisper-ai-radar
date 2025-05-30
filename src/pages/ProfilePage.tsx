@@ -1,159 +1,46 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { User } from 'lucide-react';
+import React from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import { User } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 const ProfilePage = () => {
-  const { user } = useAuth();
-  const { toast } = useToast();
   const isMobile = useIsMobile();
-  const [username, setUsername] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-
-  useEffect(() => {
-    if (user) {
-      fetchProfile();
-    }
-  }, [user]);
-
-  const fetchProfile = async () => {
-    try {
-      setIsLoading(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('id', user?.id)
-        .single();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (data) {
-        setUsername(data.username || '');
-      }
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load profile",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSaveProfile = async () => {
-    try {
-      setIsSaving(true);
-      
-      const { error } = await supabase
-        .from('profiles')
-        .upsert({
-          id: user?.id,
-          username: username.trim() || null,
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      });
-    } catch (error) {
-      console.error('Error updating profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update profile",
-        variant: "destructive",
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  if (isLoading) {
-    return (
-      <div className={`flex flex-col min-h-screen bg-chart-bg ${isMobile ? 'pb-24' : ''}`}>
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8 md:px-6">
-          <div className="max-w-2xl mx-auto">
-            <p className="text-white">Loading profile...</p>
-          </div>
-        </main>
-        {!isMobile && <Footer />}
-      </div>
-    );
-  }
-
+  const { user } = useAuth();
+  
   return (
-    <div className={`flex flex-col min-h-screen bg-chart-bg ${isMobile ? 'pb-24' : ''}`}>
+    <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8 md:px-6">
-        <div className="max-w-2xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-2">Profile Settings</h1>
-            <p className="text-chart-text">Manage your account settings and preferences.</p>
+      
+      <main className={`flex-grow py-4 ${isMobile ? 'px-3' : 'py-6 px-6'} pb-20 md:pb-24`}>
+        <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-4xl'}`}>
+          <div className={`mb-4 md:mb-6 ${isMobile ? 'px-1' : 'px-0'}`}>
+            <h1 className="text-xl md:text-2xl font-bold text-white mb-1 md:mb-2">Profile</h1>
+            <p className="text-gray-400 text-sm md:text-base">Manage your account and settings</p>
           </div>
-
-          <Card className="bg-chart-card border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center gap-3">
-                <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center">
-                  <User className="h-8 w-8 text-gray-300" />
-                </div>
-                <div>
-                  <h2 className="text-xl">Account Information</h2>
-                  <p className="text-sm text-chart-text font-normal">{user?.email}</p>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-white">Username</Label>
-                <Input
-                  id="username"
-                  type="text"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
-                  className="bg-gray-800 border-gray-600 text-white"
-                />
+          
+          <div className={`bg-chart-card border border-gray-700 rounded-lg overflow-hidden ${isMobile ? 'mx-0' : 'mx-0 md:mx-0'}`}>
+            <div className="p-4 md:p-5 flex items-center">
+              <div className="bg-primary/10 text-primary rounded-full w-12 h-12 md:w-16 md:h-16 flex items-center justify-center mr-3 md:mr-4">
+                <User className="h-6 w-6 md:h-8 md:w-8" />
               </div>
-
-              <div className="space-y-2">
-                <Label className="text-white">Email</Label>
-                <Input
-                  type="email"
-                  value={user?.email || ''}
-                  disabled
-                  className="bg-gray-700 border-gray-600 text-gray-400"
-                />
-                <p className="text-xs text-chart-text">Email cannot be changed</p>
+              <div>
+                <h2 className="text-lg md:text-xl font-medium text-white">
+                  {user?.email?.split('@')[0] || 'User'}
+                </h2>
+                <p className="text-gray-400 text-sm md:text-base">{user?.email || 'No email available'}</p>
               </div>
-
-              <Button 
-                onClick={handleSaveProfile}
-                disabled={isSaving}
-                className="w-full"
-              >
-                {isSaving ? "Saving..." : "Save Changes"}
-              </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
+          
+          <div className="mt-4 md:mt-6 text-center text-gray-400 text-xs md:text-sm px-4 md:px-0">
+            <p>ForexRadar7 v1.0.0</p>
+          </div>
         </div>
       </main>
+      
       {!isMobile && <Footer />}
     </div>
   );
