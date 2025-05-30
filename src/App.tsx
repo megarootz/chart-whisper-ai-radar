@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +11,7 @@ import AnalysisDetailsPage from "./pages/AnalysisDetailsPage";
 import ProfilePage from "./pages/ProfilePage";
 import SubscriptionPage from "./pages/SubscriptionPage";
 import AuthPage from "./pages/AuthPage";
+import PricingPage from "./pages/PricingPage";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import { useIsMobile } from "./hooks/use-mobile";
