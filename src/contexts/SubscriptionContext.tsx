@@ -69,6 +69,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!user) return null;
 
     try {
+      console.log('Checking usage limits for user:', user.id);
+      
       const { data, error } = await supabase.rpc('check_usage_limits', {
         p_user_id: user.id
       });
@@ -78,6 +80,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
 
+      console.log('Usage limits response:', data);
+      
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       setUsage(usageData);
@@ -92,6 +96,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!user) return null;
 
     try {
+      console.log('Incrementing usage for user:', user.id);
+      
       const { data, error } = await supabase.rpc('increment_usage_count', {
         p_user_id: user.id,
         p_email: user.email
@@ -102,6 +108,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
 
+      console.log('Usage increment response:', data);
+      
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       setUsage(usageData);
@@ -162,9 +170,11 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   useEffect(() => {
     if (user) {
+      console.log('User logged in, checking subscription and usage');
       refreshSubscription();
       checkUsageLimits();
     } else {
+      console.log('No user, clearing subscription and usage data');
       setSubscription(null);
       setUsage(null);
       setLoading(false);

@@ -93,12 +93,21 @@ export const useChartAnalysis = () => {
         throw new Error('You must be logged in to analyze charts');
       }
 
-      // Check usage limits before proceeding
+      console.log('Starting chart analysis for user:', user.id);
+
+      // Check usage limits BEFORE proceeding - this is critical
+      console.log('Checking usage limits before analysis...');
       const usageData = await checkUsageLimits();
-      if (!usageData?.can_analyze) {
-        const message = usageData?.daily_remaining === 0 
-          ? `Daily limit reached (${usageData.daily_limit}). Upgrade your plan for more analyses.`
-          : `Monthly limit reached (${usageData.monthly_limit}). Upgrade your plan for more analyses.`;
+      console.log('Usage data received:', usageData);
+      
+      if (!usageData) {
+        throw new Error('Failed to check usage limits. Please try again.');
+      }
+      
+      if (!usageData.can_analyze) {
+        const message = usageData.daily_remaining === 0 
+          ? `Daily limit reached (${usageData.daily_count}/${usageData.daily_limit}). Upgrade your plan for more analyses.`
+          : `Monthly limit reached (${usageData.monthly_count}/${usageData.monthly_limit}). Upgrade your plan for more analyses.`;
         
         toast({
           title: "Usage Limit Reached",
@@ -107,6 +116,8 @@ export const useChartAnalysis = () => {
         });
         return;
       }
+      
+      console.log('Usage check passed, proceeding with analysis');
       
       // Convert image to base64 (for AI analysis only - not stored)
       const base64Image = await fileToBase64(file);
@@ -147,8 +158,10 @@ export const useChartAnalysis = () => {
       // Process response as text format using the new template structure
       const analysisData = processTextResult(resultText);
       
-      // Increment usage count after successful analysis
-      await incrementUsage();
+      // Increment usage count AFTER successful analysis
+      console.log('Analysis successful, incrementing usage count...');
+      const updatedUsage = await incrementUsage();
+      console.log('Usage incremented:', updatedUsage);
       
       // Save the analysis result
       setAnalysisResult(analysisData);
