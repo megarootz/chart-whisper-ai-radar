@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -230,19 +229,6 @@ const PricingPage = () => {
               </Card>
             ))}
           </div>
-
-          {/* Manage Subscription Button */}
-          {subscription?.subscribed && (
-            <div className="text-center mb-8">
-              <Button 
-                variant="outline" 
-                onClick={openCustomerPortal}
-                className="text-white border-gray-700 hover:bg-gray-800"
-              >
-                Manage Subscription
-              </Button>
-            </div>
-          )}
 
           <div className="text-center text-gray-400 text-sm">
             <p>All plans include secure payment processing and can be cancelled anytime.</p>
