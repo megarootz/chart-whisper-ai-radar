@@ -95,7 +95,7 @@ export const useChartAnalysis = () => {
 
       console.log('Starting chart analysis for user:', user.id);
 
-      // Check usage limits BEFORE proceeding - this is critical for free users
+      // CRITICAL: Check usage limits BEFORE proceeding
       console.log('Checking usage limits before analysis...');
       const usageData = await checkUsageLimits();
       console.log('Usage data received:', usageData);
@@ -104,42 +104,63 @@ export const useChartAnalysis = () => {
         throw new Error('Failed to check usage limits. Please try again.');
       }
       
-      // Strict limit checking for free users (3 per day, 90 per month)
-      if (usageData.daily_count >= usageData.daily_limit) {
-        const tierText = usageData.subscription_tier === 'free' ? 'Free users are limited to 3 analyses per day' : 
-                        `You've reached your daily limit (${usageData.daily_count}/${usageData.daily_limit})`;
+      // STRICT enforcement for FREE users - exactly 3 per day, 90 per month
+      if (usageData.subscription_tier === 'free') {
+        console.log(`FREE USER CHECK: daily_count=${usageData.daily_count}, monthly_count=${usageData.monthly_count}`);
         
-        toast({
-          title: "Daily Limit Reached",
-          description: `${tierText}. ${usageData.subscription_tier === 'free' ? 'Upgrade your plan or wait until tomorrow for more analyses.' : 'Please wait until tomorrow or upgrade your plan.'}`,
-          variant: "destructive",
-        });
-        return;
+        if (usageData.daily_count >= 3) {
+          toast({
+            title: "Daily Limit Reached",
+            description: "Free users can only analyze 3 charts per day. Please upgrade to Starter or Pro plan for more analyses, or wait until tomorrow.",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (usageData.monthly_count >= 90) {
+          toast({
+            title: "Monthly Limit Reached", 
+            description: "Free users can only analyze 90 charts per month. Please upgrade to Starter or Pro plan for unlimited monthly analyses.",
+            variant: "destructive",
+          });
+          return;
+        }
+      } else {
+        // For paid users, check their respective limits
+        if (usageData.daily_count >= usageData.daily_limit) {
+          toast({
+            title: "Daily Limit Reached",
+            description: `You've reached your daily limit (${usageData.daily_count}/${usageData.daily_limit}). Please wait until tomorrow or upgrade your plan.`,
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        if (usageData.monthly_count >= usageData.monthly_limit) {
+          toast({
+            title: "Monthly Limit Reached", 
+            description: `You've reached your monthly limit (${usageData.monthly_count}/${usageData.monthly_limit}). Please upgrade your plan for more analyses.`,
+            variant: "destructive",
+          });
+          return;
+        }
       }
       
-      if (usageData.monthly_count >= usageData.monthly_limit) {
-        const tierText = usageData.subscription_tier === 'free' ? 'Free users are limited to 90 analyses per month' : 
-                        `You've reached your monthly limit (${usageData.monthly_count}/${usageData.monthly_limit})`;
-        
-        toast({
-          title: "Monthly Limit Reached", 
-          description: `${tierText}. Upgrade your plan for more analyses.`,
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Double check that user can analyze
+      // Final check using can_analyze flag
       if (!usageData.can_analyze) {
+        const message = usageData.subscription_tier === 'free' ? 
+          "Free users can analyze only 3 charts per day or 90 per month. Please upgrade to continue." :
+          "You have reached your usage limits. Please upgrade your plan or wait for the next period.";
+          
         toast({
           title: "Usage Limit Reached",
-          description: "You have reached your usage limits. Please upgrade your plan or wait for the next period.",
+          description: message,
           variant: "destructive",
         });
         return;
       }
       
-      console.log('Usage check passed, proceeding with analysis');
+      console.log('✅ Usage check passed, proceeding with analysis');
       
       // Convert image to base64 (for AI analysis only - not stored)
       const base64Image = await fileToBase64(file);
@@ -181,7 +202,7 @@ export const useChartAnalysis = () => {
       const analysisData = processTextResult(resultText);
       
       // Increment usage count AFTER successful analysis
-      console.log('Analysis successful, incrementing usage count...');
+      console.log('✅ Analysis successful, incrementing usage count...');
       const updatedUsage = await incrementUsage();
       console.log('Usage incremented:', updatedUsage);
       

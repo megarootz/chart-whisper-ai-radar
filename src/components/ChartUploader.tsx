@@ -44,10 +44,32 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
       return;
     }
 
+    // STRICT enforcement for free users
+    if (usage && usage.subscription_tier === 'free') {
+      if (usage.daily_count >= 3) {
+        toast({
+          title: "Free Plan Daily Limit Reached",
+          description: "You can only analyze 3 charts per day with the free plan. Upgrade to Starter or Pro for more analyses, or wait until tomorrow.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (usage.monthly_count >= 90) {
+        toast({
+          title: "Free Plan Monthly Limit Reached",
+          description: "You can only analyze 90 charts per month with the free plan. Upgrade to Starter or Pro for unlimited monthly analyses.",
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+
+    // General can_analyze check for all users
     if (usage && !usage.can_analyze) {
       const isFreeUser = usage.subscription_tier === 'free';
       const limitMessage = isFreeUser ? 
-        "You've reached your daily limit of 3 analyses or monthly limit of 90 analyses. Please upgrade your plan or wait until tomorrow." :
+        "Free plan: 3 analyses per day, 90 per month. Please upgrade to continue or wait until tomorrow." :
         "You've reached your analysis limit. Please upgrade your plan to continue.";
         
       toast({
@@ -63,6 +85,31 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
     // Call the parent's onUpload function
     onUpload(file);
   };
+
+  // Determine button text and disabled state
+  const getButtonState = () => {
+    if (isUploading) return { text: "Analyzing Chart...", disabled: true };
+    if (!file) return { text: "Select an image first", disabled: true };
+    
+    if (usage && usage.subscription_tier === 'free') {
+      if (usage.daily_count >= 3) {
+        return { text: "Daily Limit Reached (3/3)", disabled: true };
+      }
+      if (usage.monthly_count >= 90) {
+        return { text: "Monthly Limit Reached (90/90)", disabled: true };
+      }
+      const remaining = 3 - usage.daily_count;
+      return { text: `Analyze Chart (${remaining} left today)`, disabled: false };
+    }
+    
+    if (usage && !usage.can_analyze) {
+      return { text: "Usage Limit Reached", disabled: true };
+    }
+    
+    return { text: "Analyze Chart", disabled: false };
+  };
+
+  const buttonState = getButtonState();
 
   return (
     <div className="space-y-6">
@@ -114,13 +161,9 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
             type="submit" 
             onClick={handleSubmit} 
             className="w-full" 
-            disabled={isUploading || !file || (usage && !usage.can_analyze)}
+            disabled={buttonState.disabled}
           >
-            {isUploading ? "Analyzing Chart..." : 
-             usage && !usage.can_analyze ? (
-               usage.subscription_tier === 'free' ? "Daily/Monthly Limit Reached" : "Usage Limit Reached"
-             ) : 
-             "Analyze Chart"}
+            {buttonState.text}
           </Button>
         </CardFooter>
       </Card>

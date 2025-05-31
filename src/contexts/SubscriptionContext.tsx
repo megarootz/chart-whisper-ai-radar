@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -85,10 +84,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       
-      // Ensure strict enforcement for free users (3 daily, 90 monthly)
+      // STRICT ENFORCEMENT: For free users, absolutely no analysis if daily >= 3 OR monthly >= 90
       const correctedUsageData = {
         ...usageData,
-        // For free users, enforce strict limits
         daily_limit: usageData.subscription_tier === 'free' ? 3 : usageData.daily_limit,
         monthly_limit: usageData.subscription_tier === 'free' ? 90 : usageData.monthly_limit,
         daily_remaining: usageData.subscription_tier === 'free' ? 
@@ -97,13 +95,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         monthly_remaining: usageData.subscription_tier === 'free' ? 
           Math.max(0, 90 - usageData.monthly_count) : 
           Math.max(0, usageData.monthly_limit - usageData.monthly_count),
-        // Free users: strict enforcement - no analysis if daily >= 3 OR monthly >= 90
+        // CRITICAL: Free users cannot analyze if they've used 3+ today OR 90+ this month
         can_analyze: usageData.subscription_tier === 'free' ? 
           (usageData.daily_count < 3 && usageData.monthly_count < 90) :
           (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
       };
       
-      console.log('Corrected usage data with strict free user limits:', correctedUsageData);
+      console.log('STRICT free user enforcement - corrected usage data:', correctedUsageData);
       setUsage(correctedUsageData);
       return correctedUsageData;
     } catch (error) {
@@ -133,10 +131,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       
-      // Ensure strict enforcement after increment for free users
+      // STRICT ENFORCEMENT: Ensure limits are properly enforced after increment
       const correctedUsageData = {
         ...usageData,
-        // For free users, enforce strict limits
         daily_limit: usageData.subscription_tier === 'free' ? 3 : usageData.daily_limit,
         monthly_limit: usageData.subscription_tier === 'free' ? 90 : usageData.monthly_limit,
         daily_remaining: usageData.subscription_tier === 'free' ? 
@@ -145,12 +142,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         monthly_remaining: usageData.subscription_tier === 'free' ? 
           Math.max(0, 90 - usageData.monthly_count) : 
           Math.max(0, usageData.monthly_limit - usageData.monthly_count),
-        // Free users: strict enforcement after increment
+        // CRITICAL: After increment, check if user has reached limits
         can_analyze: usageData.subscription_tier === 'free' ? 
           (usageData.daily_count < 3 && usageData.monthly_count < 90) :
           (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
       };
       
+      console.log('Post-increment usage data with strict enforcement:', correctedUsageData);
       setUsage(correctedUsageData);
       return correctedUsageData;
     } catch (error) {

@@ -29,11 +29,16 @@ const UsageDisplay = () => {
   const currentTier = subscription?.subscription_tier || 'free';
   const isFreeUser = currentTier === 'free';
 
-  // For free users, ensure we display the correct limits (3 daily, 90 monthly)
+  // For free users: STRICT limits (3 daily, 90 monthly)
   const displayDailyLimit = isFreeUser ? 3 : usage.daily_limit;
   const displayMonthlyLimit = isFreeUser ? 90 : usage.monthly_limit;
   const displayDailyRemaining = isFreeUser ? Math.max(0, 3 - usage.daily_count) : usage.daily_remaining;
   const displayMonthlyRemaining = isFreeUser ? Math.max(0, 90 - usage.monthly_count) : usage.monthly_remaining;
+
+  // Check if free user has hit limits
+  const freeUserDailyLimitHit = isFreeUser && usage.daily_count >= 3;
+  const freeUserMonthlyLimitHit = isFreeUser && usage.monthly_count >= 90;
+  const freeUserLimitHit = freeUserDailyLimitHit || freeUserMonthlyLimitHit;
 
   return (
     <Card className="bg-chart-card border-gray-700 mb-6">
@@ -65,16 +70,21 @@ const UsageDisplay = () => {
         <div>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-400">Daily Usage</span>
-            <span className="text-white">{usage.daily_count}/{displayDailyLimit}</span>
+            <span className={`${freeUserDailyLimitHit ? 'text-red-400 font-bold' : 'text-white'}`}>
+              {usage.daily_count}/{displayDailyLimit}
+            </span>
           </div>
           <Progress 
             value={(usage.daily_count / displayDailyLimit) * 100} 
             className="h-2"
           />
           <p className="text-xs text-gray-500 mt-1">
-            {displayDailyRemaining} analyses remaining today
-            {isFreeUser && usage.daily_count >= 3 && (
-              <span className="text-red-400 ml-2">• Daily limit reached</span>
+            {freeUserDailyLimitHit ? (
+              <span className="text-red-400 font-medium">
+                Daily limit reached! Wait until tomorrow or upgrade.
+              </span>
+            ) : (
+              `${displayDailyRemaining} analyses remaining today`
             )}
           </p>
         </div>
@@ -82,48 +92,58 @@ const UsageDisplay = () => {
         <div>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-400">Monthly Usage</span>
-            <span className="text-white">{usage.monthly_count}/{displayMonthlyLimit}</span>
+            <span className={`${freeUserMonthlyLimitHit ? 'text-red-400 font-bold' : 'text-white'}`}>
+              {usage.monthly_count}/{displayMonthlyLimit}
+            </span>
           </div>
           <Progress 
             value={(usage.monthly_count / displayMonthlyLimit) * 100} 
             className="h-2"
           />
           <p className="text-xs text-gray-500 mt-1">
-            {displayMonthlyRemaining} analyses remaining this month
-            {isFreeUser && usage.monthly_count >= 90 && (
-              <span className="text-red-400 ml-2">• Monthly limit reached</span>
+            {freeUserMonthlyLimitHit ? (
+              <span className="text-red-400 font-medium">
+                Monthly limit reached! Upgrade for unlimited monthly analyses.
+              </span>
+            ) : (
+              `${displayMonthlyRemaining} analyses remaining this month`
             )}
           </p>
         </div>
 
-        {!usage.can_analyze && (
+        {freeUserLimitHit && (
           <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-3">
-            <p className="text-red-400 text-sm font-medium">
-              {isFreeUser 
-                ? "Free plan limit reached. You can analyze 3 charts per day or 90 per month."
-                : "Usage limit reached. Upgrade your plan to continue analyzing charts."
+            <p className="text-red-400 text-sm font-medium mb-2">
+              🚫 Free Plan Limit Reached
+            </p>
+            <p className="text-red-300 text-xs mb-3">
+              {freeUserDailyLimitHit && !freeUserMonthlyLimitHit && 
+                "You've used all 3 daily analyses. Wait until tomorrow or upgrade for more."
+              }
+              {freeUserMonthlyLimitHit && 
+                "You've used all 90 monthly analyses. Upgrade for unlimited monthly analyses."
               }
             </p>
             <Button 
               size="sm" 
-              className="mt-2 w-full"
+              className="w-full bg-red-600 hover:bg-red-700"
               onClick={() => navigate('/subscription')}
             >
-              {isFreeUser ? "Upgrade to Continue" : "View Plans"}
+              Upgrade to Continue Analyzing
             </Button>
           </div>
         )}
 
-        {isFreeUser && usage.can_analyze && (
+        {isFreeUser && !freeUserLimitHit && (
           <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-3">
             <p className="text-blue-400 text-sm">
               <strong>Free Plan:</strong> {displayDailyRemaining} analyses left today, {displayMonthlyRemaining} left this month.
-              {displayDailyRemaining === 0 && displayMonthlyRemaining > 0 && (
-                <span className="block mt-1 text-yellow-400">
-                  Daily limit reached. Reset tomorrow.
-                </span>
-              )}
             </p>
+            {displayDailyRemaining === 0 && displayMonthlyRemaining > 0 && (
+              <p className="text-yellow-400 text-xs mt-1">
+                Daily limit reached. Resets tomorrow at midnight.
+              </p>
+            )}
           </div>
         )}
       </CardContent>

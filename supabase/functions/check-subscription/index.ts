@@ -100,7 +100,8 @@ serve(async (req) => {
       
       logStep("Determined subscription tier", { priceId, amount, subscriptionTier });
     } else {
-      logStep("No active subscription found");
+      logStep("No active subscription found - setting to free tier");
+      subscriptionTier = "free";
     }
 
     await supabaseClient.from("subscribers").upsert({
