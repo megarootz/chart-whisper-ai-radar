@@ -58,7 +58,7 @@ const UsageDisplay = () => {
           {currentTier === 'free' && (
             <Button 
               size="sm" 
-              onClick={() => navigate('/subscription')}
+              onClick={() => navigate('/pricing')}
               className="text-xs"
             >
               Upgrade
@@ -127,7 +127,7 @@ const UsageDisplay = () => {
             <Button 
               size="sm" 
               className="w-full bg-red-600 hover:bg-red-700"
-              onClick={() => navigate('/subscription')}
+              onClick={() => navigate('/pricing')}
             >
               Upgrade to Continue Analyzing
             </Button>

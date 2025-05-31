@@ -9,9 +9,8 @@ import AnalyzePage from "./pages/AnalyzePage";
 import HistoryPage from "./pages/HistoryPage";
 import AnalysisDetailsPage from "./pages/AnalysisDetailsPage";
 import ProfilePage from "./pages/ProfilePage";
-import SubscriptionPage from "./pages/SubscriptionPage";
-import AuthPage from "./pages/AuthPage";
 import PricingPage from "./pages/PricingPage";
+import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import { useIsMobile } from "./hooks/use-mobile";
@@ -86,14 +85,8 @@ const AppRoutes = () => {
             </ProtectedRoute>
           } 
         />
-        <Route 
-          path="/subscription" 
-          element={
-            <ProtectedRoute>
-              <SubscriptionPage />
-            </ProtectedRoute>
-          } 
-        />
+        {/* Redirect old subscription route to pricing */}
+        <Route path="/subscription" element={<Navigate to="/pricing" replace />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
