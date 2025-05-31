@@ -45,9 +45,14 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
     }
 
     if (usage && !usage.can_analyze) {
+      const isFreeUser = usage.subscription_tier === 'free';
+      const limitMessage = isFreeUser ? 
+        "You've reached your daily limit of 3 analyses or monthly limit of 90 analyses. Please upgrade your plan or wait until tomorrow." :
+        "You've reached your analysis limit. Please upgrade your plan to continue.";
+        
       toast({
         title: "Usage Limit Reached",
-        description: "You've reached your analysis limit. Please upgrade your plan to continue.",
+        description: limitMessage,
         variant: "destructive"
       });
       return;
@@ -112,7 +117,9 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
             disabled={isUploading || !file || (usage && !usage.can_analyze)}
           >
             {isUploading ? "Analyzing Chart..." : 
-             usage && !usage.can_analyze ? "Usage Limit Reached" : 
+             usage && !usage.can_analyze ? (
+               usage.subscription_tier === 'free' ? "Daily/Monthly Limit Reached" : "Usage Limit Reached"
+             ) : 
              "Analyze Chart"}
           </Button>
         </CardFooter>

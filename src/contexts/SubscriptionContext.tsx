@@ -85,13 +85,25 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       
-      // Ensure the can_analyze flag is correctly set based on actual limits
+      // Ensure strict enforcement for free users (3 daily, 90 monthly)
       const correctedUsageData = {
         ...usageData,
-        can_analyze: usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit
+        // For free users, enforce strict limits
+        daily_limit: usageData.subscription_tier === 'free' ? 3 : usageData.daily_limit,
+        monthly_limit: usageData.subscription_tier === 'free' ? 90 : usageData.monthly_limit,
+        daily_remaining: usageData.subscription_tier === 'free' ? 
+          Math.max(0, 3 - usageData.daily_count) : 
+          Math.max(0, usageData.daily_limit - usageData.daily_count),
+        monthly_remaining: usageData.subscription_tier === 'free' ? 
+          Math.max(0, 90 - usageData.monthly_count) : 
+          Math.max(0, usageData.monthly_limit - usageData.monthly_count),
+        // Free users: strict enforcement - no analysis if daily >= 3 OR monthly >= 90
+        can_analyze: usageData.subscription_tier === 'free' ? 
+          (usageData.daily_count < 3 && usageData.monthly_count < 90) :
+          (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
       };
       
-      console.log('Corrected usage data:', correctedUsageData);
+      console.log('Corrected usage data with strict free user limits:', correctedUsageData);
       setUsage(correctedUsageData);
       return correctedUsageData;
     } catch (error) {
@@ -121,10 +133,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       
-      // Ensure the can_analyze flag is correctly set after increment
+      // Ensure strict enforcement after increment for free users
       const correctedUsageData = {
         ...usageData,
-        can_analyze: usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit
+        // For free users, enforce strict limits
+        daily_limit: usageData.subscription_tier === 'free' ? 3 : usageData.daily_limit,
+        monthly_limit: usageData.subscription_tier === 'free' ? 90 : usageData.monthly_limit,
+        daily_remaining: usageData.subscription_tier === 'free' ? 
+          Math.max(0, 3 - usageData.daily_count) : 
+          Math.max(0, usageData.daily_limit - usageData.daily_count),
+        monthly_remaining: usageData.subscription_tier === 'free' ? 
+          Math.max(0, 90 - usageData.monthly_count) : 
+          Math.max(0, usageData.monthly_limit - usageData.monthly_count),
+        // Free users: strict enforcement after increment
+        can_analyze: usageData.subscription_tier === 'free' ? 
+          (usageData.daily_count < 3 && usageData.monthly_count < 90) :
+          (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
       };
       
       setUsage(correctedUsageData);

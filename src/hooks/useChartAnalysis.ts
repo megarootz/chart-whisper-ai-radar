@@ -95,7 +95,7 @@ export const useChartAnalysis = () => {
 
       console.log('Starting chart analysis for user:', user.id);
 
-      // Check usage limits BEFORE proceeding - this is critical
+      // Check usage limits BEFORE proceeding - this is critical for free users
       console.log('Checking usage limits before analysis...');
       const usageData = await checkUsageLimits();
       console.log('Usage data received:', usageData);
@@ -104,20 +104,36 @@ export const useChartAnalysis = () => {
         throw new Error('Failed to check usage limits. Please try again.');
       }
       
-      // Fixed logic: check if user can analyze based on correct limits
+      // Strict limit checking for free users (3 per day, 90 per month)
       if (usageData.daily_count >= usageData.daily_limit) {
+        const tierText = usageData.subscription_tier === 'free' ? 'Free users are limited to 3 analyses per day' : 
+                        `You've reached your daily limit (${usageData.daily_count}/${usageData.daily_limit})`;
+        
         toast({
           title: "Daily Limit Reached",
-          description: `You've reached your daily limit (${usageData.daily_count}/${usageData.daily_limit}). Upgrade your plan for more analyses.`,
+          description: `${tierText}. ${usageData.subscription_tier === 'free' ? 'Upgrade your plan or wait until tomorrow for more analyses.' : 'Please wait until tomorrow or upgrade your plan.'}`,
           variant: "destructive",
         });
         return;
       }
       
       if (usageData.monthly_count >= usageData.monthly_limit) {
+        const tierText = usageData.subscription_tier === 'free' ? 'Free users are limited to 90 analyses per month' : 
+                        `You've reached your monthly limit (${usageData.monthly_count}/${usageData.monthly_limit})`;
+        
         toast({
           title: "Monthly Limit Reached", 
-          description: `You've reached your monthly limit (${usageData.monthly_count}/${usageData.monthly_limit}). Upgrade your plan for more analyses.`,
+          description: `${tierText}. Upgrade your plan for more analyses.`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Double check that user can analyze
+      if (!usageData.can_analyze) {
+        toast({
+          title: "Usage Limit Reached",
+          description: "You have reached your usage limits. Please upgrade your plan or wait for the next period.",
           variant: "destructive",
         });
         return;

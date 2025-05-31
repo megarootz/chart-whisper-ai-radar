@@ -27,6 +27,13 @@ const UsageDisplay = () => {
   };
 
   const currentTier = subscription?.subscription_tier || 'free';
+  const isFreeUser = currentTier === 'free';
+
+  // For free users, ensure we display the correct limits (3 daily, 90 monthly)
+  const displayDailyLimit = isFreeUser ? 3 : usage.daily_limit;
+  const displayMonthlyLimit = isFreeUser ? 90 : usage.monthly_limit;
+  const displayDailyRemaining = isFreeUser ? Math.max(0, 3 - usage.daily_count) : usage.daily_remaining;
+  const displayMonthlyRemaining = isFreeUser ? Math.max(0, 90 - usage.monthly_count) : usage.monthly_remaining;
 
   return (
     <Card className="bg-chart-card border-gray-700 mb-6">
@@ -37,6 +44,11 @@ const UsageDisplay = () => {
               {tierIcons[currentTier as keyof typeof tierIcons]}
             </div>
             {currentTier.charAt(0).toUpperCase() + currentTier.slice(1)} Plan
+            {isFreeUser && (
+              <Badge variant="outline" className="text-xs text-yellow-500 border-yellow-500">
+                3/day • 90/month
+              </Badge>
+            )}
           </CardTitle>
           {currentTier === 'free' && (
             <Button 
@@ -53,43 +65,65 @@ const UsageDisplay = () => {
         <div>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-400">Daily Usage</span>
-            <span className="text-white">{usage.daily_count}/{usage.daily_limit}</span>
+            <span className="text-white">{usage.daily_count}/{displayDailyLimit}</span>
           </div>
           <Progress 
-            value={(usage.daily_count / usage.daily_limit) * 100} 
+            value={(usage.daily_count / displayDailyLimit) * 100} 
             className="h-2"
           />
           <p className="text-xs text-gray-500 mt-1">
-            {usage.daily_remaining} analyses remaining today
+            {displayDailyRemaining} analyses remaining today
+            {isFreeUser && usage.daily_count >= 3 && (
+              <span className="text-red-400 ml-2">• Daily limit reached</span>
+            )}
           </p>
         </div>
         
         <div>
           <div className="flex justify-between text-sm mb-2">
             <span className="text-gray-400">Monthly Usage</span>
-            <span className="text-white">{usage.monthly_count}/{usage.monthly_limit}</span>
+            <span className="text-white">{usage.monthly_count}/{displayMonthlyLimit}</span>
           </div>
           <Progress 
-            value={(usage.monthly_count / usage.monthly_limit) * 100} 
+            value={(usage.monthly_count / displayMonthlyLimit) * 100} 
             className="h-2"
           />
           <p className="text-xs text-gray-500 mt-1">
-            {usage.monthly_remaining} analyses remaining this month
+            {displayMonthlyRemaining} analyses remaining this month
+            {isFreeUser && usage.monthly_count >= 90 && (
+              <span className="text-red-400 ml-2">• Monthly limit reached</span>
+            )}
           </p>
         </div>
 
         {!usage.can_analyze && (
           <div className="bg-red-900/20 border border-red-500/20 rounded-lg p-3">
             <p className="text-red-400 text-sm font-medium">
-              Usage limit reached. Upgrade your plan to continue analyzing charts.
+              {isFreeUser 
+                ? "Free plan limit reached. You can analyze 3 charts per day or 90 per month."
+                : "Usage limit reached. Upgrade your plan to continue analyzing charts."
+              }
             </p>
             <Button 
               size="sm" 
               className="mt-2 w-full"
               onClick={() => navigate('/subscription')}
             >
-              View Plans
+              {isFreeUser ? "Upgrade to Continue" : "View Plans"}
             </Button>
+          </div>
+        )}
+
+        {isFreeUser && usage.can_analyze && (
+          <div className="bg-blue-900/20 border border-blue-500/20 rounded-lg p-3">
+            <p className="text-blue-400 text-sm">
+              <strong>Free Plan:</strong> {displayDailyRemaining} analyses left today, {displayMonthlyRemaining} left this month.
+              {displayDailyRemaining === 0 && displayMonthlyRemaining > 0 && (
+                <span className="block mt-1 text-yellow-400">
+                  Daily limit reached. Reset tomorrow.
+                </span>
+              )}
+            </p>
           </div>
         )}
       </CardContent>
