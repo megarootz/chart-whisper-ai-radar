@@ -1,3 +1,4 @@
+
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -15,10 +16,11 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // Update SEO for 404 page
+    // Update SEO for 404 page with enhanced meta data
     updatePageMeta(
-      '404 - Page Not Found | ForexRadar7',
-      'The page you are looking for does not exist. Return to ForexRadar7 for AI-powered forex chart analysis.',
+      '404 - Page Not Found | ForexRadar7 - AI Forex Analysis',
+      'The page you are looking for does not exist. Return to ForexRadar7 for AI-powered forex chart analysis, trading insights, and professional technical analysis tools.',
+      'page not found, 404 error, forex analysis, AI trading, chart analysis, ForexRadar7',
       `https://forexradar7.com${location.pathname}`
     );
     
