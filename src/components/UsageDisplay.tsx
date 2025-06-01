@@ -9,8 +9,40 @@ import { Crown, Zap, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const UsageDisplay = () => {
-  const { subscription, usage } = useSubscription();
+  const { subscription, usage, loading } = useSubscription();
   const navigate = useNavigate();
+
+  // Show loading state while subscription data is being fetched
+  if (loading) {
+    return (
+      <Card className="bg-chart-card border-gray-700 mb-6">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gray-600 animate-pulse"></div>
+              <div className="h-4 w-24 bg-gray-600 animate-pulse rounded"></div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-400">Daily Usage</span>
+              <div className="h-4 w-16 bg-gray-600 animate-pulse rounded"></div>
+            </div>
+            <div className="h-2 w-full bg-gray-600 animate-pulse rounded"></div>
+          </div>
+          <div>
+            <div className="flex justify-between text-sm mb-2">
+              <span className="text-gray-400">Monthly Usage</span>
+              <div className="h-4 w-16 bg-gray-600 animate-pulse rounded"></div>
+            </div>
+            <div className="h-2 w-full bg-gray-600 animate-pulse rounded"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!usage) return null;
 

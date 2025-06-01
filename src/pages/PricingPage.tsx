@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -50,6 +51,93 @@ const PricingPage = () => {
     }
     await createCheckout(plan);
   };
+
+  // Show loading state while subscription data is being fetched
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-chart-bg w-full max-w-full overflow-x-hidden">
+        <Header />
+        
+        <main className={`flex-grow flex flex-col w-full max-w-full overflow-x-hidden ${isMobile ? 'pt-20 px-3 pb-20' : 'pt-24 px-4 pb-24'}`}>
+          <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
+            <div className="text-center mb-8">
+              <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl md:text-4xl'} font-bold text-white mb-3`}>
+                Choose Your Plan
+              </h1>
+              <p className="text-gray-400 max-w-2xl mx-auto text-sm md:text-base px-2">
+                Unlock more analyses with our subscription plans
+              </p>
+            </div>
+
+            {/* Loading Current Usage Section */}
+            {user && (
+              <div className="mb-8">
+                <Card className="bg-chart-card border-gray-700 max-w-2xl mx-auto">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-white text-lg text-center">Current Usage</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-6">
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-gray-400">Daily</span>
+                          <div className="h-4 w-16 bg-gray-600 animate-pulse rounded"></div>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                          <div className="bg-gray-600 h-2 rounded-full animate-pulse w-1/2"></div>
+                        </div>
+                      </div>
+                      <div>
+                        <div className="flex justify-between text-sm mb-2">
+                          <span className="text-gray-400">Monthly</span>
+                          <div className="h-4 w-16 bg-gray-600 animate-pulse rounded"></div>
+                        </div>
+                        <div className="w-full bg-gray-700 rounded-full h-2">
+                          <div className="bg-gray-600 h-2 rounded-full animate-pulse w-1/3"></div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+            
+            {/* Loading Plans Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 max-w-5xl mx-auto">
+              {[1, 2, 3].map((index) => (
+                <Card key={index} className="bg-chart-card border-gray-700 relative">
+                  <CardHeader className="text-center pb-4">
+                    <div className="w-12 h-12 mx-auto rounded-full bg-gray-600 animate-pulse mb-3"></div>
+                    <div className="h-6 w-32 bg-gray-600 animate-pulse rounded mx-auto mb-2"></div>
+                    <div className="h-8 w-24 bg-gray-600 animate-pulse rounded mx-auto"></div>
+                  </CardHeader>
+                  
+                  <CardContent className="pt-0">
+                    <div className="space-y-3 mb-6">
+                      {[1, 2, 3, 4].map((featureIndex) => (
+                        <div key={featureIndex} className="flex items-center">
+                          <div className="h-4 w-4 bg-gray-600 animate-pulse rounded mr-2"></div>
+                          <div className="h-4 w-full bg-gray-600 animate-pulse rounded"></div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="w-full h-10 bg-gray-600 animate-pulse rounded"></div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            <div className="text-center text-gray-400 text-sm">
+              <p>All plans include secure payment processing and can be cancelled anytime.</p>
+            </div>
+          </div>
+        </main>
+        
+        {!isMobile && <Footer />}
+      </div>
+    );
+  }
 
   const currentTier = subscription?.subscription_tier || 'free';
 
