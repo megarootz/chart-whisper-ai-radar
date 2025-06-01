@@ -37,10 +37,10 @@ const UsageDisplay = () => {
         </Badge>
       </div>
 
-      {/* Current Server Time */}
+      {/* Current Server Time for Usage Limits */}
       {serverTime && (
         <div className="text-xs text-gray-400 border-b border-gray-700 pb-2">
-          Server time: {format(new Date(serverTime.current_utc_time), 'MMM d, yyyy h:mm:ss a')} UTC
+          Usage tracking time: {format(new Date(serverTime.current_utc_time), 'MMM d, yyyy h:mm:ss a')} UTC
         </div>
       )}
 

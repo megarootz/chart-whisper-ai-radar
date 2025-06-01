@@ -16,7 +16,7 @@ export const useChartAnalysis = () => {
   const { setLatestAnalysis, addToHistory } = useAnalysis();
   const { incrementUsage, checkUsageLimits } = useSubscription();
 
-  // Save analysis to database (without chart_url)
+  // Save analysis to database with client timestamp
   const saveAnalysisToDatabase = async (analysisData: AnalysisResultData) => {
     try {
       if (!user) {
@@ -24,8 +24,14 @@ export const useChartAnalysis = () => {
         return;
       }
       
+      // Add client timestamp to analysis data
+      const analysisWithTimestamp = {
+        ...analysisData,
+        created_at: new Date().toISOString() // Client's local time in ISO format
+      };
+      
       // Convert AnalysisResultData to a JSON-compatible object
-      const analysisDataJson: Json = JSON.parse(JSON.stringify(analysisData));
+      const analysisDataJson: Json = JSON.parse(JSON.stringify(analysisWithTimestamp));
       
       console.log("Saving analysis to database:", {
         user_id: user.id,
@@ -41,7 +47,8 @@ export const useChartAnalysis = () => {
           analysis_data: analysisDataJson,
           pair_name: analysisData.pairName,
           timeframe: analysisData.timeframe,
-          chart_url: null // Explicitly set to null since we're not storing images
+          chart_url: null, // Explicitly set to null since we're not storing images
+          created_at: analysisWithTimestamp.created_at // Store client timestamp
         })
         .select()
         .single();
@@ -212,7 +219,7 @@ export const useChartAnalysis = () => {
       // Update the latest analysis in the context
       setLatestAnalysis(analysisData);
       
-      // Save the analysis to Supabase (without image)
+      // Save the analysis to Supabase (with client timestamp)
       await saveAnalysisToDatabase(analysisData);
 
       toast({
