@@ -42,24 +42,6 @@ serve(async (req) => {
     if (!user?.email) throw new Error("User not authenticated or email not available");
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    // After authentication, trigger a usage check to ensure daily reset is detected
-    try {
-      const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-      logStep("Checking for daily reset", { currentDate });
-      
-      const { error: usageError } = await supabaseClient.rpc('check_usage_limits', {
-        p_user_id: user.id
-      });
-      
-      if (usageError) {
-        logStep("Warning: Could not check usage for daily reset", { error: usageError.message });
-      } else {
-        logStep("Usage check completed for daily reset detection");
-      }
-    } catch (usageCheckError) {
-      logStep("Warning: Error during usage check", { error: usageCheckError });
-    }
-
     const stripe = new Stripe(stripeKey, { apiVersion: "2023-10-16" });
     const customers = await stripe.customers.list({ email: user.email, limit: 1 });
     

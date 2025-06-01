@@ -5,11 +5,12 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Button } from '@/components/ui/button';
-import { Crown, Zap, Check } from 'lucide-react';
+import { Crown, Zap, Check, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import ResetCountdown from './ResetCountdown';
 
 const UsageDisplay = () => {
-  const { subscription, usage, loading } = useSubscription();
+  const { subscription, usage, loading, checkUsageLimits, refreshServerTime } = useSubscription();
   const navigate = useNavigate();
 
   // Show loading state while subscription data is being fetched
@@ -72,6 +73,11 @@ const UsageDisplay = () => {
   const freeUserMonthlyLimitHit = isFreeUser && usage.monthly_count >= 90;
   const freeUserLimitHit = freeUserDailyLimitHit || freeUserMonthlyLimitHit;
 
+  const handleRefreshUsage = async () => {
+    await checkUsageLimits();
+    await refreshServerTime();
+  };
+
   return (
     <Card className="bg-chart-card border-gray-700 mb-6">
       <CardHeader className="pb-3">
@@ -87,15 +93,29 @@ const UsageDisplay = () => {
               </Badge>
             )}
           </CardTitle>
-          {currentTier === 'free' && (
+          <div className="flex items-center gap-2">
             <Button 
               size="sm" 
-              onClick={() => navigate('/pricing')}
+              variant="outline"
+              onClick={handleRefreshUsage}
               className="text-xs"
             >
-              Upgrade
+              <RefreshCw className="h-3 w-3 mr-1" />
+              Refresh
             </Button>
-          )}
+            {currentTier === 'free' && (
+              <Button 
+                size="sm" 
+                onClick={() => navigate('/pricing')}
+                className="text-xs"
+              >
+                Upgrade
+              </Button>
+            )}
+          </div>
+        </div>
+        <div className="mt-2">
+          <ResetCountdown />
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -113,7 +133,7 @@ const UsageDisplay = () => {
           <p className="text-xs text-gray-500 mt-1">
             {freeUserDailyLimitHit ? (
               <span className="text-red-400 font-medium">
-                Daily limit reached! Wait until tomorrow or upgrade.
+                Daily limit reached! Resets at midnight UTC.
               </span>
             ) : (
               `${displayDailyRemaining} analyses remaining today`
@@ -150,7 +170,7 @@ const UsageDisplay = () => {
             </p>
             <p className="text-red-300 text-xs mb-3">
               {freeUserDailyLimitHit && !freeUserMonthlyLimitHit && 
-                "You've used all 3 daily analyses. Wait until tomorrow or upgrade for more."
+                "You've used all 3 daily analyses. Daily limits reset at midnight UTC."
               }
               {freeUserMonthlyLimitHit && 
                 "You've used all 90 monthly analyses. Upgrade for unlimited monthly analyses."
@@ -171,11 +191,9 @@ const UsageDisplay = () => {
             <p className="text-blue-400 text-sm">
               <strong>Free Plan:</strong> {displayDailyRemaining} analyses left today, {displayMonthlyRemaining} left this month.
             </p>
-            {displayDailyRemaining === 0 && displayMonthlyRemaining > 0 && (
-              <p className="text-yellow-400 text-xs mt-1">
-                Daily limit reached. Resets tomorrow at midnight.
-              </p>
-            )}
+            <p className="text-yellow-400 text-xs mt-1">
+              Daily limits reset at midnight UTC. All times are server-controlled and tamper-proof.
+            </p>
           </div>
         )}
       </CardContent>

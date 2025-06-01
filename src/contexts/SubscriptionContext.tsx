@@ -20,13 +20,27 @@ interface UsageData {
   subscription_tier: string;
 }
 
+interface ServerTimeData {
+  current_utc_time: string;
+  next_reset_utc: string;
+  time_until_reset_ms: number;
+  time_until_reset: {
+    hours: number;
+    minutes: number;
+    seconds: number;
+  };
+  current_date_utc: string;
+}
+
 interface SubscriptionContextType {
   subscription: SubscriptionData | null;
   usage: UsageData | null;
+  serverTime: ServerTimeData | null;
   loading: boolean;
   refreshSubscription: () => Promise<void>;
   checkUsageLimits: () => Promise<UsageData | null>;
   incrementUsage: () => Promise<UsageData | null>;
+  refreshServerTime: () => Promise<void>;
   createCheckout: (plan: 'starter' | 'pro') => Promise<void>;
   openCustomerPortal: () => Promise<void>;
 }
@@ -36,10 +50,27 @@ const SubscriptionContext = createContext<SubscriptionContextType | undefined>(u
 export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
+  const [serverTime, setServerTime] = useState<ServerTimeData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lastCheckedDate, setLastCheckedDate] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
+
+  const refreshServerTime = async () => {
+    try {
+      console.log('Fetching server time...');
+      const { data, error } = await supabase.functions.invoke('get-server-time');
+      
+      if (error) {
+        console.error('Error fetching server time:', error);
+        return;
+      }
+
+      console.log('Server time response:', data);
+      setServerTime(data);
+    } catch (error) {
+      console.error('Error in refreshServerTime:', error);
+    }
+  };
 
   const refreshSubscription = async () => {
     if (!user) {
@@ -69,8 +100,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!user) return null;
 
     try {
-      const currentDate = new Date().toDateString();
-      console.log('Checking usage limits for user:', user.id, 'on date:', currentDate);
+      console.log('Checking usage limits for user:', user.id);
       
       const { data, error } = await supabase.rpc('check_usage_limits', {
         p_user_id: user.id
@@ -85,14 +115,6 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
-      
-      // Log if we detect a date change (daily reset should have occurred)
-      if (lastCheckedDate && lastCheckedDate !== currentDate) {
-        console.log('🔄 Date changed detected! Daily usage should be reset.');
-        console.log('Previous date:', lastCheckedDate, 'Current date:', currentDate);
-        console.log('Daily count after date change:', usageData.daily_count);
-      }
-      setLastCheckedDate(currentDate);
       
       // STRICT ENFORCEMENT: For free users, absolutely no analysis if daily >= 3 OR monthly >= 90
       const correctedUsageData = {
@@ -113,6 +135,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       console.log('STRICT free user enforcement - corrected usage data:', correctedUsageData);
       setUsage(correctedUsageData);
+      
+      // Refresh server time when checking usage to keep countdown accurate
+      await refreshServerTime();
+      
       return correctedUsageData;
     } catch (error) {
       console.error('Error in checkUsageLimits:', error);
@@ -160,6 +186,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       console.log('Post-increment usage data with strict enforcement:', correctedUsageData);
       setUsage(correctedUsageData);
+      
+      // Refresh server time after incrementing usage
+      await refreshServerTime();
+      
       return correctedUsageData;
     } catch (error) {
       console.error('Error in incrementUsage:', error);
@@ -226,28 +256,43 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => clearInterval(interval);
   }, [user]);
 
+  // Initialize data when user logs in
   useEffect(() => {
     if (user) {
-      console.log('User logged in, checking subscription and usage');
+      console.log('User logged in, checking subscription, usage, and server time');
       refreshSubscription();
       checkUsageLimits();
+      refreshServerTime();
     } else {
-      console.log('No user, clearing subscription and usage data');
+      console.log('No user, clearing subscription, usage, and server time data');
       setSubscription(null);
       setUsage(null);
-      setLastCheckedDate(null);
+      setServerTime(null);
       setLoading(false);
     }
+  }, [user]);
+
+  // Refresh server time every 10 seconds to keep countdown accurate
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      refreshServerTime();
+    }, 10000); // Refresh every 10 seconds
+
+    return () => clearInterval(interval);
   }, [user]);
 
   return (
     <SubscriptionContext.Provider value={{
       subscription,
       usage,
+      serverTime,
       loading,
       refreshSubscription,
       checkUsageLimits,
       incrementUsage,
+      refreshServerTime,
       createCheckout,
       openCustomerPortal,
     }}>
