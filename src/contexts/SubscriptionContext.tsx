@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -38,6 +37,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastCheckedDate, setLastCheckedDate] = useState<string | null>(null);
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -69,7 +69,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (!user) return null;
 
     try {
-      console.log('Checking usage limits for user:', user.id);
+      const currentDate = new Date().toDateString();
+      console.log('Checking usage limits for user:', user.id, 'on date:', currentDate);
       
       const { data, error } = await supabase.rpc('check_usage_limits', {
         p_user_id: user.id
@@ -84,6 +85,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
+      
+      // Log if we detect a date change (daily reset should have occurred)
+      if (lastCheckedDate && lastCheckedDate !== currentDate) {
+        console.log('🔄 Date changed detected! Daily usage should be reset.');
+        console.log('Previous date:', lastCheckedDate, 'Current date:', currentDate);
+        console.log('Daily count after date change:', usageData.daily_count);
+      }
+      setLastCheckedDate(currentDate);
       
       // STRICT ENFORCEMENT: For free users, absolutely no analysis if daily >= 3 OR monthly >= 90
       const correctedUsageData = {
@@ -206,6 +215,17 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  // Auto-refresh usage data every minute to catch daily resets
+  useEffect(() => {
+    if (!user) return;
+
+    const interval = setInterval(() => {
+      checkUsageLimits();
+    }, 60000); // Check every minute
+
+    return () => clearInterval(interval);
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       console.log('User logged in, checking subscription and usage');
@@ -215,6 +235,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       console.log('No user, clearing subscription and usage data');
       setSubscription(null);
       setUsage(null);
+      setLastCheckedDate(null);
       setLoading(false);
     }
   }, [user]);
