@@ -5,6 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft, AlertCircle } from "lucide-react";
 import { updatePageMeta } from "@/utils/seoUtils";
 
+// Declare gtag as a global function for TypeScript
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
+
 const NotFound = () => {
   const location = useLocation();
 
@@ -22,9 +29,9 @@ const NotFound = () => {
       location.pathname
     );
     
-    // Track 404s for Google Search Console
-    if (typeof gtag !== 'undefined') {
-      gtag('event', 'page_not_found', {
+    // Track 404s for Google Search Console (only if gtag is available)
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'page_not_found', {
         page_path: location.pathname,
         page_title: '404 - Page Not Found'
       });
