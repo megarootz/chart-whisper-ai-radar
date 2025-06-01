@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalysis } from '@/contexts/AnalysisContext';
+import { useSubscription } from '@/contexts/SubscriptionContext';
 
 // Update the interface for the history items to include timestamp and date
 interface HistoryAnalysisData extends AnalysisResultData {
@@ -25,6 +27,7 @@ const HistoryPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { analysisHistory, refreshHistory } = useAnalysis();
+  const { serverTime } = useSubscription();
   
   useEffect(() => {
     if (user) {
@@ -40,14 +43,15 @@ const HistoryPage = () => {
     setIsLoading(false);
   };
 
-  // Filter the history based on date selection
+  // Filter the history based on date selection using server time
   const filteredHistory = React.useMemo(() => {
     if (dateFilter === 'all') return analysisHistory;
     
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    // Use server time if available, otherwise fallback to client time
+    const serverDate = serverTime ? new Date(serverTime.current_utc_time) : new Date();
+    const today = new Date(serverDate.getUTCFullYear(), serverDate.getUTCMonth(), serverDate.getUTCDate()).getTime();
     const weekAgo = today - (7 * 24 * 60 * 60 * 1000);
-    const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate()).getTime();
+    const monthAgo = new Date(serverDate.getUTCFullYear(), serverDate.getUTCMonth() - 1, serverDate.getUTCDate()).getTime();
     
     return analysisHistory.filter(item => {
       // Use timestamp or created_at property
@@ -59,12 +63,15 @@ const HistoryPage = () => {
       
       return true;
     });
-  }, [analysisHistory, dateFilter]);
+  }, [analysisHistory, dateFilter, serverTime]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';
     try {
-      return format(new Date(dateStr), 'MMM d, yyyy h:mm a');
+      // Format in UTC and clearly indicate it's UTC time
+      const utcDate = new Date(dateStr);
+      const formatted = format(utcDate, 'MMM d, yyyy h:mm a');
+      return `${formatted} UTC`;
     } catch (e) {
       return dateStr;
     }
@@ -87,13 +94,13 @@ const HistoryPage = () => {
               className={`text-gray-400 ${isMobile ? 'text-sm' : ''}`}
               style={{ color: '#9ca3af' }}
             >
-              Review and manage your previous chart analyses
+              Review and manage your previous chart analyses (all times in UTC)
             </p>
           </div>
           
           <div className={`${isMobile ? 'mb-4' : 'mb-8'} flex ${isMobile ? 'flex-col space-y-3' : 'justify-between items-center'}`}>
             <div className="flex items-center space-x-2">
-              <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>Filter by date:</span>
+              <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>Filter by date (UTC):</span>
               <select
                 value={dateFilter}
                 onChange={(e) => setDateFilter(e.target.value)}
@@ -108,6 +115,11 @@ const HistoryPage = () => {
             
             <div className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
               Showing {filteredHistory.length} of {analysisHistory.length} analyses
+              {serverTime && (
+                <div className="text-xs text-gray-500 mt-1">
+                  Server time: {format(new Date(serverTime.current_utc_time), 'MMM d, yyyy h:mm a')} UTC
+                </div>
+              )}
             </div>
           </div>
           
