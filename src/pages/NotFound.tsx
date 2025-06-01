@@ -1,4 +1,3 @@
-
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,7 @@ const NotFound = () => {
     updatePageMeta(
       '404 - Page Not Found | ForexRadar7',
       'The page you are looking for does not exist. Return to ForexRadar7 for AI-powered forex chart analysis.',
-      `https://forexradar7.lovable.app${location.pathname}`
+      `https://forexradar7.com${location.pathname}`
     );
     
     // Log 404 for debugging

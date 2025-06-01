@@ -46,7 +46,7 @@ export const updatePageMeta = (title: string, description: string, url?: string)
 };
 
 export const getPageSEOData = (pathname: string) => {
-  const baseUrl = 'https://forexradar7.lovable.app';
+  const baseUrl = 'https://forexradar7.com';
   
   switch (pathname) {
     case '/':

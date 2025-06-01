@@ -14,7 +14,7 @@ Disallow: /profile
 Disallow: /analysis/
 
 # Sitemap location
-Sitemap: https://forexradar7.lovable.app/sitemap.xml
+Sitemap: https://forexradar7.com/sitemap.xml
 
 # Specific bot permissions
 User-agent: Googlebot
