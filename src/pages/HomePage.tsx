@@ -10,17 +10,16 @@ import SpinningRadar from '@/components/SpinningRadar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { updatePageMeta, getPageSEOData } from '@/utils/seoUtils';
-
 const HomePage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const { user } = useAuth();
-  
+  const {
+    user
+  } = useAuth();
   useEffect(() => {
     const seoData = getPageSEOData('/');
     updatePageMeta(seoData.title, seoData.description, seoData.url);
   }, []);
-  
   const handleGetStartedClick = () => {
     if (user) {
       navigate('/analyze');
@@ -28,22 +27,19 @@ const HomePage = () => {
       navigate('/auth');
     }
   };
-
   const handleViewPlansClick = () => {
     navigate('/pricing');
   };
-  
-  return (
-    <div className="min-h-screen flex flex-col bg-chart-bg w-full max-w-full overflow-x-hidden">
+  return <div className="min-h-screen flex flex-col bg-chart-bg w-full max-w-full overflow-x-hidden">
       <Header />
       
       <main className={`flex-grow flex flex-col w-full max-w-full overflow-x-hidden ${isMobile ? 'pt-16' : 'pt-16'}`}>
         {/* Hero Section - Mobile first layout */}
         <section className={`${isMobile ? 'py-4 px-3' : 'py-12 md:py-24 px-4'} w-full max-w-full overflow-x-hidden`}>
           <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
-            {isMobile ? (
-              // Mobile layout: radar as background behind text
-              <div className="relative flex flex-col items-center justify-center min-h-[50vh] w-full max-w-full overflow-hidden">
+            {isMobile ?
+          // Mobile layout: radar as background behind text
+          <div className="relative flex flex-col items-center justify-center min-h-[50vh] w-full max-w-full overflow-hidden">
                 {/* Background radar */}
                 <SpinningRadar isBackground={true} />
                 
@@ -56,19 +52,14 @@ const HomePage = () => {
                     Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
                   </p>
                   <div className="pt-2">
-                    <Button 
-                      onClick={handleGetStartedClick} 
-                      size="default" 
-                      className="bg-primary hover:bg-primary/90 text-white font-medium px-8 py-3"
-                    >
+                    <Button onClick={handleGetStartedClick} size="default" className="bg-primary hover:bg-primary/90 text-white font-medium px-8 py-3">
                       Get Started
                     </Button>
                   </div>
                 </div>
-              </div>
-            ) : (
-              // Desktop layout: side by side
-              <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center w-full overflow-x-hidden">
+              </div> :
+          // Desktop layout: side by side
+          <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center w-full overflow-x-hidden">
                 <div className="w-full md:w-1/2 space-y-4 md:space-y-6">
                   <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
                     AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
@@ -77,11 +68,7 @@ const HomePage = () => {
                     Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
                   </p>
                   <div className="pt-3 md:pt-4">
-                    <Button 
-                      onClick={handleGetStartedClick} 
-                      size="lg" 
-                      className="bg-primary hover:bg-primary/90 text-white font-medium"
-                    >
+                    <Button onClick={handleGetStartedClick} size="lg" className="bg-primary hover:bg-primary/90 text-white font-medium">
                       Get Started
                     </Button>
                   </div>
@@ -91,8 +78,7 @@ const HomePage = () => {
                     <SpinningRadar />
                   </div>
                 </div>
-              </div>
-            )}
+              </div>}
           </div>
         </section>
 
@@ -135,42 +121,14 @@ const HomePage = () => {
         {/* CTA Section */}
         <section className={`py-8 ${isMobile ? 'px-3 pb-16' : 'py-12 md:py-20 px-4'} w-full max-w-full overflow-x-hidden`}>
           <div className="container mx-auto max-w-4xl w-full overflow-x-hidden">
-            <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-lg p-4 md:p-10 border border-gray-700 shadow-lg">
-              <div className="text-center space-y-3 md:space-y-4">
-                <h2 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold text-white`}>
-                  Ready to elevate your trading decisions?
-                </h2>
-                <p className={`text-gray-300 ${isMobile ? 'text-sm px-1' : 'md:text-lg'} max-w-2xl mx-auto`}>
-                  Stop guessing chart patterns and support levels. Let our AI provide you with professional-grade analysis in seconds.
-                </p>
-                <div className="pt-3 md:pt-4 space-y-3 md:space-x-4 md:space-y-0 flex flex-col md:flex-row justify-center items-center">
-                  <Button 
-                    onClick={handleGetStartedClick} 
-                    size={isMobile ? "default" : "lg"} 
-                    className="bg-primary hover:bg-primary/90 text-white font-medium"
-                  >
-                    Start Analyzing Now
-                  </Button>
-                  <Button 
-                    onClick={handleViewPlansClick} 
-                    variant="outline"
-                    size={isMobile ? "default" : "lg"}
-                    className="text-white border-gray-700 hover:bg-gray-800"
-                  >
-                    View Pricing
-                  </Button>
-                </div>
-              </div>
-            </div>
+            
           </div>
         </section>
       </main>
       
       {!isMobile && <Footer />}
-    </div>
-  );
+    </div>;
 };
-
 const FeatureCard = ({
   icon,
   title,
@@ -181,9 +139,7 @@ const FeatureCard = ({
   description: string;
 }) => {
   const isMobile = useIsMobile();
-  
-  return (
-    <Card className="bg-chart-card border border-gray-800">
+  return <Card className="bg-chart-card border border-gray-800">
       <CardContent className={`${isMobile ? 'p-4' : 'p-6'} space-y-3 md:space-y-4`}>
         <div className="bg-gray-800/50 w-12 h-12 md:w-16 md:h-16 rounded-full flex items-center justify-center">
           {icon}
@@ -193,8 +149,6 @@ const FeatureCard = ({
           {description}
         </p>
       </CardContent>
-    </Card>
-  );
+    </Card>;
 };
-
 export default HomePage;
