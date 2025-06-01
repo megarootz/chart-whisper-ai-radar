@@ -1,2 +1,17 @@
 
-/*    /index.html   200
+# Handle SPA routing - serve index.html for all routes
+/analyze             /index.html   200
+/history             /index.html   200
+/profile             /index.html   200
+/pricing             /index.html   200
+/auth                /index.html   200
+/analysis/*          /index.html   200
+/subscription        /index.html   200
+
+# Block crawling of API endpoints and admin paths
+/api/*               /index.html   404
+/admin/*             /index.html   404
+/_/*                 /index.html   404
+
+# Fallback rule - must be last
+/*                   /index.html   200

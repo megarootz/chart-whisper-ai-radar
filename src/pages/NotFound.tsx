@@ -3,20 +3,43 @@ import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Home, ArrowLeft, AlertCircle } from "lucide-react";
+import { updatePageMeta } from "@/utils/seoUtils";
 
 const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Update SEO for 404 page
+    updatePageMeta(
+      '404 - Page Not Found | ForexRadar7',
+      'The page you are looking for does not exist. Return to ForexRadar7 for AI-powered forex chart analysis.',
+      `https://forexradar7.lovable.app${location.pathname}`
+    );
+    
+    // Log 404 for debugging
     console.error(
       "404 Error: User attempted to access non-existent route:",
       location.pathname
     );
+    
+    // Track 404s for Google Search Console
+    if (typeof gtag !== 'undefined') {
+      gtag('event', 'page_not_found', {
+        page_path: location.pathname,
+        page_title: '404 - Page Not Found'
+      });
+    }
   }, [location.pathname]);
 
-  // Check if this might be a SPA routing issue (common paths that should exist)
-  const commonPaths = ['/analyze', '/history', '/profile', '/auth'];
-  const isSPARoutingIssue = commonPaths.some(path => location.pathname.startsWith(path));
+  // Check if this might be a SPA routing issue
+  const protectedPaths = ['/analyze', '/history', '/profile'];
+  const publicPaths = ['/pricing', '/auth'];
+  const dynamicPaths = ['/analysis/'];
+  
+  const isProtectedRoute = protectedPaths.some(path => location.pathname.startsWith(path));
+  const isPublicRoute = publicPaths.some(path => location.pathname.startsWith(path));
+  const isDynamicRoute = dynamicPaths.some(path => location.pathname.startsWith(path));
+  const isSPARoutingIssue = isProtectedRoute || isPublicRoute || isDynamicRoute;
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-chart-bg">
@@ -33,8 +56,10 @@ const NotFound = () => {
               <strong>Routing Issue Detected</strong>
             </p>
             <p className="text-gray-300 text-sm">
-              This appears to be a server configuration issue. If you refreshed the page or accessed this URL directly, 
-              the server needs to be configured to serve the React app for all routes.
+              {isProtectedRoute ? 
+                "This page requires authentication. Please sign in to access this feature." :
+                "This appears to be a server configuration issue. If you refreshed the page or accessed this URL directly, try navigating from the homepage."
+              }
             </p>
           </div>
         ) : (
@@ -61,7 +86,7 @@ const NotFound = () => {
 
         {isSPARoutingIssue && (
           <div className="mt-6 text-xs text-gray-500">
-            <p>For developers: Configure your server to serve index.html for all routes</p>
+            <p>Having trouble? <Link to="/auth" className="text-primary hover:underline">Try signing in</Link> or <Link to="/" className="text-primary hover:underline">return to homepage</Link></p>
           </div>
         )}
       </div>

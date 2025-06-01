@@ -1,14 +1,34 @@
+
+User-agent: *
+Allow: /
+Allow: /pricing
+Allow: /auth
+
+# Block private/admin areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_/
+Disallow: /analyze
+Disallow: /history
+Disallow: /profile
+Disallow: /analysis/
+
+# Sitemap location
+Sitemap: https://forexradar7.lovable.app/sitemap.xml
+
+# Specific bot permissions
 User-agent: Googlebot
 Allow: /
+Allow: /pricing
+Allow: /auth
 
 User-agent: Bingbot
 Allow: /
+Allow: /pricing
+Allow: /auth
 
 User-agent: Twitterbot
 Allow: /
 
 User-agent: facebookexternalhit
-Allow: /
-
-User-agent: *
 Allow: /

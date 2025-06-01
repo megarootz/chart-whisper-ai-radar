@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -10,11 +9,17 @@ import TickmillBanner from '@/components/TickmillBanner';
 import SpinningRadar from '@/components/SpinningRadar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
+import { updatePageMeta, getPageSEOData } from '@/utils/seoUtils';
 
 const HomePage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
   const { user } = useAuth();
+  
+  useEffect(() => {
+    const seoData = getPageSEOData('/');
+    updatePageMeta(seoData.title, seoData.description, seoData.url);
+  }, []);
   
   const handleGetStartedClick = () => {
     if (user) {
