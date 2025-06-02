@@ -15,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 const PricingPage = () => {
   const isMobile = useIsMobile();
   const { user } = useAuth();
-  const { subscription, usage, loading, createCheckout, openCustomerPortal, refreshSubscription } = useSubscription();
+  const { subscription, usage, loading, createCheckout, openCustomerPortal, refreshSubscription, checkUsageLimits } = useSubscription();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -37,6 +37,13 @@ const PricingPage = () => {
       });
     }
   }, []);
+
+  // Force refresh usage data when component mounts to ensure latest data
+  useEffect(() => {
+    if (user) {
+      checkUsageLimits();
+    }
+  }, [user]);
 
   const handleGetStarted = () => {
     if (!user) {

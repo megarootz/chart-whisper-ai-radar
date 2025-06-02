@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
@@ -8,8 +8,13 @@ import ResetCountdown from './ResetCountdown';
 import { Crown, Star, Zap } from 'lucide-react';
 
 const UsageDisplay = () => {
-  const { usage } = useSubscription();
+  const { usage, checkUsageLimits } = useSubscription();
   const isMobile = useIsMobile();
+
+  // Force refresh when component mounts to ensure latest data
+  useEffect(() => {
+    checkUsageLimits();
+  }, []);
 
   if (!usage) return null;
 

@@ -253,6 +253,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         can_analyze: canAnalyze
       };
       
+      // Update state immediately
       setUsage(correctedUsageData);
       
       // Refresh server time when checking usage to keep countdown accurate
@@ -318,10 +319,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         throw new Error('No data returned from increment_usage_count');
       }
       
-      // After incrementing, get the actual corrected usage data
+      // After incrementing, get the actual corrected usage data immediately
       const correctedUsageData = await checkUsageLimits();
       
       console.log('✅ USAGE SUCCESSFULLY INCREMENTED and corrected:', correctedUsageData);
+      
+      // Force immediate state update
+      if (correctedUsageData) {
+        setUsage(correctedUsageData);
+      }
       
       // Refresh server time after incrementing usage
       await refreshServerTime();
