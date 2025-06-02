@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -106,8 +107,23 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Get today's date in UTC
       const today = new Date().toISOString().split('T')[0];
       
-      // Get this month in YYYY-MM format
-      const currentMonth = new Date().toISOString().slice(0, 7);
+      // Get this month's start and end dates
+      const now = new Date();
+      const currentYear = now.getUTCFullYear();
+      const currentMonth = now.getUTCMonth(); // 0-indexed
+      
+      // First day of current month
+      const monthStart = new Date(Date.UTC(currentYear, currentMonth, 1));
+      // First day of next month (to use as exclusive end)
+      const monthEnd = new Date(Date.UTC(currentYear, currentMonth + 1, 1));
+
+      console.log('📅 Date range calculation:', {
+        today,
+        currentYear,
+        currentMonth: currentMonth + 1, // Display as 1-indexed
+        monthStart: monthStart.toISOString(),
+        monthEnd: monthEnd.toISOString()
+      });
 
       // Count actual analyses from chart_analyses table for today
       const { data: dailyAnalyses, error: dailyError } = await supabase
@@ -127,8 +143,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         .from('chart_analyses')
         .select('id')
         .eq('user_id', user.id)
-        .gte('created_at', `${currentMonth}-01T00:00:00.000Z`)
-        .lt('created_at', `${currentMonth}-31T23:59:59.999Z`);
+        .gte('created_at', monthStart.toISOString())
+        .lt('created_at', monthEnd.toISOString());
 
       if (monthlyError) {
         console.error('❌ Error fetching monthly analyses:', monthlyError);
@@ -142,7 +158,10 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         daily: actualDailyCount,
         monthly: actualMonthlyCount,
         today,
-        currentMonth
+        monthStart: monthStart.toISOString(),
+        monthEnd: monthEnd.toISOString(),
+        dailyAnalyses: dailyAnalyses?.map(a => a.id),
+        monthlyAnalyses: monthlyAnalyses?.map(a => a.id)
       });
 
       return { 
