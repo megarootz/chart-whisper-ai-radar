@@ -29,6 +29,22 @@ const Footer = () => {
             <Globe className="h-5 w-5" />
           </a>
         </div>
+
+        {/* Legal Links */}
+        <div className="flex justify-center space-x-6 mb-6">
+          <Link 
+            to="/privacy" 
+            className="text-sm text-gray-400 hover:text-primary transition-colors hover-underline"
+          >
+            Privacy Policy
+          </Link>
+          <Link 
+            to="/terms" 
+            className="text-sm text-gray-400 hover:text-primary transition-colors hover-underline"
+          >
+            Terms of Service
+          </Link>
+        </div>
         
         <p className="text-center text-sm text-gray-400">
           © {currentYear} ForexRadar7. All rights reserved.
