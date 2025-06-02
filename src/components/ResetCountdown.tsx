@@ -45,7 +45,6 @@ const ResetCountdown = () => {
       <span>
         Daily reset in: {formatTime(countdown.hours)}:{formatTime(countdown.minutes)}:{formatTime(countdown.seconds)}
       </span>
-      <span className="text-xs text-gray-500">(UTC)</span>
     </div>
   );
 };

@@ -32,9 +32,8 @@ const ProfilePage = () => {
             </p>
           </div>
 
-          <UsageDisplay />
-          
-          <div className={`bg-chart-card border border-gray-700 rounded-lg overflow-hidden ${isMobile ? 'mx-0' : 'mx-0 md:mx-0'}`}>
+          {/* User Info Section - Moved to top */}
+          <div className={`bg-chart-card border border-gray-700 rounded-lg overflow-hidden mb-4 md:mb-6 ${isMobile ? 'mx-0' : 'mx-0 md:mx-0'}`}>
             <div className="p-4 md:p-5 flex items-center">
               <div className="bg-primary/10 text-primary rounded-full w-12 h-12 md:w-16 md:h-16 flex items-center justify-center mr-3 md:mr-4">
                 <User className="h-6 w-6 md:h-8 md:w-8" />
@@ -47,6 +46,8 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
+
+          <UsageDisplay />
           
           <div className="mt-4 md:mt-6 text-center text-gray-400 text-xs md:text-sm px-4 md:px-0">
             <p>ForexRadar7 v1.0.0</p>
