@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -75,6 +74,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const refreshSubscription = async () => {
     if (!user) {
+      console.log('👤 No user, clearing subscription data');
       setSubscription(null);
       setLoading(false);
       return;
@@ -107,6 +107,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       console.log('📊 Checking usage limits for user:', user.id, 'email:', user.email);
+      
+      // Verify user session is still valid
+      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+      if (authError || !currentUser) {
+        console.error('❌ User session invalid:', authError);
+        return null;
+      }
       
       const { data, error } = await supabase.rpc('check_usage_limits', {
         p_user_id: user.id
@@ -155,12 +162,26 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const incrementUsage = async (): Promise<UsageData | null> => {
     if (!user) {
-      console.log('❌ No user logged in for usage increment');
+      console.error('❌ CRITICAL: No user logged in for usage increment');
       return null;
     }
 
     try {
-      console.log('📈 INCREMENTING USAGE - User:', user.id, 'Email:', user.email);
+      console.log('📈 STARTING USAGE INCREMENT - User:', user.id, 'Email:', user.email);
+      
+      // CRITICAL: Verify user session is still valid before incrementing
+      const { data: { user: currentUser }, error: authError } = await supabase.auth.getUser();
+      if (authError || !currentUser) {
+        console.error('❌ CRITICAL: User session invalid during increment:', authError);
+        throw new Error('User session expired. Please sign in again.');
+      }
+      
+      if (currentUser.id !== user.id) {
+        console.error('❌ CRITICAL: User ID mismatch during increment');
+        throw new Error('User session mismatch. Please sign in again.');
+      }
+      
+      console.log('✅ User session verified, proceeding with increment');
       
       // Call the RPC function with explicit parameters
       const { data, error } = await supabase.rpc('increment_usage_count', {
@@ -217,7 +238,9 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         after_daily: correctedUsageData.daily_count,
         monthly: correctedUsageData.monthly_count,
         tier: correctedUsageData.subscription_tier,
-        can_analyze: correctedUsageData.can_analyze
+        can_analyze: correctedUsageData.can_analyze,
+        user_id: user.id,
+        email: user.email
       });
       
       setUsage(correctedUsageData);

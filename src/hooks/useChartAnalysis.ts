@@ -20,25 +20,20 @@ export const useChartAnalysis = () => {
   const saveAnalysisToDatabase = async (analysisData: AnalysisResultData) => {
     try {
       if (!user) {
-        console.log("User not logged in, cannot save analysis");
+        console.log("❌ User not logged in, cannot save analysis");
         return;
       }
+      
+      console.log("💾 Saving analysis to database for user:", user.id, user.email);
       
       // Add client timestamp to analysis data
       const analysisWithTimestamp = {
         ...analysisData,
-        created_at: new Date().toISOString() // Client's local time in ISO format
+        created_at: new Date().toISOString()
       };
       
       // Convert AnalysisResultData to a JSON-compatible object
       const analysisDataJson: Json = JSON.parse(JSON.stringify(analysisWithTimestamp));
-      
-      console.log("Saving analysis to database:", {
-        user_id: user.id,
-        analysis_data: analysisDataJson,
-        pair_name: analysisData.pairName,
-        timeframe: analysisData.timeframe
-      });
       
       const { data, error } = await supabase
         .from('chart_analyses')
@@ -47,23 +42,22 @@ export const useChartAnalysis = () => {
           analysis_data: analysisDataJson,
           pair_name: analysisData.pairName,
           timeframe: analysisData.timeframe,
-          chart_url: null, // Explicitly set to null since we're not storing images
-          created_at: analysisWithTimestamp.created_at // Store client timestamp
+          chart_url: null,
+          created_at: analysisWithTimestamp.created_at
         })
         .select()
         .single();
       
       if (error) {
-        console.error("Error saving analysis to database:", error);
+        console.error("❌ Error saving analysis to database:", error);
         toast({
           title: "Error",
           description: "Failed to save analysis to history",
           variant: "destructive",
         });
       } else {
-        console.log("Analysis saved to database successfully", data);
+        console.log("✅ Analysis saved to database successfully", data);
         
-        // Add the newly saved analysis to the history context
         if (data) {
           addToHistory({
             id: data.id,
@@ -82,7 +76,7 @@ export const useChartAnalysis = () => {
         });
       }
     } catch (err) {
-      console.error("Error in saveAnalysisToDatabase:", err);
+      console.error("❌ Error in saveAnalysisToDatabase:", err);
       toast({
         title: "Error",
         description: "Failed to save analysis to history",
@@ -95,41 +89,63 @@ export const useChartAnalysis = () => {
     try {
       setIsAnalyzing(true);
       
-      // Check if user is logged in
+      // CRITICAL: Check authentication first
       if (!user) {
-        throw new Error('You must be logged in to analyze charts');
+        console.error('❌ AUTHENTICATION REQUIRED: User must be logged in to analyze charts');
+        toast({
+          title: "Authentication Required",
+          description: "You must be logged in to analyze charts. Please sign in first.",
+          variant: "destructive",
+        });
+        return;
       }
 
-      console.log('🔍 Starting chart analysis for user:', user.id, 'email:', user.email);
+      console.log('🔍 Starting chart analysis for authenticated user:', user.id, 'email:', user.email);
 
-      // Check usage limits BEFORE proceeding but don't enforce too strictly during analysis
+      // Check usage limits BEFORE proceeding
       console.log('📊 Checking usage limits before analysis...');
       const usageData = await checkUsageLimits();
       console.log('📊 Usage data received:', usageData);
       
-      if (!usageData) {
-        console.warn('⚠️ Could not check usage limits, but proceeding with analysis');
-      } else {
-        // Only block if we're absolutely sure they've exceeded limits
-        const isDefinitelyOverLimit = usageData.subscription_tier === 'free' && 
-          (usageData.daily_count >= 3 || usageData.monthly_count >= 90);
+      if (usageData) {
+        // Strict enforcement for free users
+        if (usageData.subscription_tier === 'free') {
+          if (usageData.daily_count >= 3) {
+            console.log('❌ Daily limit reached for free user');
+            toast({
+              title: "Daily Limit Reached",
+              description: "Free users can analyze 3 charts per day. Please upgrade or wait until tomorrow.",
+              variant: "destructive",
+            });
+            return;
+          }
           
-        if (isDefinitelyOverLimit) {
-          console.log('❌ Usage limits definitely exceeded, blocking analysis');
+          if (usageData.monthly_count >= 90) {
+            console.log('❌ Monthly limit reached for free user');
+            toast({
+              title: "Monthly Limit Reached", 
+              description: "Free users can analyze 90 charts per month. Please upgrade your plan.",
+              variant: "destructive",
+            });
+            return;
+          }
+        }
+        
+        // General can_analyze check
+        if (!usageData.can_analyze) {
+          console.log('❌ General usage limit reached');
           toast({
             title: "Usage Limit Reached",
-            description: usageData.daily_count >= 3 ? 
-              "Free users can only analyze 3 charts per day. Please upgrade or wait until tomorrow." :
-              "Free users can only analyze 90 charts per month. Please upgrade your plan.",
+            description: "You've reached your analysis limit. Please upgrade your plan or wait for reset.",
             variant: "destructive",
           });
           return;
         }
       }
       
-      console.log('✅ Usage check passed or inconclusive, proceeding with analysis');
+      console.log('✅ Usage limits check passed, proceeding with analysis');
       
-      // Convert image to base64 (for AI analysis only - not stored)
+      // Convert image to base64
       const base64Image = await fileToBase64(file);
       
       console.log("🤖 Calling Supabase Edge Function to analyze chart");
@@ -165,14 +181,22 @@ export const useChartAnalysis = () => {
       const resultText = responseData.choices[0].message.content || '';
       console.log("📝 Raw API Response content received");
       
-      // Process response as text format using the new template structure
+      // Process response as text format
       const analysisData = processTextResult(resultText);
       console.log("🔄 Analysis data processed:", { pairName: analysisData.pairName, timeframe: analysisData.timeframe });
       
       // CRITICAL: Increment usage count AFTER successful analysis
-      console.log('📈 Analysis successful, attempting to increment usage count...');
+      console.log('📈 Analysis successful, incrementing usage count...');
       try {
-        console.log('📈 Calling incrementUsage with user:', user.id, 'email:', user.email);
+        console.log('📈 Current user state:', { id: user.id, email: user.email, isAuthenticated: !!user });
+        
+        // Double-check user is still authenticated
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        if (!currentUser) {
+          console.error('❌ User session expired during analysis');
+          throw new Error('User session expired. Please sign in again.');
+        }
+        
         const updatedUsage = await incrementUsage();
         
         if (updatedUsage) {
@@ -184,14 +208,17 @@ export const useChartAnalysis = () => {
           });
         } else {
           console.error('❌ incrementUsage returned null/undefined');
-          // Don't throw error, just log it
+          toast({
+            title: "Usage Count Warning", 
+            description: "Analysis completed but usage count may not have updated. Please refresh the page.",
+            variant: "destructive",
+          });
         }
       } catch (usageError) {
-        console.error('❌ Error incrementing usage:', usageError);
-        // Don't block the analysis, just warn the user
+        console.error('❌ CRITICAL Error incrementing usage:', usageError);
         toast({
-          title: "Usage Count Warning", 
-          description: "Analysis completed but usage count may not have updated correctly. Please refresh the page.",
+          title: "Usage Count Error", 
+          description: "Analysis completed but usage count failed to update. Please contact support if this continues.",
           variant: "destructive",
         });
       }
@@ -202,7 +229,7 @@ export const useChartAnalysis = () => {
       // Update the latest analysis in the context
       setLatestAnalysis(analysisData);
       
-      // Save the analysis to Supabase (with client timestamp)
+      // Save the analysis to Supabase
       await saveAnalysisToDatabase(analysisData);
 
       toast({
