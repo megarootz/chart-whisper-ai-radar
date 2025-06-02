@@ -115,6 +115,21 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
       
+      // CRITICAL FIX: Let's also get direct count from usage_tracking table to verify
+      const today = new Date().toISOString().split('T')[0];
+      const { data: directUsageData, error: directError } = await supabase
+        .from('usage_tracking')
+        .select('daily_count')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+      
+      if (directError) {
+        console.error('❌ Error getting direct usage data:', directError);
+      } else {
+        console.log('📊 Direct usage data from table:', directUsageData);
+      }
+      
       const { data, error } = await supabase.rpc('check_usage_limits', {
         p_user_id: user.id
       });
@@ -125,26 +140,49 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
 
-      console.log('📊 Raw usage limits response:', data);
+      console.log('📊 Raw RPC usage limits response:', data);
       
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       
-      console.log('📊 Usage data received:', {
+      console.log('📊 Parsed usage data:', {
         daily_count: usageData.daily_count,
         daily_limit: usageData.daily_limit,
         monthly_count: usageData.monthly_count,
         monthly_limit: usageData.monthly_limit,
         can_analyze: usageData.can_analyze,
-        subscription_tier: usageData.subscription_tier
+        subscription_tier: usageData.subscription_tier,
+        daily_remaining: usageData.daily_remaining,
+        monthly_remaining: usageData.monthly_remaining
       });
+
+      // CRITICAL FIX: Double-check the can_analyze logic
+      const actualCanAnalyze = (usageData.daily_count < usageData.daily_limit) && 
+                              (usageData.monthly_count < usageData.monthly_limit);
       
-      setUsage(usageData);
+      console.log('📊 Can analyze calculation check:', {
+        daily_check: `${usageData.daily_count} < ${usageData.daily_limit} = ${usageData.daily_count < usageData.daily_limit}`,
+        monthly_check: `${usageData.monthly_count} < ${usageData.monthly_limit} = ${usageData.monthly_count < usageData.monthly_limit}`,
+        final_result: actualCanAnalyze,
+        rpc_returned: usageData.can_analyze
+      });
+
+      // Override the can_analyze if there's a discrepancy
+      const correctedUsageData = {
+        ...usageData,
+        can_analyze: actualCanAnalyze
+      };
+
+      if (actualCanAnalyze !== usageData.can_analyze) {
+        console.log('⚠️ CORRECTING can_analyze value from', usageData.can_analyze, 'to', actualCanAnalyze);
+      }
+      
+      setUsage(correctedUsageData);
       
       // Refresh server time when checking usage to keep countdown accurate
       await refreshServerTime();
       
-      return usageData;
+      return correctedUsageData;
     } catch (error) {
       console.error('❌ Error in checkUsageLimits:', error);
       return null;

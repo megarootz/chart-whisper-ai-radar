@@ -6,10 +6,48 @@ import { Progress } from './ui/progress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ResetCountdown from './ResetCountdown';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const UsageDisplay = () => {
   const { usage, subscription, serverTime } = useSubscription();
+  const { user } = useAuth();
   const isMobile = useIsMobile();
+
+  // Debug function to check raw database data
+  const debugUsageData = async () => {
+    if (!user) return;
+    
+    console.log('🔍 DEBUGGING: Checking raw database usage data...');
+    
+    // Check today's usage directly from database
+    const today = new Date().toISOString().split('T')[0];
+    const { data: todayData, error: todayError } = await supabase
+      .from('usage_tracking')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('date', today);
+    
+    console.log('🔍 Today\'s usage data from DB:', todayData, 'Error:', todayError);
+    
+    // Check subscription data
+    const { data: subData, error: subError } = await supabase
+      .from('subscribers')
+      .select('*')
+      .eq('user_id', user.id);
+    
+    console.log('🔍 Subscription data from DB:', subData, 'Error:', subError);
+    
+    // Check all usage data for this month
+    const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM
+    const { data: monthData, error: monthError } = await supabase
+      .from('usage_tracking')
+      .select('*')
+      .eq('user_id', user.id)
+      .ilike('month_year', `${currentMonth}%`);
+    
+    console.log('🔍 This month\'s usage data from DB:', monthData, 'Error:', monthError);
+  };
 
   if (!usage) return null;
 
@@ -32,9 +70,22 @@ const UsageDisplay = () => {
     <div className="bg-chart-card border border-gray-700 rounded-lg p-4 space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-white font-medium">Usage Statistics</h3>
-        <Badge variant="outline" className="text-xs">
-          {usage.subscription_tier.charAt(0).toUpperCase() + usage.subscription_tier.slice(1)}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="text-xs">
+            {usage.subscription_tier.charAt(0).toUpperCase() + usage.subscription_tier.slice(1)}
+          </Badge>
+          <button
+            onClick={debugUsageData}
+            className="text-xs px-2 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Debug DB
+          </button>
+        </div>
+      </div>
+
+      {/* Debug Info */}
+      <div className="text-xs text-yellow-400 bg-gray-800 p-2 rounded">
+        Debug: Daily {usage.daily_count}/{usage.daily_limit} | Can analyze: {usage.can_analyze ? 'YES' : 'NO'} | Remaining: {usage.daily_remaining}
       </div>
 
       {/* Current Server Time for Usage Limits */}
