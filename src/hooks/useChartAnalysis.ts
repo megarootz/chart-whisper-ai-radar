@@ -105,38 +105,46 @@ export const useChartAnalysis = () => {
       // Check usage limits BEFORE proceeding
       console.log('📊 Checking usage limits before analysis...');
       const usageData = await checkUsageLimits();
-      console.log('📊 Usage data received:', usageData);
+      console.log('📊 Current usage status:', usageData);
       
       if (usageData) {
-        // Strict enforcement for free users
-        if (usageData.subscription_tier === 'free') {
-          if (usageData.daily_count >= 3) {
-            console.log('❌ Daily limit reached for free user');
-            toast({
-              title: "Daily Limit Reached",
-              description: "Free users can analyze 3 charts per day. Please upgrade or wait until tomorrow.",
-              variant: "destructive",
-            });
-            return;
-          }
-          
-          if (usageData.monthly_count >= 90) {
-            console.log('❌ Monthly limit reached for free user');
-            toast({
-              title: "Monthly Limit Reached", 
-              description: "Free users can analyze 90 charts per month. Please upgrade your plan.",
-              variant: "destructive",
-            });
-            return;
-          }
-        }
-        
-        // General can_analyze check
+        console.log('📊 Detailed usage check:', {
+          tier: usageData.subscription_tier,
+          daily: `${usageData.daily_count}/${usageData.daily_limit}`,
+          monthly: `${usageData.monthly_count}/${usageData.monthly_limit}`,
+          can_analyze: usageData.can_analyze,
+          daily_remaining: usageData.daily_remaining,
+          monthly_remaining: usageData.monthly_remaining
+        });
+
+        // Check if user has reached their limits
         if (!usageData.can_analyze) {
-          console.log('❌ General usage limit reached');
+          console.log('❌ Usage limit reached - cannot analyze');
           toast({
             title: "Usage Limit Reached",
-            description: "You've reached your analysis limit. Please upgrade your plan or wait for reset.",
+            description: `You've reached your analysis limit. Daily: ${usageData.daily_count}/${usageData.daily_limit}, Monthly: ${usageData.monthly_count}/${usageData.monthly_limit}`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Additional check for daily limits specifically
+        if (usageData.daily_count >= usageData.daily_limit) {
+          console.log('❌ Daily limit specifically reached');
+          toast({
+            title: "Daily Limit Reached",
+            description: `You've used all ${usageData.daily_limit} analyses for today. Please wait until tomorrow or upgrade your plan.`,
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Additional check for monthly limits specifically
+        if (usageData.monthly_count >= usageData.monthly_limit) {
+          console.log('❌ Monthly limit specifically reached');
+          toast({
+            title: "Monthly Limit Reached",
+            description: `You've used all ${usageData.monthly_limit} analyses for this month. Please upgrade your plan.`,
             variant: "destructive",
           });
           return;
