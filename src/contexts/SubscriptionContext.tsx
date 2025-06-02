@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -105,7 +106,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     try {
-      console.log('📊 Checking usage limits for user:', user.id);
+      console.log('📊 Checking usage limits for user:', user.id, 'email:', user.email);
       
       const { data, error } = await supabase.rpc('check_usage_limits', {
         p_user_id: user.id
@@ -159,16 +160,28 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
 
     try {
-      console.log('📈 Incrementing usage for user:', user.id, 'email:', user.email);
+      console.log('📈 INCREMENTING USAGE - User:', user.id, 'Email:', user.email);
       
+      // Call the RPC function with explicit parameters
       const { data, error } = await supabase.rpc('increment_usage_count', {
         p_user_id: user.id,
         p_email: user.email || ''
       });
 
       if (error) {
-        console.error('❌ Error incrementing usage:', error);
-        console.error('❌ Error details:', error.message, error.code, error.details);
+        console.error('❌ RPC Error incrementing usage:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint
+        });
+        
+        // Try to provide more context about the error
+        if (error.message.includes('unique constraint')) {
+          console.error('❌ Unique constraint violation - possible duplicate entry for today');
+        }
+        
         throw new Error(`Failed to increment usage: ${error.message}`);
       }
 
@@ -199,7 +212,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
       };
       
-      console.log('📈 Post-increment usage data with strict enforcement:', correctedUsageData);
+      console.log('✅ USAGE SUCCESSFULLY INCREMENTED:', {
+        before_daily: usageData.daily_count - 1,
+        after_daily: correctedUsageData.daily_count,
+        monthly: correctedUsageData.monthly_count,
+        tier: correctedUsageData.subscription_tier,
+        can_analyze: correctedUsageData.can_analyze
+      });
+      
       setUsage(correctedUsageData);
       
       // Refresh server time after incrementing usage
@@ -207,7 +227,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       return correctedUsageData;
     } catch (error) {
-      console.error('❌ Error in incrementUsage:', error);
+      console.error('❌ CRITICAL Error in incrementUsage:', error);
+      
+      // Additional debugging information
+      console.error('❌ User context:', {
+        user_id: user?.id,
+        user_email: user?.email,
+        user_object: user
+      });
+      
       throw error; // Re-throw to let the caller handle it
     }
   };

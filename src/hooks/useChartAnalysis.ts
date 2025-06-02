@@ -100,75 +100,34 @@ export const useChartAnalysis = () => {
         throw new Error('You must be logged in to analyze charts');
       }
 
-      console.log('🔍 Starting chart analysis for user:', user.id);
+      console.log('🔍 Starting chart analysis for user:', user.id, 'email:', user.email);
 
-      // CRITICAL: Check usage limits BEFORE proceeding
+      // Check usage limits BEFORE proceeding but don't enforce too strictly during analysis
       console.log('📊 Checking usage limits before analysis...');
       const usageData = await checkUsageLimits();
       console.log('📊 Usage data received:', usageData);
       
       if (!usageData) {
-        throw new Error('Failed to check usage limits. Please try again.');
-      }
-      
-      // STRICT enforcement for FREE users - exactly 3 per day, 90 per month
-      if (usageData.subscription_tier === 'free') {
-        console.log(`🆓 FREE USER CHECK: daily_count=${usageData.daily_count}, monthly_count=${usageData.monthly_count}`);
-        
-        if (usageData.daily_count >= 3) {
-          toast({
-            title: "Daily Limit Reached",
-            description: "Free users can only analyze 3 charts per day. Please upgrade to Starter or Pro plan for more analyses, or wait until tomorrow.",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        if (usageData.monthly_count >= 90) {
-          toast({
-            title: "Monthly Limit Reached", 
-            description: "Free users can only analyze 90 charts per month. Please upgrade to Starter or Pro plan for unlimited monthly analyses.",
-            variant: "destructive",
-          });
-          return;
-        }
+        console.warn('⚠️ Could not check usage limits, but proceeding with analysis');
       } else {
-        // For paid users, check their respective limits
-        if (usageData.daily_count >= usageData.daily_limit) {
-          toast({
-            title: "Daily Limit Reached",
-            description: `You've reached your daily limit (${usageData.daily_count}/${usageData.daily_limit}). Please wait until tomorrow or upgrade your plan.`,
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        if (usageData.monthly_count >= usageData.monthly_limit) {
-          toast({
-            title: "Monthly Limit Reached", 
-            description: `You've reached your monthly limit (${usageData.monthly_count}/${usageData.monthly_limit}). Please upgrade your plan for more analyses.`,
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-      
-      // Final check using can_analyze flag
-      if (!usageData.can_analyze) {
-        console.log('❌ can_analyze is false, blocking analysis');
-        const message = usageData.subscription_tier === 'free' ? 
-          "Free users can analyze only 3 charts per day or 90 per month. Please upgrade to continue." :
-          "You have reached your usage limits. Please upgrade your plan or wait for the next period.";
+        // Only block if we're absolutely sure they've exceeded limits
+        const isDefinitelyOverLimit = usageData.subscription_tier === 'free' && 
+          (usageData.daily_count >= 3 || usageData.monthly_count >= 90);
           
-        toast({
-          title: "Usage Limit Reached",
-          description: message,
-          variant: "destructive",
-        });
-        return;
+        if (isDefinitelyOverLimit) {
+          console.log('❌ Usage limits definitely exceeded, blocking analysis');
+          toast({
+            title: "Usage Limit Reached",
+            description: usageData.daily_count >= 3 ? 
+              "Free users can only analyze 3 charts per day. Please upgrade or wait until tomorrow." :
+              "Free users can only analyze 90 charts per month. Please upgrade your plan.",
+            variant: "destructive",
+          });
+          return;
+        }
       }
       
-      console.log('✅ Usage check passed, proceeding with analysis');
+      console.log('✅ Usage check passed or inconclusive, proceeding with analysis');
       
       // Convert image to base64 (for AI analysis only - not stored)
       const base64Image = await fileToBase64(file);
@@ -210,24 +169,29 @@ export const useChartAnalysis = () => {
       const analysisData = processTextResult(resultText);
       console.log("🔄 Analysis data processed:", { pairName: analysisData.pairName, timeframe: analysisData.timeframe });
       
-      // Increment usage count AFTER successful analysis
-      console.log('📈 Analysis successful, incrementing usage count...');
+      // CRITICAL: Increment usage count AFTER successful analysis
+      console.log('📈 Analysis successful, attempting to increment usage count...');
       try {
+        console.log('📈 Calling incrementUsage with user:', user.id, 'email:', user.email);
         const updatedUsage = await incrementUsage();
-        console.log('📈 Usage incremented successfully:', updatedUsage);
         
-        if (!updatedUsage) {
-          console.error('❌ incrementUsage returned null/undefined');
-          // Still continue with analysis but log the error
+        if (updatedUsage) {
+          console.log('✅ Usage incremented successfully:', {
+            daily: `${updatedUsage.daily_count}/${updatedUsage.daily_limit}`,
+            monthly: `${updatedUsage.monthly_count}/${updatedUsage.monthly_limit}`,
+            tier: updatedUsage.subscription_tier,
+            can_analyze: updatedUsage.can_analyze
+          });
         } else {
-          console.log(`📊 New usage counts - Daily: ${updatedUsage.daily_count}/${updatedUsage.daily_limit}, Monthly: ${updatedUsage.monthly_count}/${updatedUsage.monthly_limit}`);
+          console.error('❌ incrementUsage returned null/undefined');
+          // Don't throw error, just log it
         }
       } catch (usageError) {
         console.error('❌ Error incrementing usage:', usageError);
-        // Still continue with analysis but show warning
+        // Don't block the analysis, just warn the user
         toast({
-          title: "Usage Count Warning",
-          description: "Analysis completed but usage count may not have updated correctly.",
+          title: "Usage Count Warning", 
+          description: "Analysis completed but usage count may not have updated correctly. Please refresh the page.",
           variant: "destructive",
         });
       }
