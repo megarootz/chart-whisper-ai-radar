@@ -99,6 +99,62 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
+  const getActualUsageCounts = async (): Promise<{ dailyCount: number; monthlyCount: number }> => {
+    if (!user) return { dailyCount: 0, monthlyCount: 0 };
+
+    try {
+      // Get today's date in UTC
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get this month in YYYY-MM format
+      const currentMonth = new Date().toISOString().slice(0, 7);
+
+      // Count actual analyses from chart_analyses table for today
+      const { data: dailyAnalyses, error: dailyError } = await supabase
+        .from('chart_analyses')
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('created_at', `${today}T00:00:00.000Z`)
+        .lt('created_at', `${today}T23:59:59.999Z`);
+
+      if (dailyError) {
+        console.error('❌ Error fetching daily analyses:', dailyError);
+        return { dailyCount: 0, monthlyCount: 0 };
+      }
+
+      // Count actual analyses from chart_analyses table for this month
+      const { data: monthlyAnalyses, error: monthlyError } = await supabase
+        .from('chart_analyses')
+        .select('id')
+        .eq('user_id', user.id)
+        .gte('created_at', `${currentMonth}-01T00:00:00.000Z`)
+        .lt('created_at', `${currentMonth}-31T23:59:59.999Z`);
+
+      if (monthlyError) {
+        console.error('❌ Error fetching monthly analyses:', monthlyError);
+        return { dailyCount: dailyAnalyses?.length || 0, monthlyCount: 0 };
+      }
+
+      const actualDailyCount = dailyAnalyses?.length || 0;
+      const actualMonthlyCount = monthlyAnalyses?.length || 0;
+
+      console.log('📊 ACTUAL usage counts from chart_analyses:', {
+        daily: actualDailyCount,
+        monthly: actualMonthlyCount,
+        today,
+        currentMonth
+      });
+
+      return { 
+        dailyCount: actualDailyCount, 
+        monthlyCount: actualMonthlyCount 
+      };
+    } catch (error) {
+      console.error('❌ Error getting actual usage counts:', error);
+      return { dailyCount: 0, monthlyCount: 0 };
+    }
+  };
+
   const checkUsageLimits = async (): Promise<UsageData | null> => {
     if (!user) {
       console.log('❌ No user logged in for usage check');
@@ -115,67 +171,68 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         return null;
       }
       
-      // CRITICAL FIX: Let's also get direct count from usage_tracking table to verify
-      const today = new Date().toISOString().split('T')[0];
-      const { data: directUsageData, error: directError } = await supabase
-        .from('usage_tracking')
-        .select('daily_count')
+      // Get actual usage counts from chart_analyses table
+      const { dailyCount: actualDailyCount, monthlyCount: actualMonthlyCount } = await getActualUsageCounts();
+      
+      // Get subscription tier and limits
+      const { data: subscriptionData, error: subError } = await supabase
+        .from('subscribers')
+        .select('subscription_tier')
         .eq('user_id', user.id)
-        .eq('date', today)
         .maybeSingle();
-      
-      if (directError) {
-        console.error('❌ Error getting direct usage data:', directError);
-      } else {
-        console.log('📊 Direct usage data from table:', directUsageData);
-      }
-      
-      const { data, error } = await supabase.rpc('check_usage_limits', {
-        p_user_id: user.id
-      });
 
-      if (error) {
-        console.error('❌ Error checking usage limits:', error);
-        console.error('❌ Error details:', error.message, error.code, error.details);
-        return null;
+      if (subError) {
+        console.error('❌ Error fetching subscription:', subError);
       }
 
-      console.log('📊 Raw RPC usage limits response:', data);
+      const subscriptionTier = subscriptionData?.subscription_tier || 'free';
       
-      // Type cast the Json response to UsageData via unknown
-      const usageData = data as unknown as UsageData;
+      // Set limits based on subscription tier
+      let dailyLimit: number;
+      let monthlyLimit: number;
       
-      console.log('📊 Parsed usage data:', {
-        daily_count: usageData.daily_count,
-        daily_limit: usageData.daily_limit,
-        monthly_count: usageData.monthly_count,
-        monthly_limit: usageData.monthly_limit,
-        can_analyze: usageData.can_analyze,
-        subscription_tier: usageData.subscription_tier,
-        daily_remaining: usageData.daily_remaining,
-        monthly_remaining: usageData.monthly_remaining
+      switch (subscriptionTier) {
+        case 'starter':
+          dailyLimit = 15;
+          monthlyLimit = 450;
+          break;
+        case 'pro':
+          dailyLimit = 30;
+          monthlyLimit = 900;
+          break;
+        default: // 'free'
+          dailyLimit = 3;
+          monthlyLimit = 90;
+      }
+
+      // Calculate remaining counts
+      const dailyRemaining = Math.max(0, dailyLimit - actualDailyCount);
+      const monthlyRemaining = Math.max(0, monthlyLimit - actualMonthlyCount);
+      
+      // Determine if user can analyze (both daily and monthly limits must allow)
+      const canAnalyze = (actualDailyCount < dailyLimit) && (actualMonthlyCount < monthlyLimit);
+      
+      console.log('📊 CORRECTED usage data:', {
+        actual_daily_count: actualDailyCount,
+        actual_monthly_count: actualMonthlyCount,
+        daily_limit: dailyLimit,
+        monthly_limit: monthlyLimit,
+        subscription_tier: subscriptionTier,
+        can_analyze: canAnalyze,
+        daily_remaining: dailyRemaining,
+        monthly_remaining: monthlyRemaining
       });
 
-      // CRITICAL FIX: Double-check the can_analyze logic
-      const actualCanAnalyze = (usageData.daily_count < usageData.daily_limit) && 
-                              (usageData.monthly_count < usageData.monthly_limit);
-      
-      console.log('📊 Can analyze calculation check:', {
-        daily_check: `${usageData.daily_count} < ${usageData.daily_limit} = ${usageData.daily_count < usageData.daily_limit}`,
-        monthly_check: `${usageData.monthly_count} < ${usageData.monthly_limit} = ${usageData.monthly_count < usageData.monthly_limit}`,
-        final_result: actualCanAnalyze,
-        rpc_returned: usageData.can_analyze
-      });
-
-      // Override the can_analyze if there's a discrepancy
-      const correctedUsageData = {
-        ...usageData,
-        can_analyze: actualCanAnalyze
+      const correctedUsageData: UsageData = {
+        daily_count: actualDailyCount,
+        monthly_count: actualMonthlyCount,
+        daily_limit: dailyLimit,
+        monthly_limit: monthlyLimit,
+        subscription_tier: subscriptionTier,
+        daily_remaining: dailyRemaining,
+        monthly_remaining: monthlyRemaining,
+        can_analyze: canAnalyze
       };
-
-      if (actualCanAnalyze !== usageData.can_analyze) {
-        console.log('⚠️ CORRECTING can_analyze value from', usageData.can_analyze, 'to', actualCanAnalyze);
-      }
       
       setUsage(correctedUsageData);
       
@@ -242,25 +299,15 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         throw new Error('No data returned from increment_usage_count');
       }
       
-      // Type cast the Json response to UsageData via unknown
-      const usageData = data as unknown as UsageData;
+      // After incrementing, get the actual corrected usage data
+      const correctedUsageData = await checkUsageLimits();
       
-      console.log('✅ USAGE SUCCESSFULLY INCREMENTED:', {
-        before_daily: usageData.daily_count - 1,
-        after_daily: usageData.daily_count,
-        monthly: usageData.monthly_count,
-        tier: usageData.subscription_tier,
-        can_analyze: usageData.can_analyze,
-        user_id: user.id,
-        email: user.email
-      });
-      
-      setUsage(usageData);
+      console.log('✅ USAGE SUCCESSFULLY INCREMENTED and corrected:', correctedUsageData);
       
       // Refresh server time after incrementing usage
       await refreshServerTime();
       
-      return usageData;
+      return correctedUsageData;
     } catch (error) {
       console.error('❌ CRITICAL Error in incrementUsage:', error);
       

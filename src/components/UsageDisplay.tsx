@@ -28,7 +28,18 @@ const UsageDisplay = () => {
       .eq('user_id', user.id)
       .eq('date', today);
     
-    console.log('🔍 Today\'s usage data from DB:', todayData, 'Error:', todayError);
+    console.log('🔍 Today\'s usage data from usage_tracking table:', todayData, 'Error:', todayError);
+    
+    // Check actual analyses from chart_analyses table for today
+    const { data: todayAnalyses, error: analysesError } = await supabase
+      .from('chart_analyses')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('created_at', `${today}T00:00:00.000Z`)
+      .lt('created_at', `${today}T23:59:59.999Z`);
+    
+    console.log('🔍 Today\'s actual analyses from chart_analyses table:', todayAnalyses, 'Error:', analysesError);
+    console.log('🔍 Actual daily count from analyses:', todayAnalyses?.length || 0);
     
     // Check subscription data
     const { data: subData, error: subError } = await supabase
@@ -46,7 +57,18 @@ const UsageDisplay = () => {
       .eq('user_id', user.id)
       .ilike('month_year', `${currentMonth}%`);
     
-    console.log('🔍 This month\'s usage data from DB:', monthData, 'Error:', monthError);
+    console.log('🔍 This month\'s usage data from usage_tracking table:', monthData, 'Error:', monthError);
+    
+    // Check all analyses for this month
+    const { data: monthAnalyses, error: monthAnalysesError } = await supabase
+      .from('chart_analyses')
+      .select('*')
+      .eq('user_id', user.id)
+      .gte('created_at', `${currentMonth}-01T00:00:00.000Z`)
+      .lt('created_at', `${currentMonth}-31T23:59:59.999Z`);
+    
+    console.log('🔍 This month\'s actual analyses from chart_analyses table:', monthAnalyses, 'Error:', monthAnalysesError);
+    console.log('🔍 Actual monthly count from analyses:', monthAnalyses?.length || 0);
   };
 
   if (!usage) return null;
@@ -85,7 +107,7 @@ const UsageDisplay = () => {
 
       {/* Debug Info */}
       <div className="text-xs text-yellow-400 bg-gray-800 p-2 rounded">
-        Debug: Daily {usage.daily_count}/{usage.daily_limit} | Can analyze: {usage.can_analyze ? 'YES' : 'NO'} | Remaining: {usage.daily_remaining}
+        Debug: Daily {usage.daily_count}/{usage.daily_limit} | Monthly {usage.monthly_count}/{usage.monthly_limit} | Can analyze: {usage.can_analyze ? 'YES' : 'NO'} | Remaining: {usage.daily_remaining}
       </div>
 
       {/* Current Server Time for Usage Limits */}
