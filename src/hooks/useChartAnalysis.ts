@@ -100,12 +100,12 @@ export const useChartAnalysis = () => {
         throw new Error('You must be logged in to analyze charts');
       }
 
-      console.log('Starting chart analysis for user:', user.id);
+      console.log('🔍 Starting chart analysis for user:', user.id);
 
       // CRITICAL: Check usage limits BEFORE proceeding
-      console.log('Checking usage limits before analysis...');
+      console.log('📊 Checking usage limits before analysis...');
       const usageData = await checkUsageLimits();
-      console.log('Usage data received:', usageData);
+      console.log('📊 Usage data received:', usageData);
       
       if (!usageData) {
         throw new Error('Failed to check usage limits. Please try again.');
@@ -113,7 +113,7 @@ export const useChartAnalysis = () => {
       
       // STRICT enforcement for FREE users - exactly 3 per day, 90 per month
       if (usageData.subscription_tier === 'free') {
-        console.log(`FREE USER CHECK: daily_count=${usageData.daily_count}, monthly_count=${usageData.monthly_count}`);
+        console.log(`🆓 FREE USER CHECK: daily_count=${usageData.daily_count}, monthly_count=${usageData.monthly_count}`);
         
         if (usageData.daily_count >= 3) {
           toast({
@@ -155,6 +155,7 @@ export const useChartAnalysis = () => {
       
       // Final check using can_analyze flag
       if (!usageData.can_analyze) {
+        console.log('❌ can_analyze is false, blocking analysis');
         const message = usageData.subscription_tier === 'free' ? 
           "Free users can analyze only 3 charts per day or 90 per month. Please upgrade to continue." :
           "You have reached your usage limits. Please upgrade your plan or wait for the next period.";
@@ -172,7 +173,7 @@ export const useChartAnalysis = () => {
       // Convert image to base64 (for AI analysis only - not stored)
       const base64Image = await fileToBase64(file);
       
-      console.log("Calling Supabase Edge Function to analyze chart");
+      console.log("🤖 Calling Supabase Edge Function to analyze chart");
       
       // Call our Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("analyze-chart", {
@@ -184,7 +185,7 @@ export const useChartAnalysis = () => {
       });
       
       if (error) {
-        console.error("Edge function error:", error);
+        console.error("❌ Edge function error:", error);
         throw new Error(`Edge function error: ${error.message}`);
       }
 
@@ -192,7 +193,7 @@ export const useChartAnalysis = () => {
         throw new Error('No response from analysis function');
       }
 
-      console.log("Edge function response received:", data);
+      console.log("✅ Edge function response received");
       
       // Parse the API response
       const responseData = data as any;
@@ -203,15 +204,33 @@ export const useChartAnalysis = () => {
 
       // Parse the text response to extract JSON
       const resultText = responseData.choices[0].message.content || '';
-      console.log("Raw API Response content:", resultText.substring(0, 100) + "...");
+      console.log("📝 Raw API Response content received");
       
       // Process response as text format using the new template structure
       const analysisData = processTextResult(resultText);
+      console.log("🔄 Analysis data processed:", { pairName: analysisData.pairName, timeframe: analysisData.timeframe });
       
       // Increment usage count AFTER successful analysis
-      console.log('✅ Analysis successful, incrementing usage count...');
-      const updatedUsage = await incrementUsage();
-      console.log('Usage incremented:', updatedUsage);
+      console.log('📈 Analysis successful, incrementing usage count...');
+      try {
+        const updatedUsage = await incrementUsage();
+        console.log('📈 Usage incremented successfully:', updatedUsage);
+        
+        if (!updatedUsage) {
+          console.error('❌ incrementUsage returned null/undefined');
+          // Still continue with analysis but log the error
+        } else {
+          console.log(`📊 New usage counts - Daily: ${updatedUsage.daily_count}/${updatedUsage.daily_limit}, Monthly: ${updatedUsage.monthly_count}/${updatedUsage.monthly_limit}`);
+        }
+      } catch (usageError) {
+        console.error('❌ Error incrementing usage:', usageError);
+        // Still continue with analysis but show warning
+        toast({
+          title: "Usage Count Warning",
+          description: "Analysis completed but usage count may not have updated correctly.",
+          variant: "destructive",
+        });
+      }
       
       // Save the analysis result
       setAnalysisResult(analysisData);
@@ -229,7 +248,7 @@ export const useChartAnalysis = () => {
       });
       
     } catch (error) {
-      console.error("Error analyzing chart:", error);
+      console.error("❌ Error analyzing chart:", error);
       toast({
         title: "Analysis Failed",
         description: error instanceof Error ? error.message : "Failed to analyze the chart. Please try again.",

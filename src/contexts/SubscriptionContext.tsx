@@ -57,18 +57,18 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
   const refreshServerTime = async () => {
     try {
-      console.log('Fetching server time...');
+      console.log('⏰ Fetching server time...');
       const { data, error } = await supabase.functions.invoke('get-server-time');
       
       if (error) {
-        console.error('Error fetching server time:', error);
+        console.error('❌ Error fetching server time:', error);
         return;
       }
 
-      console.log('Server time response:', data);
+      console.log('⏰ Server time response:', data);
       setServerTime(data);
     } catch (error) {
-      console.error('Error in refreshServerTime:', error);
+      console.error('❌ Error in refreshServerTime:', error);
     }
   };
 
@@ -81,37 +81,43 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
 
     try {
       setLoading(true);
+      console.log('💳 Checking subscription for user:', user.id);
       const { data, error } = await supabase.functions.invoke('check-subscription');
       
       if (error) {
-        console.error('Error checking subscription:', error);
+        console.error('❌ Error checking subscription:', error);
         return;
       }
 
+      console.log('💳 Subscription data:', data);
       setSubscription(data);
     } catch (error) {
-      console.error('Error in refreshSubscription:', error);
+      console.error('❌ Error in refreshSubscription:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const checkUsageLimits = async (): Promise<UsageData | null> => {
-    if (!user) return null;
+    if (!user) {
+      console.log('❌ No user logged in for usage check');
+      return null;
+    }
 
     try {
-      console.log('Checking usage limits for user:', user.id);
+      console.log('📊 Checking usage limits for user:', user.id);
       
       const { data, error } = await supabase.rpc('check_usage_limits', {
         p_user_id: user.id
       });
 
       if (error) {
-        console.error('Error checking usage limits:', error);
+        console.error('❌ Error checking usage limits:', error);
+        console.error('❌ Error details:', error.message, error.code, error.details);
         return null;
       }
 
-      console.log('Usage limits response:', data);
+      console.log('📊 Raw usage limits response:', data);
       
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
@@ -133,7 +139,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
       };
       
-      console.log('STRICT free user enforcement - corrected usage data:', correctedUsageData);
+      console.log('📊 STRICT free user enforcement - corrected usage data:', correctedUsageData);
       setUsage(correctedUsageData);
       
       // Refresh server time when checking usage to keep countdown accurate
@@ -141,28 +147,37 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       return correctedUsageData;
     } catch (error) {
-      console.error('Error in checkUsageLimits:', error);
+      console.error('❌ Error in checkUsageLimits:', error);
       return null;
     }
   };
 
   const incrementUsage = async (): Promise<UsageData | null> => {
-    if (!user) return null;
+    if (!user) {
+      console.log('❌ No user logged in for usage increment');
+      return null;
+    }
 
     try {
-      console.log('Incrementing usage for user:', user.id);
+      console.log('📈 Incrementing usage for user:', user.id, 'email:', user.email);
       
       const { data, error } = await supabase.rpc('increment_usage_count', {
         p_user_id: user.id,
-        p_email: user.email
+        p_email: user.email || ''
       });
 
       if (error) {
-        console.error('Error incrementing usage:', error);
-        return null;
+        console.error('❌ Error incrementing usage:', error);
+        console.error('❌ Error details:', error.message, error.code, error.details);
+        throw new Error(`Failed to increment usage: ${error.message}`);
       }
 
-      console.log('Usage increment response:', data);
+      console.log('📈 Raw usage increment response:', data);
+      
+      if (!data) {
+        console.error('❌ incrementUsage returned null data');
+        throw new Error('No data returned from increment_usage_count');
+      }
       
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
@@ -184,7 +199,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
           (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
       };
       
-      console.log('Post-increment usage data with strict enforcement:', correctedUsageData);
+      console.log('📈 Post-increment usage data with strict enforcement:', correctedUsageData);
       setUsage(correctedUsageData);
       
       // Refresh server time after incrementing usage
@@ -192,8 +207,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       
       return correctedUsageData;
     } catch (error) {
-      console.error('Error in incrementUsage:', error);
-      return null;
+      console.error('❌ Error in incrementUsage:', error);
+      throw error; // Re-throw to let the caller handle it
     }
   };
 
@@ -259,12 +274,12 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Initialize data when user logs in
   useEffect(() => {
     if (user) {
-      console.log('User logged in, checking subscription, usage, and server time');
+      console.log('👤 User logged in, checking subscription, usage, and server time');
       refreshSubscription();
       checkUsageLimits();
       refreshServerTime();
     } else {
-      console.log('No user, clearing subscription, usage, and server time data');
+      console.log('👤 No user, clearing subscription, usage, and server time data');
       setSubscription(null);
       setUsage(null);
       setServerTime(null);
