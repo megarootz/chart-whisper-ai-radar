@@ -60,13 +60,32 @@ serve(async (req) => {
       logStep("No existing customer found");
     }
 
-    // Use actual Stripe price IDs
+    // Use test mode price IDs (create these in your Stripe test dashboard)
     const priceIds = {
-      starter: "price_1RUXRIF5K6hqVqXWXsYpHFE7",
-      pro: "price_1RUXSEF5K6hqVqXWwFh3SfM2"
+      starter: "price_test_starter", // Replace with your test price ID
+      pro: "price_test_pro" // Replace with your test price ID
     };
 
-    const priceId = priceIds[plan as keyof typeof priceIds];
+    // For now, let's create the prices dynamically to avoid the error
+    let priceId;
+    if (plan === 'starter') {
+      const price = await stripe.prices.create({
+        unit_amount: 999, // $9.99
+        currency: 'usd',
+        recurring: { interval: 'month' },
+        product_data: { name: 'Starter Plan' },
+      });
+      priceId = price.id;
+    } else {
+      const price = await stripe.prices.create({
+        unit_amount: 1899, // $18.99
+        currency: 'usd',
+        recurring: { interval: 'month' },
+        product_data: { name: 'Pro Plan' },
+      });
+      priceId = price.id;
+    }
+
     logStep("Using price ID", { plan, priceId });
 
     const origin = req.headers.get("origin") || "http://localhost:3000";

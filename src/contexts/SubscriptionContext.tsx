@@ -130,30 +130,13 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       
-      // STRICT ENFORCEMENT: For free users, absolutely no analysis if daily >= 3 OR monthly >= 90
-      const correctedUsageData = {
-        ...usageData,
-        daily_limit: usageData.subscription_tier === 'free' ? 3 : usageData.daily_limit,
-        monthly_limit: usageData.subscription_tier === 'free' ? 90 : usageData.monthly_limit,
-        daily_remaining: usageData.subscription_tier === 'free' ? 
-          Math.max(0, 3 - usageData.daily_count) : 
-          Math.max(0, usageData.daily_limit - usageData.daily_count),
-        monthly_remaining: usageData.subscription_tier === 'free' ? 
-          Math.max(0, 90 - usageData.monthly_count) : 
-          Math.max(0, usageData.monthly_limit - usageData.monthly_count),
-        // CRITICAL: Free users cannot analyze if they've used 3+ today OR 90+ this month
-        can_analyze: usageData.subscription_tier === 'free' ? 
-          (usageData.daily_count < 3 && usageData.monthly_count < 90) :
-          (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
-      };
-      
-      console.log('📊 STRICT free user enforcement - corrected usage data:', correctedUsageData);
-      setUsage(correctedUsageData);
+      console.log('📊 Usage data received:', usageData);
+      setUsage(usageData);
       
       // Refresh server time when checking usage to keep countdown accurate
       await refreshServerTime();
       
-      return correctedUsageData;
+      return usageData;
     } catch (error) {
       console.error('❌ Error in checkUsageLimits:', error);
       return null;
@@ -216,39 +199,22 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Type cast the Json response to UsageData via unknown
       const usageData = data as unknown as UsageData;
       
-      // STRICT ENFORCEMENT: Ensure limits are properly enforced after increment
-      const correctedUsageData = {
-        ...usageData,
-        daily_limit: usageData.subscription_tier === 'free' ? 3 : usageData.daily_limit,
-        monthly_limit: usageData.subscription_tier === 'free' ? 90 : usageData.monthly_limit,
-        daily_remaining: usageData.subscription_tier === 'free' ? 
-          Math.max(0, 3 - usageData.daily_count) : 
-          Math.max(0, usageData.daily_limit - usageData.daily_count),
-        monthly_remaining: usageData.subscription_tier === 'free' ? 
-          Math.max(0, 90 - usageData.monthly_count) : 
-          Math.max(0, usageData.monthly_limit - usageData.monthly_count),
-        // CRITICAL: After increment, check if user has reached limits
-        can_analyze: usageData.subscription_tier === 'free' ? 
-          (usageData.daily_count < 3 && usageData.monthly_count < 90) :
-          (usageData.daily_count < usageData.daily_limit && usageData.monthly_count < usageData.monthly_limit)
-      };
-      
       console.log('✅ USAGE SUCCESSFULLY INCREMENTED:', {
         before_daily: usageData.daily_count - 1,
-        after_daily: correctedUsageData.daily_count,
-        monthly: correctedUsageData.monthly_count,
-        tier: correctedUsageData.subscription_tier,
-        can_analyze: correctedUsageData.can_analyze,
+        after_daily: usageData.daily_count,
+        monthly: usageData.monthly_count,
+        tier: usageData.subscription_tier,
+        can_analyze: usageData.can_analyze,
         user_id: user.id,
         email: user.email
       });
       
-      setUsage(correctedUsageData);
+      setUsage(usageData);
       
       // Refresh server time after incrementing usage
       await refreshServerTime();
       
-      return correctedUsageData;
+      return usageData;
     } catch (error) {
       console.error('❌ CRITICAL Error in incrementUsage:', error);
       
