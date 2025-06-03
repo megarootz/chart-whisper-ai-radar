@@ -7,11 +7,7 @@ import SEOHead from '@/components/SEOHead';
 const TermsPage = () => {
   return (
     <>
-      <SEOHead
-        title="Terms of Service - ForexRadar7 | Service Agreement"
-        description="Read ForexRadar7's terms of service covering usage rights, responsibilities, and conditions for our AI forex chart analysis platform."
-        keywords="terms of service, user agreement, ForexRadar7 terms, service conditions, legal terms, usage policy"
-      />
+      <SEOHead />
       <div className="min-h-screen bg-chart-bg">
         <Header />
         
@@ -26,158 +22,156 @@ const TermsPage = () => {
                 <p className="text-gray-300 mb-4">
                   By accessing and using ForexRadar7 ("the Service"), you accept and agree to be bound by the terms and provision of this agreement. If you do not agree to abide by the above, please do not use this service.
                 </p>
+                <p className="text-gray-300">
+                  These Terms of Service govern your use of our AI-powered forex chart analysis platform and related services.
+                </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-semibold text-white mb-4">2. Service Description</h2>
                 <p className="text-gray-300 mb-4">
-                  ForexRadar7 is an AI-powered forex chart analysis platform that provides:
+                  ForexRadar7 provides AI-powered technical analysis of forex trading charts, including but not limited to:
                 </p>
                 <ul className="list-disc list-inside text-gray-300 space-y-2">
-                  <li>Automated technical analysis of forex trading charts</li>
-                  <li>Pattern recognition and trend identification</li>
-                  <li>Trading insights and recommendations</li>
+                  <li>Chart pattern recognition and analysis</li>
+                  <li>Support and resistance level identification</li>
+                  <li>Entry and exit point recommendations</li>
+                  <li>Risk assessment and management suggestions</li>
+                  <li>Trading signal generation</li>
                   <li>Historical analysis tracking</li>
-                  <li>Subscription-based premium features</li>
                 </ul>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-4">3. User Accounts and Registration</h2>
-                <p className="text-gray-300 mb-4">
-                  To access certain features, you must register for an account. You agree to:
-                </p>
-                <ul className="list-disc list-inside text-gray-300 space-y-2">
-                  <li>Provide accurate and complete registration information</li>
-                  <li>Maintain the security of your password</li>
-                  <li>Accept responsibility for all activities under your account</li>
-                  <li>Notify us immediately of any unauthorized access</li>
+                <h2 className="text-xl font-semibold text-white mb-4">3. User Responsibilities</h2>
+                <h3 className="text-lg font-medium text-white mb-3">3.1 Account Security</h3>
+                <ul className="list-disc list-inside text-gray-300 mb-4 space-y-1">
+                  <li>You are responsible for maintaining the confidentiality of your account credentials</li>
+                  <li>You must notify us immediately of any unauthorized use of your account</li>
+                  <li>You are responsible for all activities that occur under your account</li>
                 </ul>
-              </section>
 
-              <section>
-                <h2 className="text-xl font-semibold text-white mb-4">4. Acceptable Use Policy</h2>
+                <h3 className="text-lg font-medium text-white mb-3">3.2 Acceptable Use</h3>
                 <p className="text-gray-300 mb-4">You agree not to:</p>
                 <ul className="list-disc list-inside text-gray-300 space-y-2">
-                  <li>Use the service for any unlawful purpose</li>
-                  <li>Upload malicious code, viruses, or harmful content</li>
-                  <li>Attempt to gain unauthorized access to our systems</li>
-                  <li>Interfere with or disrupt the service</li>
-                  <li>Use automated tools to access the service without permission</li>
-                  <li>Reverse engineer or attempt to extract our algorithms</li>
-                  <li>Resell or redistribute our service without authorization</li>
+                  <li>Use the service for any illegal or unauthorized purpose</li>
+                  <li>Upload malicious content or attempt to compromise system security</li>
+                  <li>Reverse engineer, decompile, or attempt to extract our algorithms</li>
+                  <li>Share your account credentials with others</li>
+                  <li>Use automated systems to access the service beyond normal usage</li>
+                  <li>Violate any laws in your jurisdiction</li>
                 </ul>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-4">5. Subscription Terms</h2>
-                
-                <h3 className="text-lg font-medium text-white mb-3">5.1 Billing</h3>
-                <ul className="list-disc list-inside text-gray-300 mb-4 space-y-1">
-                  <li>Subscriptions are billed monthly or annually in advance</li>
-                  <li>Payments are processed securely through Stripe</li>
-                  <li>Prices may change with 30 days notice</li>
-                </ul>
-
-                <h3 className="text-lg font-medium text-white mb-3">5.2 Cancellation</h3>
-                <ul className="list-disc list-inside text-gray-300 mb-4 space-y-1">
-                  <li>You may cancel your subscription at any time</li>
-                  <li>Cancellation takes effect at the end of the current billing period</li>
-                  <li>No refunds for partial months unless required by law</li>
-                </ul>
-
-                <h3 className="text-lg font-medium text-white mb-3">5.3 Free Trial</h3>
-                <p className="text-gray-300">
-                  Free trial users are subject to usage limits and may be upgraded to paid plans automatically if limits are exceeded and payment information is provided.
+                <h2 className="text-xl font-semibold text-white mb-4">4. Subscription and Billing</h2>
+                <h3 className="text-lg font-medium text-white mb-3">4.1 Subscription Plans</h3>
+                <p className="text-gray-300 mb-4">
+                  We offer various subscription tiers with different features and usage limits. Subscription fees are charged in advance on a monthly or annual basis.
                 </p>
+
+                <h3 className="text-lg font-medium text-white mb-3">4.2 Payment Terms</h3>
+                <ul className="list-disc list-inside text-gray-300 mb-4 space-y-1">
+                  <li>All fees are non-refundable unless required by law</li>
+                  <li>We reserve the right to change our pricing with 30 days notice</li>
+                  <li>Failed payments may result in service suspension</li>
+                  <li>You may cancel your subscription at any time</li>
+                </ul>
+
+                <h3 className="text-lg font-medium text-white mb-3">4.3 Cancellation</h3>
+                <p className="text-gray-300">
+                  You may cancel your subscription at any time. Upon cancellation, your access to premium features will continue until the end of your current billing period.
+                </p>
+              </section>
+
+              <section>
+                <h2 className="text-xl font-semibold text-white mb-4">5. Trading Disclaimer</h2>
+                <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4 mb-4">
+                  <p className="text-red-400 font-semibold mb-2">IMPORTANT TRADING DISCLAIMER</p>
+                  <p className="text-gray-300 text-sm">
+                    ForexRadar7 provides educational and analytical tools only. Our AI analysis and recommendations are for informational purposes and do not constitute financial advice.
+                  </p>
+                </div>
+                <ul className="list-disc list-inside text-gray-300 space-y-2">
+                  <li>Trading forex involves substantial risk of loss and is not suitable for all investors</li>
+                  <li>Past performance does not guarantee future results</li>
+                  <li>You should carefully consider your investment objectives and risk tolerance</li>
+                  <li>Never invest money you cannot afford to lose</li>
+                  <li>Seek independent financial advice if needed</li>
+                  <li>We are not responsible for trading losses incurred using our analysis</li>
+                </ul>
               </section>
 
               <section>
                 <h2 className="text-xl font-semibold text-white mb-4">6. Intellectual Property</h2>
                 <p className="text-gray-300 mb-4">
-                  ForexRadar7 and its original content, features, and functionality are owned by us and are protected by international copyright, trademark, and other intellectual property laws.
+                  All content, features, and functionality of ForexRadar7, including but not limited to algorithms, software, text, displays, images, and the design, are owned by us and are protected by copyright, trademark, and other intellectual property laws.
                 </p>
                 <p className="text-gray-300">
-                  You retain ownership of any charts or data you upload, but grant us a license to process and analyze this content to provide our services.
+                  You may not reproduce, distribute, modify, or create derivative works of our content without explicit written permission.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-4">7. Disclaimers and Risk Warning</h2>
-                <div className="bg-red-900/20 border border-red-700 rounded-lg p-4 mb-4">
-                  <h3 className="text-lg font-medium text-red-400 mb-2">⚠️ Trading Risk Warning</h3>
-                  <p className="text-red-300 text-sm">
-                    Forex trading involves substantial risk of loss and is not suitable for all investors. Our analysis and recommendations are for informational purposes only and should not be considered as financial advice. Past performance does not guarantee future results.
-                  </p>
-                </div>
-                
-                <p className="text-gray-300 mb-4">The service is provided "as is" without warranties of any kind. We specifically disclaim:</p>
+                <h2 className="text-xl font-semibold text-white mb-4">7. Service Availability</h2>
+                <p className="text-gray-300 mb-4">
+                  While we strive to maintain high availability, we do not guarantee uninterrupted access to our services. We may:
+                </p>
                 <ul className="list-disc list-inside text-gray-300 space-y-2">
-                  <li>Accuracy of analysis results</li>
-                  <li>Profitability of trading decisions based on our analysis</li>
-                  <li>Uninterrupted or error-free service</li>
-                  <li>Fitness for any particular trading strategy</li>
+                  <li>Perform scheduled maintenance with advance notice</li>
+                  <li>Experience temporary outages due to technical issues</li>
+                  <li>Modify or discontinue features with reasonable notice</li>
+                  <li>Suspend service for security or legal reasons</li>
                 </ul>
               </section>
 
               <section>
                 <h2 className="text-xl font-semibold text-white mb-4">8. Limitation of Liability</h2>
                 <p className="text-gray-300 mb-4">
-                  To the maximum extent permitted by law, ForexRadar7 shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including but not limited to:
+                  TO THE MAXIMUM EXTENT PERMITTED BY LAW, FOREXRADAR7 SHALL NOT BE LIABLE FOR:
                 </p>
                 <ul className="list-disc list-inside text-gray-300 space-y-2">
-                  <li>Trading losses or missed opportunities</li>
-                  <li>Loss of profits or data</li>
-                  <li>Business interruption</li>
-                  <li>Personal injury or property damage</li>
+                  <li>Any trading losses or financial damages</li>
+                  <li>Indirect, incidental, or consequential damages</li>
+                  <li>Loss of profits, data, or business opportunities</li>
+                  <li>Service interruptions or technical failures</li>
+                  <li>Third-party actions or content</li>
                 </ul>
-                <p className="text-gray-300 mt-4">
-                  Our total liability shall not exceed the amount paid by you for the service in the 12 months preceding the claim.
-                </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-semibold text-white mb-4">9. Indemnification</h2>
                 <p className="text-gray-300">
-                  You agree to indemnify and hold harmless ForexRadar7 from any claims, damages, or expenses arising from your use of the service, violation of these terms, or infringement of any third-party rights.
+                  You agree to indemnify and hold harmless ForexRadar7 from any claims, damages, or expenses arising from your use of the service, violation of these terms, or infringement of any rights of another party.
                 </p>
               </section>
 
               <section>
                 <h2 className="text-xl font-semibold text-white mb-4">10. Termination</h2>
                 <p className="text-gray-300 mb-4">
-                  We may terminate or suspend your account and access to the service immediately, without prior notice, for conduct that we believe:
+                  We may terminate or suspend your account and access to the service at our sole discretion, without prior notice, for conduct that we believe violates these Terms or is harmful to other users, us, or third parties.
                 </p>
-                <ul className="list-disc list-inside text-gray-300 space-y-2">
-                  <li>Violates these Terms of Service</li>
-                  <li>Is harmful to other users or our business</li>
-                  <li>Involves fraudulent or illegal activity</li>
-                </ul>
-              </section>
-
-              <section>
-                <h2 className="text-xl font-semibold text-white mb-4">11. Privacy Policy</h2>
                 <p className="text-gray-300">
-                  Your privacy is important to us. Please review our Privacy Policy, which also governs your use of the service, to understand our practices.
+                  Upon termination, your right to use the service will cease immediately.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-4">12. Governing Law</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">11. Governing Law</h2>
                 <p className="text-gray-300">
-                  These Terms shall be interpreted and governed by the laws of [Your Jurisdiction], without regard to conflict of law provisions. Any disputes shall be resolved through binding arbitration.
+                  These Terms shall be governed by and construed in accordance with the laws of the United States, without regard to its conflict of law provisions. Any disputes shall be resolved in the appropriate courts of the United States.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-4">13. Changes to Terms</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">12. Changes to Terms</h2>
                 <p className="text-gray-300">
-                  We reserve the right to modify these terms at any time. We will provide notice of significant changes via email or through the service. Continued use after changes constitutes acceptance of the new terms.
+                  We reserve the right to modify these Terms at any time. We will notify users of any material changes by posting the new Terms on this page and updating the "Last updated" date. Your continued use of the service after such modifications constitutes acceptance of the updated Terms.
                 </p>
               </section>
 
               <section>
-                <h2 className="text-xl font-semibold text-white mb-4">14. Contact Information</h2>
+                <h2 className="text-xl font-semibold text-white mb-4">13. Contact Information</h2>
                 <p className="text-gray-300">
                   If you have any questions about these Terms of Service, please contact us at:
                 </p>
@@ -185,13 +179,6 @@ const TermsPage = () => {
                   <p className="text-gray-300">Email: legal@forexradar7.com</p>
                   <p className="text-gray-300">Subject: Terms of Service Inquiry</p>
                 </div>
-              </section>
-
-              <section>
-                <h2 className="text-xl font-semibold text-white mb-4">15. Severability</h2>
-                <p className="text-gray-300">
-                  If any provision of these Terms is found to be unenforceable, the remaining provisions will remain in full force and effect.
-                </p>
               </section>
             </div>
           </div>

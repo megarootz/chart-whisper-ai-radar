@@ -7,11 +7,7 @@ import SEOHead from '@/components/SEOHead';
 const PrivacyPage = () => {
   return (
     <>
-      <SEOHead
-        title="Privacy Policy - ForexRadar7 | Your Data Protection Rights"
-        description="Learn how ForexRadar7 protects your privacy and handles your data. Comprehensive privacy policy covering data collection, usage, and your rights."
-        keywords="privacy policy, data protection, ForexRadar7 privacy, user data, GDPR compliance, data security"
-      />
+      <SEOHead />
       <div className="min-h-screen bg-chart-bg">
         <Header />
         

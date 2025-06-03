@@ -81,6 +81,20 @@ export const getPageSEOData = (pathname: string) => {
         keywords: 'forex login, trading account, AI trading login, forex dashboard, trading platform access, chart analysis login, forex signin',
         url: `${baseUrl}/auth`
       };
+    case '/privacy':
+      return {
+        title: 'Privacy Policy - ForexRadar7 | Your Data Protection Rights',
+        description: 'Learn how ForexRadar7 protects your privacy and handles your data. Comprehensive privacy policy covering data collection, usage, and your rights.',
+        keywords: 'privacy policy, data protection, ForexRadar7 privacy, user data, GDPR compliance, data security',
+        url: `${baseUrl}/privacy`
+      };
+    case '/terms':
+      return {
+        title: 'Terms of Service - ForexRadar7 | User Agreement & Legal Terms',
+        description: 'Read ForexRadar7 terms of service including user responsibilities, service limitations, and legal agreements for using our AI forex analysis platform.',
+        keywords: 'terms of service, user agreement, legal terms, ForexRadar7 terms, service conditions, user responsibilities',
+        url: `${baseUrl}/terms`
+      };
     case '/analyze':
       return {
         title: 'AI Chart Analysis - ForexRadar7 | Upload & Analyze Trading Charts',
