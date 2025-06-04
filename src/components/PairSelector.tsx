@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TrendingUp, Webhook, Zap, Globe } from 'lucide-react';
+import { TrendingUp, Zap, Globe } from 'lucide-react';
 
 interface PairSelectorProps {
   selectedPair: string;
@@ -45,17 +45,11 @@ const PairSelector = ({
   };
 
   return (
-    <Card className="w-full bg-gradient-to-br from-chart-card to-gray-900/50 border-gray-700/50 backdrop-blur-sm">
+    <Card className="w-full bg-gradient-to-br from-slate-800/90 to-slate-900/90 border-slate-700/50 backdrop-blur-sm">
       <CardHeader className="pb-4">
         <CardTitle className="text-white flex items-center gap-2 text-lg md:text-xl">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-primary" />
-            <span>Real-Time Forex Analysis</span>
-          </div>
-          <div className="flex items-center gap-1 ml-auto">
-            <Webhook className="h-4 w-4 text-green-500" />
-            <span className="text-xs text-green-500 font-normal">n8n Powered</span>
-          </div>
+          <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-blue-400" />
+          <span>Real-Time Forex Analysis</span>
         </CardTitle>
       </CardHeader>
       
@@ -71,13 +65,13 @@ const PairSelector = ({
             placeholder="e.g., EUR/USD, GBP/JPY, BTC/USD"
             value={inputValue}
             onChange={handleInputChange}
-            className="bg-gray-800/80 border-gray-600 text-white placeholder:text-gray-400 focus:border-primary transition-colors text-base md:text-sm h-11 md:h-10"
+            className="bg-slate-800/80 border-slate-600 text-white placeholder:text-slate-400 focus:border-blue-400 transition-colors text-base md:text-sm h-11 md:h-10"
           />
         </div>
 
         {/* Popular Pairs */}
         <div className="space-y-3">
-          <Label className="text-gray-300 text-sm">Popular Pairs</Label>
+          <Label className="text-slate-300 text-sm">Popular Pairs</Label>
           <div className="grid grid-cols-3 md:grid-cols-4 gap-2">
             {POPULAR_PAIRS.map((pair) => (
               <Button
@@ -85,7 +79,7 @@ const PairSelector = ({
                 variant="outline"
                 size="sm"
                 onClick={() => handlePopularPairClick(pair)}
-                className="bg-gray-800/60 border-gray-600 text-gray-300 hover:bg-primary/20 hover:border-primary hover:text-white transition-all text-xs h-8"
+                className="bg-slate-700/60 border-slate-600 text-slate-300 hover:bg-blue-600/20 hover:border-blue-500 hover:text-white transition-all text-xs h-8"
               >
                 {pair}
               </Button>
@@ -94,28 +88,28 @@ const PairSelector = ({
         </div>
 
         {/* Features */}
-        <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border border-blue-800/50 rounded-lg p-4">
+        <div className="bg-gradient-to-r from-blue-900/40 to-indigo-900/40 border border-blue-700/50 rounded-lg p-4">
           <div className="space-y-3">
             <div className="flex items-center gap-2 mb-3">
               <Zap className="h-5 w-5 text-blue-400" />
-              <h4 className="text-blue-400 font-medium">Live Market Intelligence</h4>
+              <h4 className="text-blue-300 font-medium">Live Market Intelligence</h4>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
               <div className="flex items-start gap-2">
-                <Globe className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300">Real-time price feeds & market data</span>
+                <Globe className="h-4 w-4 text-emerald-400 mt-0.5 flex-shrink-0" />
+                <span className="text-slate-300">Real-time price feeds & market data</span>
               </div>
               <div className="flex items-start gap-2">
-                <TrendingUp className="h-4 w-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300">Advanced technical analysis</span>
+                <TrendingUp className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                <span className="text-slate-300">Advanced technical analysis</span>
               </div>
               <div className="flex items-start gap-2">
-                <Webhook className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300">Automated workflow processing</span>
+                <Zap className="h-4 w-4 text-purple-400 mt-0.5 flex-shrink-0" />
+                <span className="text-slate-300">Automated workflow processing</span>
               </div>
               <div className="flex items-start gap-2">
-                <Zap className="h-4 w-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                <span className="text-gray-300">Instant analysis results</span>
+                <Zap className="h-4 w-4 text-yellow-400 mt-0.5 flex-shrink-0" />
+                <span className="text-slate-300">Instant analysis results</span>
               </div>
             </div>
           </div>
@@ -125,7 +119,7 @@ const PairSelector = ({
         <Button 
           onClick={handleAnalyze}
           disabled={!inputValue.trim() || isAnalyzing}
-          className="w-full bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90 text-white font-medium h-12 text-base transition-all transform hover:scale-[1.02] disabled:transform-none"
+          className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium h-12 text-base transition-all transform hover:scale-[1.02] disabled:transform-none"
         >
           {isAnalyzing ? (
             <div className="flex items-center gap-2">
