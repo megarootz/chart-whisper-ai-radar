@@ -8,18 +8,16 @@ import PairSelector from '@/components/PairSelector';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useDeepSeekAnalysis } from '@/hooks/useDeepSeekAnalysis';
+import { useN8nAnalysis } from '@/hooks/useN8nAnalysis';
 
 const AnalyzePage = () => {
   const {
     isAnalyzing,
     analysisResult,
-    streamingContent,
     analyzePair,
-  } = useDeepSeekAnalysis();
+  } = useN8nAnalysis();
   
   const [selectedPair, setSelectedPair] = useState<string>('');
-  const [selectedTimeframe, setSelectedTimeframe] = useState<string>('');
   const isMobile = useIsMobile();
   const analysisResultRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
@@ -40,15 +38,15 @@ const AnalyzePage = () => {
   }, [analysisResult]);
   
   const handleAnalyze = async () => {
-    if (selectedPair && selectedTimeframe) {
-      console.log("Starting DeepSeek real-time analysis...");
+    if (selectedPair.trim()) {
+      console.log("Starting n8n real-time analysis...");
       
       if (!user) {
         console.log("User not logged in, cannot analyze pair");
         return;
       }
       
-      analyzePair(selectedPair, selectedTimeframe);
+      analyzePair(selectedPair.trim());
     }
   };
   
@@ -61,44 +59,31 @@ const AnalyzePage = () => {
           <div className="space-y-6">
             <PairSelector
               selectedPair={selectedPair}
-              selectedTimeframe={selectedTimeframe}
               onPairChange={setSelectedPair}
-              onTimeframeChange={setSelectedTimeframe}
               onAnalyze={handleAnalyze}
               isAnalyzing={isAnalyzing}
             />
             
             {/* Analysis Results */}
             <div className="space-y-6" ref={analysisResultRef}>
-              {(analysisResult || streamingContent) ? (
+              {analysisResult ? (
                 <>
                   <AnalysisResult 
-                    data={analysisResult || {
-                      pairName: selectedPair,
-                      timeframe: selectedTimeframe,
-                      overallSentiment: 'neutral',
-                      confidenceScore: 95,
-                      marketAnalysis: '',
-                      trendDirection: 'neutral',
-                      marketFactors: [],
-                      chartPatterns: [],
-                      priceLevels: [],
-                    }} 
-                    streamingContent={streamingContent}
-                    isStreaming={isAnalyzing}
+                    data={analysisResult} 
+                    isStreaming={false}
                   />
-                  {!isAnalyzing && <TickmillBanner />}
+                  <TickmillBanner />
                 </>
               ) : !isAnalyzing && (
-                <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6">
+                <div className="bg-gradient-to-br from-chart-card to-gray-900/50 border border-gray-700/50 rounded-lg p-6 md:p-8 backdrop-blur-sm">
                   <h2 className="text-lg md:text-xl font-bold text-white mb-6 md:mb-8">Analysis Results</h2>
                   <div className="flex flex-col items-center justify-center py-12 md:py-16">
-                    <div className="bg-gray-800 p-3 md:p-4 rounded-full mb-3 md:mb-4">
-                      <AlertCircle className="h-6 w-6 md:h-8 md:w-8 text-gray-400" />
+                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-4 md:p-5 rounded-full mb-4 md:mb-5 shadow-lg">
+                      <AlertCircle className="h-8 w-8 md:h-10 md:w-10 text-gray-400" />
                     </div>
-                    <h3 className="text-white font-medium mb-2">No Analysis Yet</h3>
-                    <p className="text-gray-400 text-center text-sm md:text-base max-w-md">
-                      Select a currency pair and timeframe, then click "Analyze Pair" to get comprehensive market analysis with real-time data
+                    <h3 className="text-white font-medium mb-3 text-lg">Ready for Analysis</h3>
+                    <p className="text-gray-400 text-center text-sm md:text-base max-w-md leading-relaxed">
+                      Enter a currency pair above and click "Analyze Pair" to get comprehensive real-time market analysis powered by n8n workflows
                     </p>
                   </div>
                 </div>
