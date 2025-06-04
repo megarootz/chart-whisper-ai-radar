@@ -7,7 +7,6 @@ import AnalysisResult from '@/components/AnalysisResult';
 import PairSelector from '@/components/PairSelector';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
-import RadarAnimation from '@/components/RadarAnimation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDeepSeekAnalysis } from '@/hooks/useDeepSeekAnalysis';
 
@@ -67,9 +66,6 @@ const AnalyzePage = () => {
               onAnalyze={handleAnalyze}
               isAnalyzing={isAnalyzing}
             />
-            
-            {/* Radar Animation Modal when analyzing */}
-            {isAnalyzing && <RadarAnimation />}
             
             {/* Analysis Results */}
             <div className="space-y-6" ref={analysisResultRef}>

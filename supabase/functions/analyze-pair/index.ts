@@ -25,42 +25,8 @@ serve(async (req) => {
       model: "deepseek-chat",
       messages: [
         {
-          role: "system",
-          content: "You are an expert forex technical and fundamental analyst with access to real-time market data. Provide comprehensive analysis including current prices, technical levels, fundamental factors, and trading insights. Always format your response with clear sections and specific price levels."
-        },
-        {
           role: "user",
-          content: `Provide a comprehensive forex analysis for ${pairName} on ${timeframe} timeframe. Include:
-
-1. CURRENT MARKET DATA:
-- Current live price and recent price action
-- 24h high/low and percentage change
-- Current market sentiment
-
-2. TECHNICAL ANALYSIS:
-- Trend direction and strength
-- Key support and resistance levels (be specific with prices)
-- Chart patterns currently forming
-- Technical indicator signals (RSI, MACD, Moving Averages)
-
-3. FUNDAMENTAL ANALYSIS:
-- Recent economic news affecting both currencies
-- Upcoming economic events and data releases
-- Central bank policies and interest rate outlook
-- Geopolitical factors
-
-4. TRADING INSIGHTS:
-- Bullish scenario: entry points, targets, stop loss
-- Bearish scenario: entry points, targets, stop loss
-- Risk-reward ratios and position sizing recommendations
-- Key levels to watch for breakouts
-
-5. MARKET OUTLOOK:
-- Short-term forecast (next 24-48 hours)
-- Medium-term outlook (next week)
-- Key events to monitor
-
-Please search for the most current market data and news to ensure accuracy. Format the response clearly with specific price levels and actionable insights.`
+          content: `I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze the following currency pair: ${pairName} and ${timeframe}.`
         }
       ],
       temperature: 0.2,
