@@ -118,21 +118,27 @@ export const useDeepSeekAnalysis = () => {
       
       console.log("🤖 Calling DeepSeek Streaming Supabase Edge Function");
       
-      const { data, error } = await supabase.functions.invoke("analyze-pair", {
-        body: {
+      const response = await fetch(`https://npougftucphdtujkyyfz.supabase.co/functions/v1/analyze-pair`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${supabase.supabaseKey}`,
+        },
+        body: JSON.stringify({
           pairName,
           timeframe
-        }
+        })
       });
       
-      if (error) {
-        console.error("❌ Edge function error:", error);
-        throw new Error(`Edge function error: ${error.message}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Edge function error:", errorText);
+        throw new Error(`Edge function error: ${response.status} - ${errorText}`);
       }
 
       // Handle streaming response
-      if (data && data instanceof ReadableStream) {
-        const reader = data.getReader();
+      if (response.body) {
+        const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let fullContent = '';
 
@@ -142,6 +148,8 @@ export const useDeepSeekAnalysis = () => {
             if (done) break;
 
             const chunk = decoder.decode(value, { stream: true });
+            console.log("Received streaming chunk:", chunk);
+            
             const lines = chunk.split('\n');
 
             for (const line of lines) {

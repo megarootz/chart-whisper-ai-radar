@@ -54,9 +54,45 @@ serve(async (req) => {
       console.error("DeepSeek API Error:", errorText);
       throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
     }
+
+    // Check if we have a streaming response
+    if (!response.body) {
+      throw new Error("No response body received from DeepSeek API");
+    }
+    
+    // Create a new ReadableStream to transform the response
+    const stream = new ReadableStream({
+      start(controller) {
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+
+        function pump(): Promise<void> {
+          return reader.read().then(({ done, value }) => {
+            if (done) {
+              controller.close();
+              return;
+            }
+
+            // Decode the chunk
+            const chunk = decoder.decode(value, { stream: true });
+            console.log("Received chunk:", chunk);
+
+            // Forward the chunk to the client
+            controller.enqueue(new TextEncoder().encode(chunk));
+            
+            return pump();
+          }).catch(err => {
+            console.error("Stream error:", err);
+            controller.error(err);
+          });
+        }
+
+        return pump();
+      }
+    });
     
     // Return the streaming response
-    return new Response(response.body, {
+    return new Response(stream, {
       headers: { 
         ...corsHeaders, 
         'Content-Type': 'text/event-stream',
