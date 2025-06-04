@@ -11,6 +11,7 @@ import { useSubscription } from '@/contexts/SubscriptionContext';
 export const useDeepSeekAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResultData | null>(null);
+  const [streamingContent, setStreamingContent] = useState<string>('');
   const { toast } = useToast();
   const { user } = useAuth();
   const { setLatestAnalysis, addToHistory } = useAnalysis();
@@ -85,6 +86,8 @@ export const useDeepSeekAnalysis = () => {
   const analyzePair = async (pairName: string, timeframe: string) => {
     try {
       setIsAnalyzing(true);
+      setStreamingContent('');
+      setAnalysisResult(null);
       
       if (!user) {
         console.error('❌ AUTHENTICATION REQUIRED: User must be logged in to analyze pairs');
@@ -96,7 +99,7 @@ export const useDeepSeekAnalysis = () => {
         return;
       }
 
-      console.log('🔍 Starting DeepSeek analysis for authenticated user:', user.id, 'pair:', pairName, 'timeframe:', timeframe);
+      console.log('🔍 Starting DeepSeek streaming analysis for authenticated user:', user.id, 'pair:', pairName, 'timeframe:', timeframe);
 
       const usageData = await checkUsageLimits();
       console.log('📊 Current usage status:', usageData);
@@ -111,9 +114,9 @@ export const useDeepSeekAnalysis = () => {
         return;
       }
       
-      console.log('✅ Usage limits check passed, proceeding with DeepSeek analysis');
+      console.log('✅ Usage limits check passed, proceeding with DeepSeek streaming analysis');
       
-      console.log("🤖 Calling DeepSeek Supabase Edge Function");
+      console.log("🤖 Calling DeepSeek Streaming Supabase Edge Function");
       
       const { data, error } = await supabase.functions.invoke("analyze-pair", {
         body: {
@@ -127,71 +130,109 @@ export const useDeepSeekAnalysis = () => {
         throw new Error(`Edge function error: ${error.message}`);
       }
 
-      if (!data) {
-        throw new Error('No response from DeepSeek analysis function');
-      }
+      // Handle streaming response
+      if (data && data instanceof ReadableStream) {
+        const reader = data.getReader();
+        const decoder = new TextDecoder();
+        let fullContent = '';
 
-      console.log("✅ DeepSeek edge function response received");
-      
-      const responseData = data as any;
-      
-      if (!responseData.choices || responseData.choices.length === 0) {
-        throw new Error('No response content from DeepSeek API');
-      }
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-      const resultText = responseData.choices[0].message.content || '';
-      console.log("📝 Raw DeepSeek Response content received");
-      
-      // Create analysis data with the raw DeepSeek response in a chat format
-      const analysisData: AnalysisResultData = {
-        pairName,
-        timeframe,
-        overallSentiment: 'neutral',
-        confidenceScore: 95,
-        marketAnalysis: resultText,
-        trendDirection: 'neutral',
-        marketFactors: [],
-        chartPatterns: [],
-        priceLevels: [],
-        tradingInsight: resultText
-      };
-      
-      console.log('📈 Analysis successful, incrementing usage count...');
-      try {
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) {
-          console.error('❌ User session expired during analysis');
-          throw new Error('User session expired. Please sign in again.');
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.choices?.[0]?.delta?.content) {
+                    const content = parsed.choices[0].delta.content;
+                    fullContent += content;
+                    setStreamingContent(fullContent);
+                    
+                    // Update the analysis result with streaming content
+                    const streamingAnalysis: AnalysisResultData = {
+                      pairName,
+                      timeframe,
+                      overallSentiment: 'neutral',
+                      confidenceScore: 95,
+                      marketAnalysis: fullContent,
+                      trendDirection: 'neutral',
+                      marketFactors: [],
+                      chartPatterns: [],
+                      priceLevels: [],
+                      tradingInsight: fullContent
+                    };
+                    setAnalysisResult(streamingAnalysis);
+                  }
+                } catch (parseError) {
+                  console.log('Could not parse chunk:', data);
+                }
+              }
+            }
+          }
+        } finally {
+          reader.releaseLock();
         }
-        
-        const updatedUsage = await incrementUsage();
-        
-        if (updatedUsage) {
-          console.log('✅ Usage incremented successfully:', {
-            daily: `${updatedUsage.daily_count}/${updatedUsage.daily_limit}`,
-            monthly: `${updatedUsage.monthly_count}/${updatedUsage.monthly_limit}`,
-            tier: updatedUsage.subscription_tier,
-            can_analyze: updatedUsage.can_analyze
+
+        // Create final analysis data
+        const finalAnalysisData: AnalysisResultData = {
+          pairName,
+          timeframe,
+          overallSentiment: 'neutral',
+          confidenceScore: 95,
+          marketAnalysis: fullContent,
+          trendDirection: 'neutral',
+          marketFactors: [],
+          chartPatterns: [],
+          priceLevels: [],
+          tradingInsight: fullContent
+        };
+
+        console.log('📈 Analysis successful, incrementing usage count...');
+        try {
+          const { data: { user: currentUser } } = await supabase.auth.getUser();
+          if (!currentUser) {
+            console.error('❌ User session expired during analysis');
+            throw new Error('User session expired. Please sign in again.');
+          }
+          
+          const updatedUsage = await incrementUsage();
+          
+          if (updatedUsage) {
+            console.log('✅ Usage incremented successfully:', {
+              daily: `${updatedUsage.daily_count}/${updatedUsage.daily_limit}`,
+              monthly: `${updatedUsage.monthly_count}/${updatedUsage.monthly_limit}`,
+              tier: updatedUsage.subscription_tier,
+              can_analyze: updatedUsage.can_analyze
+            });
+          }
+        } catch (usageError) {
+          console.error('❌ CRITICAL Error incrementing usage:', usageError);
+          toast({
+            title: "Usage Count Error", 
+            description: "Analysis completed but usage count failed to update. Please contact support if this continues.",
+            variant: "destructive",
           });
         }
-      } catch (usageError) {
-        console.error('❌ CRITICAL Error incrementing usage:', usageError);
-        toast({
-          title: "Usage Count Error", 
-          description: "Analysis completed but usage count failed to update. Please contact support if this continues.",
-          variant: "destructive",
-        });
-      }
-      
-      setAnalysisResult(analysisData);
-      setLatestAnalysis(analysisData);
-      await saveAnalysisToDatabase(analysisData);
+        
+        setLatestAnalysis(finalAnalysisData);
+        await saveAnalysisToDatabase(finalAnalysisData);
 
-      toast({
-        title: "Analysis Complete",
-        description: `Successfully analyzed ${analysisData.pairName} on ${analysisData.timeframe} timeframe using DeepSeek's real-time analysis`,
-        variant: "default",
-      });
+        toast({
+          title: "Analysis Complete",
+          description: `Successfully analyzed ${finalAnalysisData.pairName} on ${finalAnalysisData.timeframe} timeframe using DeepSeek's real-time search analysis`,
+          variant: "default",
+        });
+      } else {
+        throw new Error('No streaming response from DeepSeek analysis function');
+      }
       
     } catch (error) {
       console.error("❌ Error analyzing pair with DeepSeek:", error);
@@ -201,6 +242,7 @@ export const useDeepSeekAnalysis = () => {
         variant: "destructive",
       });
       setAnalysisResult(null);
+      setStreamingContent('');
     } finally {
       setIsAnalyzing(false);
     }
@@ -209,6 +251,7 @@ export const useDeepSeekAnalysis = () => {
   return {
     isAnalyzing,
     analysisResult,
+    streamingContent,
     analyzePair,
   };
 };

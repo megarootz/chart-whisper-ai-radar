@@ -14,6 +14,7 @@ const AnalyzePage = () => {
   const {
     isAnalyzing,
     analysisResult,
+    streamingContent,
     analyzePair,
   } = useDeepSeekAnalysis();
   
@@ -40,7 +41,7 @@ const AnalyzePage = () => {
   
   const handleAnalyze = async () => {
     if (selectedPair && selectedTimeframe) {
-      console.log("Starting DeepSeek analysis...");
+      console.log("Starting DeepSeek real-time analysis...");
       
       if (!user) {
         console.log("User not logged in, cannot analyze pair");
@@ -69,10 +70,24 @@ const AnalyzePage = () => {
             
             {/* Analysis Results */}
             <div className="space-y-6" ref={analysisResultRef}>
-              {analysisResult ? (
+              {(analysisResult || streamingContent) ? (
                 <>
-                  <AnalysisResult data={analysisResult} />
-                  <TickmillBanner />
+                  <AnalysisResult 
+                    data={analysisResult || {
+                      pairName: selectedPair,
+                      timeframe: selectedTimeframe,
+                      overallSentiment: 'neutral',
+                      confidenceScore: 95,
+                      marketAnalysis: '',
+                      trendDirection: 'neutral',
+                      marketFactors: [],
+                      chartPatterns: [],
+                      priceLevels: [],
+                    }} 
+                    streamingContent={streamingContent}
+                    isStreaming={isAnalyzing}
+                  />
+                  {!isAnalyzing && <TickmillBanner />}
                 </>
               ) : !isAnalyzing && (
                 <div className="bg-chart-card border border-gray-700 rounded-lg p-4 md:p-6">

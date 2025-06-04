@@ -54,7 +54,13 @@ export interface AnalysisResultData {
   date?: string;
 }
 
-const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
+interface AnalysisResultProps {
+  data: AnalysisResultData;
+  streamingContent?: string;
+  isStreaming?: boolean;
+}
+
+const AnalysisResult = ({ data, streamingContent, isStreaming }: AnalysisResultProps) => {
   // Format the trading pair using our utility
   const formattedPairName = formatTradingPair(data.pairName);
 
@@ -90,9 +96,15 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
             </p>
           );
         })}
+        {isStreaming && (
+          <span className="inline-block w-2 h-5 bg-primary animate-pulse ml-1">|</span>
+        )}
       </div>
     );
   };
+
+  // Use streaming content if available and currently streaming, otherwise use final data
+  const displayContent = isStreaming && streamingContent ? streamingContent : data.marketAnalysis;
 
   return (
     <div className="space-y-4 animate-fade-in">
@@ -104,7 +116,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                 <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
             </div>
-            <div>DeepSeek Professional Analysis</div>
+            <div>DeepSeek Real-Time Analysis {isStreaming && '(Live)'}</div>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -122,6 +134,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                 </div>
                 <div className="text-gray-400 text-sm">
                   {data.timeframe || "Unknown Timeframe"} Analysis
+                  {isStreaming && <span className="ml-2 text-green-400">• Live</span>}
                 </div>
               </div>
             </div>
@@ -131,13 +144,23 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               <div className="flex items-center mb-4">
                 <div className="bg-blue-600 p-2 rounded-full mr-3">
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
                 </div>
-                <h3 className="text-lg font-semibold text-white">Professional Forex Analysis</h3>
+                <h3 className="text-lg font-semibold text-white">
+                  Professional Forex Analysis with Real-Time Data
+                  {isStreaming && <span className="ml-2 text-green-400 text-sm">Streaming...</span>}
+                </h3>
               </div>
               
-              {renderDeepSeekResponse(data.marketAnalysis)}
+              {renderDeepSeekResponse(displayContent)}
+              
+              {!displayContent && isStreaming && (
+                <div className="flex items-center space-x-2 text-gray-400">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                  <span>Connecting to DeepSeek's real-time analysis...</span>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>

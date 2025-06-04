@@ -26,15 +26,17 @@ serve(async (req) => {
       messages: [
         {
           role: "user",
-          content: `I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze the following currency pair: ${pairName} and ${timeframe}.`
+          content: `I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze the following currency pair: ${pairName} and ${timeframe}. Please provide real-time market analysis using current data and search capabilities to give me the most up-to-date information about this pair's technical indicators, price action, market sentiment, and trading opportunities.`
         }
       ],
       temperature: 0.2,
       max_tokens: 2000,
-      stream: false
+      stream: true,
+      search: true,
+      citation: true
     };
 
-    console.log("Sending request to DeepSeek API for pair:", pairName, "timeframe:", timeframe);
+    console.log("Sending streaming request to DeepSeek API for pair:", pairName, "timeframe:", timeframe);
     
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: 'POST',
@@ -53,11 +55,14 @@ serve(async (req) => {
       throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
     }
     
-    const responseData = await response.json();
-    console.log("DeepSeek response received successfully");
-    
-    return new Response(JSON.stringify(responseData), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Return the streaming response
+    return new Response(response.body, {
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      },
     });
     
   } catch (error) {
