@@ -26,7 +26,16 @@ serve(async (req) => {
       messages: [
         {
           role: "user",
-          content: `I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze the following currency pair: ${pairName} and ${timeframe}. Please provide real-time market analysis using current data and search capabilities to give me the most up-to-date information about this pair's technical indicators, price action, market sentiment, and trading opportunities.`
+          content: `Please provide a comprehensive real-time Forex analysis for ${pairName} on ${timeframe} timeframe. Use your search capabilities to find the most current market data, live prices, recent news, and economic events affecting this currency pair. I need:
+
+1. Current live price and recent price action
+2. Real-time technical analysis with current support/resistance levels
+3. Latest economic news and events impacting this pair
+4. Current market sentiment from recent sources
+5. Trading opportunities based on today's market conditions
+6. Risk factors from recent developments
+
+Please ensure all information is current and based on real-time search data, not historical or cached information.`
         }
       ],
       temperature: 0.2,
@@ -36,7 +45,7 @@ serve(async (req) => {
       citation: true
     };
 
-    console.log("Sending streaming request to DeepSeek API for pair:", pairName, "timeframe:", timeframe);
+    console.log("Sending real-time search request to DeepSeek API for:", pairName, "timeframe:", timeframe);
     
     const response = await fetch("https://api.deepseek.com/chat/completions", {
       method: 'POST',
@@ -55,7 +64,6 @@ serve(async (req) => {
       throw new Error(`DeepSeek API error: ${response.status} - ${errorText}`);
     }
 
-    // Check if we have a streaming response
     if (!response.body) {
       throw new Error("No response body received from DeepSeek API");
     }
@@ -75,7 +83,7 @@ serve(async (req) => {
 
             // Decode the chunk
             const chunk = decoder.decode(value, { stream: true });
-            console.log("Received chunk:", chunk);
+            console.log("Received real-time search chunk:", chunk.substring(0, 100) + "...");
 
             // Forward the chunk to the client
             controller.enqueue(new TextEncoder().encode(chunk));
