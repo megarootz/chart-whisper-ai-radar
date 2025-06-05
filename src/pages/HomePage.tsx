@@ -10,16 +10,17 @@ import SpinningRadar from '@/components/SpinningRadar';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { updatePageMeta, getPageSEOData } from '@/utils/seoUtils';
+
 const HomePage = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
-  const {
-    user
-  } = useAuth();
+  const { user } = useAuth();
+
   useEffect(() => {
     const seoData = getPageSEOData('/');
     updatePageMeta(seoData.title, seoData.description, seoData.url);
   }, []);
+
   const handleGetStartedClick = () => {
     if (user) {
       navigate('/analyze');
@@ -27,26 +28,29 @@ const HomePage = () => {
       navigate('/auth');
     }
   };
+
   const handleViewPlansClick = () => {
     navigate('/pricing');
   };
-  return <div className="min-h-screen flex flex-col bg-chart-bg w-full max-w-full overflow-x-hidden">
+
+  return (
+    <div className="min-h-screen flex flex-col bg-chart-bg w-full max-w-full overflow-x-hidden">
       <Header />
       
       <main className={`flex-grow flex flex-col w-full max-w-full overflow-x-hidden ${isMobile ? 'pt-16' : 'pt-16'}`}>
         {/* Hero Section - Mobile first layout */}
         <section className={`${isMobile ? 'py-4 px-3' : 'py-12 md:py-24 px-4'} w-full max-w-full overflow-x-hidden`}>
           <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
-            {isMobile ?
-          // Mobile layout: radar as background behind text
-          <div className="relative flex flex-col items-center justify-center min-h-[50vh] w-full max-w-full overflow-hidden">
+            {isMobile ? 
+              // Mobile layout: radar as background behind text
+              <div className="relative flex flex-col items-center justify-center min-h-[50vh] w-full max-w-full overflow-hidden">
                 {/* Background radar */}
                 <SpinningRadar isBackground={true} />
                 
                 {/* Content overlay */}
                 <div className="relative z-10 w-full space-y-4 text-center px-2 max-w-full">
                   <h1 className="text-3xl font-bold text-white leading-tight">
-                    AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
+                    ForexRadar7: Your ultimate <span className="text-primary">AI-Powered Forex Chart Analysis tool</span>
                   </h1>
                   <p className="text-base text-gray-300 max-w-sm mx-auto">
                     Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
@@ -58,11 +62,11 @@ const HomePage = () => {
                   </div>
                 </div>
               </div> :
-          // Desktop layout: side by side
-          <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center w-full overflow-x-hidden">
+              // Desktop layout: side by side
+              <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center w-full overflow-x-hidden">
                 <div className="w-full md:w-1/2 space-y-4 md:space-y-6">
                   <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-                    AI-Powered Forex <span className="text-primary">Chart Analysis</span> at Your Fingertips
+                    ForexRadar7: Your ultimate <span className="text-primary">AI-Powered Forex Chart Analysis tool</span>
                   </h1>
                   <p className="text-lg text-gray-300">
                     Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
@@ -78,7 +82,8 @@ const HomePage = () => {
                     <SpinningRadar />
                   </div>
                 </div>
-              </div>}
+              </div>
+            }
           </div>
         </section>
 
@@ -127,8 +132,10 @@ const HomePage = () => {
       </main>
       
       {!isMobile && <Footer />}
-    </div>;
+    </div>
+  );
 };
+
 const FeatureCard = ({
   icon,
   title,
@@ -151,4 +158,5 @@ const FeatureCard = ({
       </CardContent>
     </Card>;
 };
+
 export default HomePage;

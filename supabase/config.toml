@@ -3,6 +3,3 @@ project_id = "npougftucphdtujkyyfz"
 
 [functions.analyze-chart]
 verify_jwt = true
-
-[functions.analyze-pair]
-verify_jwt = true
