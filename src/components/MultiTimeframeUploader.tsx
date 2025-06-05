@@ -2,25 +2,10 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, X, Clock } from 'lucide-react';
-
-const TIMEFRAMES = [
-  { value: '1m', label: '1 Minute' },
-  { value: '5m', label: '5 Minutes' },
-  { value: '15m', label: '15 Minutes' },
-  { value: '30m', label: '30 Minutes' },
-  { value: '1h', label: '1 Hour' },
-  { value: '4h', label: '4 Hours' },
-  { value: '1d', label: 'Daily' },
-  { value: '1w', label: 'Weekly' },
-  { value: '1M', label: 'Monthly' },
-];
 
 interface TimeframeChart {
   file: File;
-  timeframe: string;
   previewUrl: string;
 }
 
@@ -54,7 +39,6 @@ const MultiTimeframeUploader = ({ charts, onChartsChange, maxCharts = 3 }: Multi
         reader.onload = () => {
           const newChart: TimeframeChart = {
             file,
-            timeframe: '',
             previewUrl: reader.result as string,
           };
           newCharts.push(newChart);
@@ -70,13 +54,6 @@ const MultiTimeframeUploader = ({ charts, onChartsChange, maxCharts = 3 }: Multi
 
   const removeChart = (index: number) => {
     const updatedCharts = charts.filter((_, i) => i !== index);
-    onChartsChange(updatedCharts);
-  };
-
-  const updateTimeframe = (index: number, timeframe: string) => {
-    const updatedCharts = charts.map((chart, i) => 
-      i === index ? { ...chart, timeframe } : chart
-    );
     onChartsChange(updatedCharts);
   };
 
@@ -131,22 +108,13 @@ const MultiTimeframeUploader = ({ charts, onChartsChange, maxCharts = 3 }: Multi
                     alt={`Chart ${index + 1}`}
                     className="w-24 h-16 object-cover rounded border border-gray-600"
                   />
-                  <div className="flex-1 space-y-2">
-                    <Label className="text-white text-sm">
-                      Chart {index + 1} Timeframe
-                    </Label>
-                    <Select value={chart.timeframe} onValueChange={(value) => updateTimeframe(index, value)}>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select timeframe" />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-700 border-gray-600">
-                        {TIMEFRAMES.map((tf) => (
-                          <SelectItem key={tf.value} value={tf.value} className="text-white hover:bg-gray-600">
-                            {tf.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="flex-1">
+                    <p className="text-white text-sm font-medium">
+                      Chart {index + 1}
+                    </p>
+                    <p className="text-gray-400 text-xs mt-1">
+                      Timeframe will be auto-detected by AI
+                    </p>
                   </div>
                   <Button
                     variant="ghost"
@@ -162,19 +130,12 @@ const MultiTimeframeUploader = ({ charts, onChartsChange, maxCharts = 3 }: Multi
           </div>
         )}
 
-        {/* Validation Messages */}
+        {/* Info Message */}
         {charts.length > 0 && (
-          <div className="space-y-2">
-            {charts.some(chart => !chart.timeframe) && (
-              <p className="text-yellow-400 text-sm">
-                Please select timeframes for all uploaded charts before analyzing.
-              </p>
-            )}
-            {charts.length === maxCharts && (
-              <p className="text-green-400 text-sm">
-                Maximum number of charts uploaded. Ready for multi-timeframe analysis!
-              </p>
-            )}
+          <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
+            <p className="text-blue-400 text-sm">
+              AI will automatically detect timeframes from your chart images and provide comprehensive multi-timeframe analysis.
+            </p>
           </div>
         )}
       </CardContent>

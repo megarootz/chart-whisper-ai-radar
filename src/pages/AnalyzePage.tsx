@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Cloud, Upload, Camera, Info, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -99,7 +98,7 @@ const AnalyzePage = () => {
   
   const canAnalyze = analysisMode === 'single' 
     ? file && !isAnalyzing
-    : multiCharts.length > 0 && multiCharts.every(chart => chart.timeframe) && !isAnalyzing;
+    : multiCharts.length > 0 && !isAnalyzing;
   
   return (
     <div className="min-h-screen bg-chart-bg flex flex-col">
@@ -210,7 +209,12 @@ const AnalyzePage = () => {
                   </div>
                   <div className="flex items-start space-x-3">
                     <div className="flex-shrink-0 w-3 h-3 md:w-4 md:h-4 rounded-full bg-green-500 mt-1"></div>
-                    <p className="text-gray-400 text-xs md:text-sm">Include time frame if possible</p>
+                    <p className="text-gray-400 text-xs md:text-sm">
+                      {analysisMode === 'single' 
+                        ? 'Include time frame if possible' 
+                        : 'AI will auto-detect timeframes'
+                      }
+                    </p>
                   </div>
                 </div>
               </div>
@@ -220,12 +224,12 @@ const AnalyzePage = () => {
                   <Info className="h-4 w-4 md:h-5 md:w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-blue-400 font-medium text-sm md:text-base mb-1">
-                      {analysisMode === 'single' ? 'Auto-Detection' : 'Multi-Timeframe Benefits'}
+                      {analysisMode === 'single' ? 'Auto-Detection' : 'Smart AI Analysis'}
                     </h4>
                     <p className="text-gray-400 text-xs md:text-sm">
                       {analysisMode === 'single' 
                         ? 'Trading pair and timeframe will be automatically detected from your chart image.'
-                        : 'Analyze multiple timeframes for better confluence and higher probability setups.'
+                        : 'AI will automatically detect timeframes from each chart and provide comprehensive multi-timeframe analysis.'
                       }
                     </p>
                   </div>
@@ -255,7 +259,7 @@ const AnalyzePage = () => {
                   <p className="text-gray-400 text-center text-sm md:text-base max-w-md">
                     {analysisMode === 'single' 
                       ? 'Upload a chart image and click "Analyze Chart" to get detailed technical analysis'
-                      : 'Upload multiple timeframe charts and click "Analyze Multi-Timeframe Charts" for comprehensive analysis'
+                      : 'Upload multiple charts and click "Analyze Multi-Timeframe Charts" for comprehensive analysis'
                     }
                   </p>
                 </div>

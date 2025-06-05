@@ -59,15 +59,19 @@ ${techniqueInstructions}
 
 Analyze the provided chart images from multiple timeframes and provide a comprehensive analysis that considers:
 
-1. **Multi-Timeframe Trend Analysis**: How trends align or diverge across timeframes
-2. **Confluence Analysis**: Where multiple timeframes and techniques agree
-3. **Key Levels**: Support/resistance levels that appear across multiple timeframes
-4. **Entry Strategy**: Best timeframe for entries based on the overall analysis
-5. **Risk Management**: Appropriate stops and targets considering all timeframes
+1. **Auto-Detection**: First identify the trading pair and timeframe for each chart
+2. **Multi-Timeframe Trend Analysis**: How trends align or diverge across timeframes
+3. **Confluence Analysis**: Where multiple timeframes and techniques agree
+4. **Key Levels**: Support/resistance levels that appear across multiple timeframes
+5. **Entry Strategy**: Best timeframe for entries based on the overall analysis
+6. **Risk Management**: Appropriate stops and targets considering all timeframes
 
 Format your response as follows:
 
-# [PAIR NAME] Multi-Timeframe Analysis (${technique.toUpperCase()} Focus)
+# Multi-Timeframe Analysis (${technique.toUpperCase()} Focus)
+
+## Auto-Detected Information:
+[List detected pair and timeframe for each chart]
 
 ## Overall Multi-Timeframe Assessment:
 [Provide overview of how all timeframes align and the dominant trend bias]
@@ -116,7 +120,7 @@ Key Confluence Levels: [Most important levels across timeframes]`;
     charts.forEach((chart: any, index: number) => {
       content.push({
         type: "text",
-        text: `Chart ${index + 1} - ${chart.timeframe} timeframe:`
+        text: `Chart ${index + 1}:`
       });
       content.push({
         type: "image_url",

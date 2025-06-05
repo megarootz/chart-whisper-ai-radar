@@ -49,24 +49,14 @@ export const useMultiTimeframeAnalysis = () => {
         });
         return;
       }
-
-      // Validate all charts have timeframes
-      if (charts.some(chart => !chart.timeframe)) {
-        toast({
-          title: "Missing Timeframes",
-          description: "Please select timeframes for all uploaded charts.",
-          variant: "destructive",
-        });
-        return;
-      }
       
       console.log('✅ Usage limits check passed, proceeding with multi-timeframe analysis');
       
       // Convert all images to base64
       const chartData = await Promise.all(
-        charts.map(async (chart) => ({
+        charts.map(async (chart, index) => ({
           base64Image: await fileToBase64(chart.file),
-          timeframe: chart.timeframe
+          chartNumber: index + 1
         }))
       );
       
@@ -103,10 +93,10 @@ export const useMultiTimeframeAnalysis = () => {
       console.log("📝 Raw API Response content received");
       
       // Process response as text format (reuse existing logic but enhance for multi-timeframe)
-      const analysisData = processMultiTimeframeResult(resultText, charts.map(c => c.timeframe));
+      const analysisData = processMultiTimeframeResult(resultText, charts.length);
       console.log("🔄 Multi-timeframe analysis data processed:", { 
         pairName: analysisData.pairName, 
-        timeframes: charts.map(c => c.timeframe) 
+        chartCount: charts.length 
       });
       
       // Increment usage count AFTER successful analysis
@@ -139,7 +129,7 @@ export const useMultiTimeframeAnalysis = () => {
 
       toast({
         title: "Multi-Timeframe Analysis Complete",
-        description: `Successfully analyzed ${charts.length} timeframes for ${analysisData.pairName} using ${technique} technique`,
+        description: `Successfully analyzed ${charts.length} charts using ${technique} technique`,
         variant: "default",
       });
       
@@ -156,10 +146,7 @@ export const useMultiTimeframeAnalysis = () => {
     }
   };
 
-  const processMultiTimeframeResult = (resultText: string, timeframes: string[]): AnalysisResultData => {
-    // Enhanced version of existing processTextResult but for multi-timeframe
-    // This will be similar to the existing logic but adapted for multiple timeframes
-    
+  const processMultiTimeframeResult = (resultText: string, chartCount: number): AnalysisResultData => {
     // Extract pair name (reuse existing logic)
     const titlePatterns = [
       /\[([^\]]+)\]\s+Multi[\s-]*Timeframe\s+Analysis/i,
@@ -182,11 +169,11 @@ export const useMultiTimeframeAnalysis = () => {
     }
     
     // Create combined timeframe string
-    const combinedTimeframe = timeframes.join(', ');
+    const combinedTimeframe = `Multi-Timeframe (${chartCount} charts)`;
     
     // Extract overall analysis and sentiment
     const overallMatch = resultText.match(/Overall\s+Multi[\s-]*Timeframe\s+Assessment:([\s\S]+?)(?=\d\.|Summary|$)/i);
-    const marketAnalysis = overallMatch ? overallMatch[1].trim() : '';
+    const marketAnalysis = overallMatch ? overallMatch[1].trim() : resultText.substring(0, 500) + '...';
     
     // Determine overall sentiment from multi-timeframe analysis
     let overallSentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral';
@@ -198,19 +185,16 @@ export const useMultiTimeframeAnalysis = () => {
       overallSentiment = 'bearish';
     }
     
-    // Extract other analysis components (reuse existing extraction functions)
-    // but adapt them for multi-timeframe context
-    
     return {
       pairName: symbol,
       timeframe: combinedTimeframe,
       overallSentiment,
-      confidenceScore: 80, // Higher confidence for multi-timeframe analysis
-      marketAnalysis,
+      confidenceScore: 85, // Higher confidence for multi-timeframe analysis
+      marketAnalysis: resultText,
       trendDirection: overallSentiment,
-      marketFactors: [], // Will be populated by existing extraction logic
-      chartPatterns: [], // Will be populated by existing extraction logic
-      priceLevels: [], // Will be populated by existing extraction logic
+      marketFactors: [],
+      chartPatterns: [],
+      priceLevels: [],
       tradingInsight: marketAnalysis
     };
   };
