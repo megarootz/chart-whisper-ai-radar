@@ -3,3 +3,6 @@ project_id = "npougftucphdtujkyyfz"
 
 [functions.analyze-chart]
 verify_jwt = true
+
+[functions.analyze-multi-timeframe]
+verify_jwt = true

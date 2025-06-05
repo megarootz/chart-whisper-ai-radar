@@ -7,6 +7,7 @@ import { Json } from '@/integrations/supabase/types';
 import { useAnalysis } from '@/contexts/AnalysisContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { formatTradingPair } from '@/utils/tradingPairUtils';
+import { TradingTechnique } from '@/components/TradingTechniqueSelector';
 
 export const useChartAnalysis = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -85,7 +86,7 @@ export const useChartAnalysis = () => {
     }
   };
 
-  const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
+  const analyzeChart = async (file: File, pairName: string, timeframe: string, technique: TradingTechnique = 'general') => {
     try {
       setIsAnalyzing(true);
       
@@ -100,7 +101,7 @@ export const useChartAnalysis = () => {
         return;
       }
 
-      console.log('🔍 Starting chart analysis for authenticated user:', user.id, 'email:', user.email);
+      console.log('🔍 Starting chart analysis for authenticated user:', user.id, 'email:', user.email, 'technique:', technique);
 
       // Check usage limits BEFORE proceeding
       console.log('📊 Checking usage limits before analysis...');
@@ -163,7 +164,8 @@ export const useChartAnalysis = () => {
         body: {
           base64Image,
           pairName,
-          timeframe
+          timeframe,
+          technique
         }
       });
       
@@ -190,7 +192,7 @@ export const useChartAnalysis = () => {
       console.log("📝 Raw API Response content received");
       
       // Process response as text format
-      const analysisData = processTextResult(resultText);
+      const analysisData = processTextResult(resultText, technique);
       console.log("🔄 Analysis data processed:", { pairName: analysisData.pairName, timeframe: analysisData.timeframe });
       
       // CRITICAL: Increment usage count AFTER successful analysis
@@ -242,7 +244,7 @@ export const useChartAnalysis = () => {
 
       toast({
         title: "Analysis Complete",
-        description: `Successfully analyzed the ${analysisData.pairName} chart on ${analysisData.timeframe} timeframe`,
+        description: `Successfully analyzed the ${analysisData.pairName} chart on ${analysisData.timeframe} timeframe using ${technique} technique`,
         variant: "default",
       });
       
@@ -259,7 +261,7 @@ export const useChartAnalysis = () => {
     }
   };
 
-  const processTextResult = (resultText: string): AnalysisResultData => {
+  const processTextResult = (resultText: string, technique: TradingTechnique = 'general'): AnalysisResultData => {
     // Enhanced regex patterns for accurate pair detection
     const titlePatterns = [
       // Standard format in brackets with Technical Analysis
