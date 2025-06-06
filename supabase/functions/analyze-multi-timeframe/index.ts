@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -28,9 +27,9 @@ serve(async (req) => {
 
     logStep("Received charts for analysis", { count: charts.length, technique });
 
-    const apiKey = Deno.env.get("OPENAI_API_KEY");
+    const apiKey = Deno.env.get("OPENROUTER_API_KEY");
     if (!apiKey) {
-      throw new Error("OPENAI_API_KEY is not configured");
+      throw new Error("OPENROUTER_API_KEY is not configured");
     }
 
     // Get trading technique specific instructions
@@ -130,16 +129,18 @@ Key Confluence Levels: [Most important levels across timeframes]`;
       });
     });
 
-    logStep("Calling OpenAI API for multi-timeframe analysis");
+    logStep("Calling OpenRouter API for multi-timeframe analysis");
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "HTTP-Referer": "https://forexradar7.com",
+        "X-Title": "ForexRadar7 Multi-Timeframe Analysis"
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "google/gemini-flash-1.5-8b",
         messages: [
           {
             role: "user",
