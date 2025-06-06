@@ -14,19 +14,20 @@ interface AutoChartGeneratorProps {
   isAnalyzing: boolean;
 }
 
+// Updated symbol mappings with correct TradingView symbols
 const POPULAR_SYMBOLS = [
-  { value: "CMCMARKETS:EURUSD", label: "EUR/USD" },
-  { value: "CMCMARKETS:GBPUSD", label: "GBP/USD" },
-  { value: "CMCMARKETS:USDJPY", label: "USD/JPY" },
-  { value: "CMCMARKETS:AUDUSD", label: "AUD/USD" },
-  { value: "CMCMARKETS:USDCAD", label: "USD/CAD" },
-  { value: "CMCMARKETS:USDCHF", label: "USD/CHF" },
-  { value: "CMCMARKETS:NZDUSD", label: "NZD/USD" },
-  { value: "CMCMARKETS:XAUUSD", label: "XAU/USD (Gold)" },
-  { value: "CMCMARKETS:XAGUSD", label: "XAG/USD (Silver)" },
-  { value: "BINANCE:BTCUSDT", label: "BTC/USDT" },
-  { value: "BINANCE:ETHUSDT", label: "ETH/USDT" },
-  { value: "BINANCE:ADAUSDT", label: "ADA/USDT" },
+  { value: "FX:EURUSD", label: "EUR/USD", cleanSymbol: "EUR/USD" },
+  { value: "FX:GBPUSD", label: "GBP/USD", cleanSymbol: "GBP/USD" },
+  { value: "FX:USDJPY", label: "USD/JPY", cleanSymbol: "USD/JPY" },
+  { value: "FX:AUDUSD", label: "AUD/USD", cleanSymbol: "AUD/USD" },
+  { value: "FX:USDCAD", label: "USD/CAD", cleanSymbol: "USD/CAD" },
+  { value: "FX:USDCHF", label: "USD/CHF", cleanSymbol: "USD/CHF" },
+  { value: "FX:NZDUSD", label: "NZD/USD", cleanSymbol: "NZD/USD" },
+  { value: "TVC:GOLD", label: "XAU/USD (Gold)", cleanSymbol: "XAU/USD" },
+  { value: "TVC:SILVER", label: "XAG/USD (Silver)", cleanSymbol: "XAG/USD" },
+  { value: "BINANCE:BTCUSDT", label: "BTC/USDT", cleanSymbol: "BTC/USDT" },
+  { value: "BINANCE:ETHUSDT", label: "ETH/USDT", cleanSymbol: "ETH/USDT" },
+  { value: "BINANCE:ADAUSDT", label: "ADA/USDT", cleanSymbol: "ADA/USDT" },
 ];
 
 const TIMEFRAMES = [
@@ -41,7 +42,7 @@ const TIMEFRAMES = [
 ];
 
 const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAnalyzing }) => {
-  const [selectedSymbol, setSelectedSymbol] = useState("CMCMARKETS:EURUSD");
+  const [selectedSymbol, setSelectedSymbol] = useState("FX:EURUSD");
   const [selectedTimeframe, setSelectedTimeframe] = useState("D");
   const [isWidgetLoaded, setIsWidgetLoaded] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
@@ -50,8 +51,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const { toast } = useToast();
 
   const handleWidgetLoad = useCallback(() => {
+    console.log("📊 Widget loaded callback triggered for symbol:", selectedSymbol);
     setIsWidgetLoaded(true);
-  }, []);
+  }, [selectedSymbol]);
 
   const captureAndAnalyze = async () => {
     if (!widgetRef.current || !isWidgetLoaded) {
@@ -66,59 +68,35 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsCapturing(true);
 
     try {
-      console.log("🎯 Starting enhanced chart capture for:", { selectedSymbol, selectedTimeframe });
+      // Get clean symbol for analysis
+      const symbolObj = POPULAR_SYMBOLS.find(s => s.value === selectedSymbol);
+      const cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
       
-      // Extended wait time for chart to fully render
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // Enhanced capture with multiple strategies and higher quality settings
-      let canvas;
+      console.log("🎯 Starting capture for:", { 
+        selectedSymbol, 
+        cleanSymbol, 
+        selectedTimeframe 
+      });
       
-      try {
-        console.log("📸 Attempting high-quality capture");
-        canvas = await html2canvas(widgetRef.current, {
-          useCORS: true,
-          allowTaint: false,
-          backgroundColor: '#1a1a1a',
-          scale: 2, // Higher scale for better quality
-          logging: true,
-          imageTimeout: 20000, // Longer timeout
-          removeContainer: false,
-          width: widgetRef.current.offsetWidth,
-          height: widgetRef.current.offsetHeight,
-          x: 0,
-          y: 0,
-          scrollX: 0,
-          scrollY: 0,
-          windowWidth: window.innerWidth,
-          windowHeight: window.innerHeight,
-        });
-        console.log("✅ High-quality capture successful, canvas size:", canvas.width, "x", canvas.height);
-      } catch (error) {
-        console.log("❌ High-quality capture failed, trying fallback method:", error);
-        
-        // Fallback with different settings
-        canvas = await html2canvas(widgetRef.current, {
-          useCORS: false,
-          allowTaint: true,
-          backgroundColor: '#1a1a1a',
-          scale: 1.5, // Medium scale
-          logging: true,
-          imageTimeout: 15000,
-          foreignObjectRendering: false,
-          ignoreElements: (element) => {
-            // Ignore potential problematic elements
-            return element.tagName === 'IFRAME' && element.getAttribute('src')?.includes('tradingview');
-          }
-        });
-        console.log("✅ Fallback capture successful, canvas size:", canvas.width, "x", canvas.height);
-      }
+      // Extended wait time for chart to fully render with correct symbol
+      await new Promise(resolve => setTimeout(resolve, 8000));
 
-      if (!canvas) {
-        throw new Error("Failed to create canvas");
-      }
+      // Capture with high quality settings
+      const canvas = await html2canvas(widgetRef.current, {
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#1a1a1a',
+        scale: 2,
+        logging: true,
+        imageTimeout: 25000,
+        removeContainer: false,
+        width: widgetRef.current.offsetWidth,
+        height: widgetRef.current.offsetHeight,
+      });
 
-      // Enhanced content validation
+      console.log("✅ Canvas captured, size:", canvas.width, "x", canvas.height);
+
+      // Validate canvas content
       const ctx = canvas.getContext('2d');
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
       
@@ -126,14 +104,13 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         throw new Error("Failed to get image data from canvas");
       }
 
-      // More sophisticated content analysis
+      // Enhanced content validation
       const pixels = imageData.data;
       let colorVariations = new Set();
       let nonBlackPixels = 0;
       const totalPixels = pixels.length / 4;
       
-      // Sample every 10th pixel for performance
-      for (let i = 0; i < pixels.length; i += 40) { // Every 10th pixel
+      for (let i = 0; i < pixels.length; i += 40) {
         const r = pixels[i];
         const g = pixels[i + 1];
         const b = pixels[i + 2];
@@ -143,7 +120,6 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           const colorKey = `${Math.floor(r/10)}-${Math.floor(g/10)}-${Math.floor(b/10)}`;
           colorVariations.add(colorKey);
           
-          // Count non-black/dark pixels
           if (r > 20 || g > 20 || b > 20) {
             nonBlackPixels++;
           }
@@ -153,30 +129,25 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       const contentPercentage = (nonBlackPixels / (totalPixels / 10)) * 100;
       const colorDiversity = colorVariations.size;
       
-      console.log("📊 Enhanced image analysis:", {
-        totalPixels,
-        sampledPixels: totalPixels / 10,
-        nonBlackPixels,
+      console.log("📊 Enhanced capture analysis:", {
         contentPercentage: contentPercentage.toFixed(2) + "%",
         colorVariations: colorDiversity,
-        canvasSize: `${canvas.width}x${canvas.height}`
+        canvasSize: `${canvas.width}x${canvas.height}`,
+        selectedSymbol,
+        cleanSymbol
       });
       
-      // More lenient validation but still check for meaningful content
-      if (contentPercentage < 2 || colorDiversity < 5) {
-        throw new Error(`Captured image appears to lack chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). The TradingView widget may not have loaded properly.`);
+      if (contentPercentage < 3 || colorDiversity < 8) {
+        throw new Error(`Captured image appears to lack sufficient chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). Please wait longer for the chart to load.`);
       }
 
-      // Create preview URL for validation
-      const previewUrl = canvas.toDataURL('image/png', 0.95); // High quality
+      // Create preview and file
+      const previewUrl = canvas.toDataURL('image/png', 0.95);
       setLastCapturedImage(previewUrl);
-      console.log("🖼️ High-quality preview URL created, size:", previewUrl.length, "characters");
 
-      // Convert to blob with high quality
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((result) => {
           if (result) {
-            console.log("✅ High-quality blob created, size:", result.size, "bytes");
             resolve(result);
           } else {
             reject(new Error("Failed to convert canvas to blob"));
@@ -184,49 +155,40 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         }, 'image/png', 0.95);
       });
 
-      // Create file from blob
       const timestamp = Date.now();
-      const file = new File([blob], `chart-${selectedSymbol.replace(':', '-')}-${selectedTimeframe}-${timestamp}.png`, { type: 'image/png' });
+      const file = new File([blob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
+        type: 'image/png' 
+      });
       
-      // Extract clean symbol name for analysis
-      const symbolParts = selectedSymbol.split(':');
-      const cleanSymbol = symbolParts[1] || selectedSymbol;
-      
-      // Get timeframe label
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending enhanced capture to analysis:", {
+      console.log("🚀 Sending to analysis:", {
         fileName: file.name,
         fileSize: file.size,
         cleanSymbol,
         timeframeLabel,
-        canvasSize: `${canvas.width}x${canvas.height}`,
-        contentPercentage: contentPercentage.toFixed(2) + "%",
-        colorDiversity
+        originalSymbol: selectedSymbol
       });
       
+      // Pass the clean symbol for analysis
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error in enhanced capture:", error);
+      console.error("❌ Error in capture:", error);
       
       let errorMessage = "Failed to capture the chart. ";
       
       if (error instanceof Error) {
         if (error.message.includes("content") || error.message.includes("variations")) {
-          errorMessage += error.message + " Try waiting longer for the chart to load, or use Manual Upload instead.";
-        } else if (error.message.includes("CORS") || error.message.includes("cross-origin")) {
-          errorMessage += "Browser security restrictions detected. Please use Manual Upload to upload a screenshot.";
+          errorMessage += error.message + " Try waiting longer for the chart to load.";
         } else {
           errorMessage += error.message;
         }
-      } else {
-        errorMessage += "Please try again or use Manual Upload.";
       }
       
       toast({
-        title: "Enhanced Capture Failed",
+        title: "Capture Failed",
         description: errorMessage,
         variant: "destructive"
       });
@@ -249,6 +211,19 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     return symbol?.label || selectedSymbol;
   };
 
+  // Reset widget loaded state when symbol changes
+  const handleSymbolChange = (newSymbol: string) => {
+    console.log("🔄 Symbol change from", selectedSymbol, "to", newSymbol);
+    setSelectedSymbol(newSymbol);
+    setIsWidgetLoaded(false); // Reset loaded state
+  };
+
+  const handleTimeframeChange = (newTimeframe: string) => {
+    console.log("🔄 Timeframe change from", selectedTimeframe, "to", newTimeframe);
+    setSelectedTimeframe(newTimeframe);
+    setIsWidgetLoaded(false); // Reset loaded state
+  };
+
   return (
     <Card className="w-full bg-chart-card border-gray-700">
       <CardHeader>
@@ -262,7 +237,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="symbol-select" className="text-white">Trading Pair</Label>
-            <Select value={selectedSymbol} onValueChange={setSelectedSymbol}>
+            <Select value={selectedSymbol} onValueChange={handleSymbolChange}>
               <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                 <SelectValue placeholder="Select a trading pair" />
               </SelectTrigger>
@@ -278,7 +253,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
 
           <div className="space-y-2">
             <Label htmlFor="timeframe-select" className="text-white">Timeframe</Label>
-            <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
+            <Select value={selectedTimeframe} onValueChange={handleTimeframeChange}>
               <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                 <SelectValue placeholder="Select timeframe" />
               </SelectTrigger>
@@ -300,13 +275,13 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <p className="text-gray-400 text-sm mb-4">
               Currently showing: {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
             </p>
-            {/* Enhanced chart container with better responsive design */}
+            
             <div 
               ref={widgetRef} 
               className="w-full overflow-hidden rounded-lg border border-gray-700 bg-gray-900"
               style={{ 
-                minHeight: "600px",
-                height: "700px"
+                minHeight: "700px",
+                height: "800px"
               }}
             >
               <AutoTradingViewWidget 
@@ -317,12 +292,12 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             </div>
           </div>
 
-          {/* Enhanced Status Indicators */}
+          {/* Status Indicators */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className={`w-3 h-3 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className="text-sm text-gray-400">
-                {isWidgetLoaded ? 'Chart loaded and ready for high-quality capture' : 'Loading chart...'}
+                {isWidgetLoaded ? 'Chart loaded and ready for capture' : 'Loading chart...'}
               </span>
             </div>
             {lastCapturedImage && (
@@ -338,23 +313,23 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             )}
           </div>
 
-          {/* Enhanced Debug Info */}
+          {/* Debug Info */}
           {isWidgetLoaded && (
             <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
               <p className="text-blue-400 text-sm">
-                <strong>Enhanced Capture Ready:</strong> Using high-quality capture (2x scale) for {getSelectedSymbolLabel()} on {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label} timeframe. 
-                Extended wait time and content validation ensure better analysis accuracy.
+                <strong>Enhanced Capture Ready:</strong> Chart loaded for {getSelectedSymbolLabel()} on {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label} timeframe. 
+                Symbol: {selectedSymbol}
               </p>
             </div>
           )}
 
-          {/* Enhanced Analyze Button */}
+          {/* Analyze Button */}
           <Button 
             onClick={captureAndAnalyze}
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className="w-full bg-primary hover:bg-primary/90 text-white"
           >
-            {isCapturing ? 'Capturing Chart (Enhanced)...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing Chart...' : isAnalyzing ? 'Analyzing...' : (
               <>
                 <Download className="mr-2 h-4 w-4" />
                 Enhanced Capture & Analyze Chart
@@ -362,15 +337,14 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             )}
           </Button>
 
-          {/* Enhanced Help Text */}
+          {/* Help Text */}
           <div className="bg-orange-900/20 border border-orange-800/50 rounded-lg p-3">
             <div className="flex items-start">
               <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-orange-400 font-medium text-sm mb-1">Enhanced Capture Method</h4>
+                <h4 className="text-orange-400 font-medium text-sm mb-1">Symbol Mapping Fixed</h4>
                 <p className="text-gray-400 text-xs">
-                  This version uses high-quality capture (2x resolution), extended loading time, and enhanced content validation. 
-                  If issues persist, the TradingView widget may have built-in restrictions. Manual Upload remains available as a reliable alternative.
+                  Updated symbol mappings to use correct TradingView symbols. Charts should now display the selected trading pair correctly.
                 </p>
               </div>
             </div>

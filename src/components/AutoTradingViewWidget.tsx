@@ -20,6 +20,8 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
     container.current.innerHTML = '';
     scriptLoaded.current = false;
 
+    console.log("🔄 Creating TradingView widget with symbol:", symbol, "interval:", interval);
+
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
     script.type = "text/javascript";
@@ -61,19 +63,18 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
           "paneProperties.background": "#1a1a1a",
           "paneProperties.vertGridProperties.color": "#363636",
           "paneProperties.horzGridProperties.color": "#363636",
-          "symbolWatermarkProperties.transparency": 90,
-          "scalesProperties.text"
+          "symbolWatermarkProperties.transparency": 90
         }
       }`;
     
     script.onload = () => {
-      console.log("✅ TradingView widget script loaded successfully!");
+      console.log("✅ TradingView widget script loaded successfully for symbol:", symbol);
       scriptLoaded.current = true;
-      // Give the widget more time to fully render and be interactive
+      // Give the widget time to fully render with the correct symbol
       setTimeout(() => {
-        console.log("🏁 TradingView widget render time completed, marking as loaded");
+        console.log("🏁 TradingView widget render completed for:", symbol);
         onLoad?.();
-      }, 5000);
+      }, 6000); // Increased wait time to ensure proper symbol loading
     };
 
     script.onerror = (e) => {
@@ -88,9 +89,16 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
   }, [symbol, interval, onLoad]);
 
   useEffect(() => {
-    console.log("🔄 TradingView widget rendering:", { symbol, interval });
-    // Only recreate widget if symbol or interval actually changed or if not loaded
+    console.log("🔄 TradingView widget effect triggered:", { symbol, interval });
+    // Always recreate widget when symbol or interval changes
     if (currentSymbol.current !== symbol || currentInterval.current !== interval || !scriptLoaded.current) {
+      console.log("🆕 Recreating widget due to change:", {
+        oldSymbol: currentSymbol.current,
+        newSymbol: symbol,
+        oldInterval: currentInterval.current,
+        newInterval: interval,
+        scriptLoaded: scriptLoaded.current
+      });
       createWidget();
     }
   }, [symbol, interval, createWidget]);
@@ -100,8 +108,8 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
       className="tradingview-widget-container w-full" 
       ref={container} 
       style={{ 
-        height: "700px", 
-        minHeight: "600px",
+        height: "800px", 
+        minHeight: "700px",
         width: "100%" 
       }}
     >
@@ -110,7 +118,7 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
         style={{ 
           height: "calc(100% - 32px)", 
           width: "100%",
-          minHeight: "568px"
+          minHeight: "768px"
         }}
       ></div>
       <div className="tradingview-widget-copyright">
