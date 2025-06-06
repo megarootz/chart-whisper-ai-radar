@@ -46,7 +46,6 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const [selectedTimeframe, setSelectedTimeframe] = useState("D");
   const [isWidgetLoaded, setIsWidgetLoaded] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
-  const [lastCapturedImage, setLastCapturedImage] = useState<string | null>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -85,7 +84,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       const canvas = await html2canvas(widgetRef.current, {
         useCORS: true,
         allowTaint: false,
-        backgroundColor: '#1a1a1a',
+        backgroundColor: '#131722',
         scale: 2,
         logging: true,
         imageTimeout: 25000,
@@ -141,10 +140,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         throw new Error(`Captured image appears to lack sufficient chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). Please wait longer for the chart to load.`);
       }
 
-      // Create preview and file
-      const previewUrl = canvas.toDataURL('image/png', 0.95);
-      setLastCapturedImage(previewUrl);
-
+      // Create file from canvas
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((result) => {
           if (result) {
@@ -269,11 +265,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             
             <div 
               ref={widgetRef} 
-              className="w-full overflow-hidden rounded-lg border border-gray-700 bg-gray-900"
-              style={{ 
-                minHeight: "500px",
-                height: "600px"
-              }}
+              className="w-full overflow-hidden rounded-lg border border-gray-700 bg-[#131722]"
             >
               <AutoTradingViewWidget 
                 symbol={selectedSymbol}
@@ -292,16 +284,6 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               </span>
             </div>
           </div>
-
-          {/* Debug Info */}
-          {isWidgetLoaded && (
-            <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
-              <p className="text-blue-400 text-sm">
-                <strong>Enhanced Capture Ready:</strong> Chart loaded for {getSelectedSymbolLabel()} on {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label} timeframe. 
-                Symbol: {selectedSymbol}
-              </p>
-            </div>
-          )}
 
           {/* Analyze Button */}
           <Button 
@@ -322,9 +304,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <div className="flex items-start">
               <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" />
               <div>
-                <h4 className="text-orange-400 font-medium text-sm mb-1">Symbol Mapping Fixed</h4>
+                <h4 className="text-orange-400 font-medium text-sm mb-1">Trading Chart Tips</h4>
                 <p className="text-gray-400 text-xs">
-                  Updated symbol mappings to use correct TradingView symbols. Charts should now display the selected trading pair correctly.
+                  For best results, wait for the chart to fully load before analysis. The system will automatically detect and analyze the selected trading pair.
                 </p>
               </div>
             </div>

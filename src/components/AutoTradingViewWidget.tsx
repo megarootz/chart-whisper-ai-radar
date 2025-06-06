@@ -60,9 +60,9 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
           "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
           "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
           "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350",
-          "paneProperties.background": "#1a1a1a",
-          "paneProperties.vertGridProperties.color": "#363636",
-          "paneProperties.horzGridProperties.color": "#363636",
+          "paneProperties.background": "#131722",
+          "paneProperties.vertGridProperties.color": "#242632",
+          "paneProperties.horzGridProperties.color": "#242632",
           "symbolWatermarkProperties.transparency": 90
         }
       }`;
@@ -108,17 +108,16 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
       className="tradingview-widget-container w-full" 
       ref={container} 
       style={{ 
-        height: "600px",  
-        minHeight: "500px",
+        height: "500px",  
+        minHeight: "450px",
         width: "100%" 
       }}
     >
       <div 
-        className="tradingview-widget-container__widget w-full" 
+        className="tradingview-widget-container__widget w-full h-full" 
         style={{ 
           height: "calc(100% - 32px)", 
-          width: "100%",
-          minHeight: "468px"
+          width: "100%"
         }}
       ></div>
       <div className="tradingview-widget-copyright">

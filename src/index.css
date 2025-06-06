@@ -138,8 +138,8 @@
   
   /* TradingView chart responsive adjustments */
   .tradingview-widget-container {
-    min-height: 400px !important;
-    height: 450px !important;
+    min-height: 350px !important;
+    height: 400px !important;
   }
   
   .tradingview-widget-container__widget {
@@ -150,31 +150,31 @@
 /* Medium screens */
 @media (min-width: 641px) and (max-width: 1024px) {
   .tradingview-widget-container {
-    height: 500px !important;
-    min-height: 450px !important;
+    height: 450px !important;
+    min-height: 400px !important;
   }
   
   .tradingview-widget-container__widget {
-    min-height: 468px !important;
+    min-height: 368px !important;
   }
 }
 
 /* Large screens */
 @media (min-width: 1025px) {
   .tradingview-widget-container {
-    height: 600px !important;
-    min-height: 500px !important;
+    height: 500px !important;
+    min-height: 450px !important;
   }
   
   .tradingview-widget-container__widget {
-    min-height: 568px !important;
+    min-height: 418px !important;
   }
 }
 
 /* Fix for potential rendering issues on tablets */
 @media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
   .tradingview-widget-container {
-    height: 550px !important;
+    height: 450px !important;
   }
   
   .tradingview-widget-container__widget {
@@ -192,8 +192,8 @@
 /* Extra small devices */
 @media (max-width: 480px) {
   .tradingview-widget-container {
-    min-height: 350px !important;
-    height: 400px !important;
+    min-height: 300px !important;
+    height: 350px !important;
     margin-left: -0.75rem;
     margin-right: -0.75rem;
     width: calc(100% + 1.5rem) !important;
@@ -201,7 +201,7 @@
   }
   
   .tradingview-widget-container__widget {
-    min-height: 368px !important;
+    min-height: 318px !important;
   }
 }
 
@@ -355,7 +355,7 @@
   width: 100% !important;
   overflow: hidden;
   border-radius: 0.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(36, 38, 50, 0.8);
 }
 
 .tradingview-widget-container iframe {
