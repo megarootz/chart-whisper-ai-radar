@@ -266,7 +266,15 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <p className="text-gray-400 text-sm mb-4">
               Currently showing: {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
             </p>
-            <div ref={widgetRef}>
+            {/* Enhanced chart container with better responsive design */}
+            <div 
+              ref={widgetRef} 
+              className="w-full overflow-hidden rounded-lg border border-gray-700 bg-gray-900"
+              style={{ 
+                minHeight: "500px",
+                height: "600px"
+              }}
+            >
               <AutoTradingViewWidget 
                 symbol={selectedSymbol}
                 interval={selectedTimeframe}

@@ -34,7 +34,12 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
         "style": "1",
         "locale": "en",
         "allow_symbol_change": false,
-        "support_host": "https://www.tradingview.com"
+        "support_host": "https://www.tradingview.com",
+        "withdateranges": true,
+        "hide_side_toolbar": false,
+        "hide_top_toolbar": false,
+        "save_image": false,
+        "container_id": "tradingview_chart"
       }`;
     
     script.onload = () => {
@@ -61,13 +66,21 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
 
   return (
     <div 
-      className="tradingview-widget-container" 
+      className="tradingview-widget-container w-full" 
       ref={container} 
-      style={{ height: "400px", width: "100%" }}
+      style={{ 
+        height: "600px", 
+        minHeight: "500px",
+        width: "100%" 
+      }}
     >
       <div 
-        className="tradingview-widget-container__widget" 
-        style={{ height: "calc(100% - 32px)", width: "100%" }}
+        className="tradingview-widget-container__widget w-full" 
+        style={{ 
+          height: "calc(100% - 32px)", 
+          width: "100%",
+          minHeight: "468px"
+        }}
       ></div>
       <div className="tradingview-widget-copyright">
         <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">
