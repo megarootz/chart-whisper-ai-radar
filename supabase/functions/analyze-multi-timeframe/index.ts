@@ -140,7 +140,7 @@ Key Confluence Levels: [Most important levels across timeframes]`;
         "X-Title": "ForexRadar7 Multi-Timeframe Analysis"
       },
       body: JSON.stringify({
-        model: "google/gemini-flash-1.5-8b",
+        model: "openai/gpt-4o-mini",
         messages: [
           {
             role: "user",
