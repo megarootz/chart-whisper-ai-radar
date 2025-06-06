@@ -38,7 +38,7 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
         "allow_symbol_change": false,
         "support_host": "https://www.tradingview.com",
         "withdateranges": true,
-        "hide_side_toolbar": false,
+        "hide_side_toolbar": true,
         "hide_top_toolbar": false,
         "save_image": false,
         "container_id": "tradingview_chart_${Date.now()}",
@@ -46,8 +46,8 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
         "show_popup_button": false,
         "popup_width": "1000",
         "popup_height": "650",
-        "details": true,
-        "hotlist": true,
+        "details": false,
+        "hotlist": false,
         "calendar": false,
         "studies_overrides": {},
         "overrides": {
@@ -63,7 +63,8 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
           "paneProperties.background": "#131722",
           "paneProperties.vertGridProperties.color": "#242632",
           "paneProperties.horzGridProperties.color": "#242632",
-          "symbolWatermarkProperties.transparency": 90
+          "symbolWatermarkProperties.transparency": 90,
+          "scalesProperties.backgroundColor": "#131722"
         }
       }`;
     
@@ -108,8 +109,8 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
       className="tradingview-widget-container w-full" 
       ref={container} 
       style={{ 
-        height: "500px",  
-        minHeight: "450px",
+        height: "600px",  
+        minHeight: "550px",
         width: "100%" 
       }}
     >
