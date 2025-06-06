@@ -33,20 +33,23 @@ serve(async (req) => {
       throw new Error("OPENROUTER_API_KEY is not configured");
     }
 
-    // Create a very concise, efficient prompt to minimize tokens
-    const systemPrompt = `Analyze these forex charts. Provide structured analysis:
+    // Create a natural, conversational prompt similar to ChatGPT
+    const systemPrompt = `You are an expert forex trader and technical analyst. Analyze these multiple timeframe charts and provide a comprehensive trading analysis. 
 
-**PAIR:** [trading pair]
-**TREND:** [Bullish/Bearish/Neutral] - [brief reason]
-**SUPPORT:** [price1, price2] 
-**RESISTANCE:** [price1, price2]
-**PATTERNS:** [pattern name - confidence% - signal]
-**INDICATORS:** [indicator: analysis]
-**SETUPS:**
-Long: Entry [price] | Stop [price] | Target [price]
-Short: Entry [price] | Stop [price] | Target [price]
+Be conversational and natural in your response, like you're explaining to a fellow trader. Focus on:
 
-Be specific with prices. Keep analysis concise.`;
+1. **Multi-timeframe trend analysis** - What's the overall direction across timeframes?
+2. **Key support and resistance levels** - Identify the most important price levels
+3. **Chart patterns and formations** - What patterns do you see forming or completed?
+4. **Technical indicators** - RSI, moving averages, momentum indicators, etc.
+5. **Trading strategy** - Provide specific entry, stop loss, and take profit levels
+6. **Risk management** - What should traders watch out for?
+
+Combine insights from all timeframes to give the best possible trading setup. Be specific with price levels and explain your reasoning clearly.
+
+Technique focus: ${technique}
+
+Provide your analysis in a natural, flowing conversation style - not in bullet points or rigid format.`;
 
     // Prepare the content for the API call
     const content = [
@@ -62,7 +65,7 @@ Be specific with prices. Keep analysis concise.`;
         type: "image_url",
         image_url: {
           url: chart.base64Image,
-          detail: "low" // Use low detail to reduce token usage
+          detail: "low"
         }
       });
     });
@@ -85,8 +88,8 @@ Be specific with prices. Keep analysis concise.`;
             content: content
           }
         ],
-        max_tokens: 800, // Significantly reduced from 2000
-        temperature: 0.1, // Lower temperature for more consistent output
+        max_tokens: 1200,
+        temperature: 0.3,
         top_p: 0.9,
       }),
     });
