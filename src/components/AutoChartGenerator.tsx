@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Download, Eye, AlertTriangle } from 'lucide-react';
+import { TrendingUp, Download, AlertTriangle } from 'lucide-react';
 import AutoTradingViewWidget from './AutoTradingViewWidget';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
@@ -197,15 +197,6 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     }
   };
 
-  const previewLastCapture = () => {
-    if (lastCapturedImage) {
-      const newWindow = window.open();
-      if (newWindow) {
-        newWindow.document.write(`<img src="${lastCapturedImage}" style="max-width: 100%; height: auto;" />`);
-      }
-    }
-  };
-
   const getSelectedSymbolLabel = () => {
     const symbol = POPULAR_SYMBOLS.find(s => s.value === selectedSymbol);
     return symbol?.label || selectedSymbol;
@@ -280,8 +271,8 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               ref={widgetRef} 
               className="w-full overflow-hidden rounded-lg border border-gray-700 bg-gray-900"
               style={{ 
-                minHeight: "700px",
-                height: "800px"
+                minHeight: "500px",
+                height: "600px"
               }}
             >
               <AutoTradingViewWidget 
@@ -293,24 +284,13 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           </div>
 
           {/* Status Indicators */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center">
             <div className="flex items-center space-x-2">
               <div className={`w-3 h-3 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className="text-sm text-gray-400">
                 {isWidgetLoaded ? 'Chart loaded and ready for capture' : 'Loading chart...'}
               </span>
             </div>
-            {lastCapturedImage && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={previewLastCapture}
-                className="text-xs"
-              >
-                <Eye className="mr-1 h-3 w-3" />
-                Preview Last Capture
-              </Button>
-            )}
           </div>
 
           {/* Debug Info */}

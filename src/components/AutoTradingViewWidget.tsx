@@ -74,7 +74,7 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
       setTimeout(() => {
         console.log("🏁 TradingView widget render completed for:", symbol);
         onLoad?.();
-      }, 6000); // Increased wait time to ensure proper symbol loading
+      }, 6000); // Keep increased wait time to ensure proper symbol loading
     };
 
     script.onerror = (e) => {
@@ -108,8 +108,8 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
       className="tradingview-widget-container w-full" 
       ref={container} 
       style={{ 
-        height: "800px", 
-        minHeight: "700px",
+        height: "600px",  
+        minHeight: "500px",
         width: "100%" 
       }}
     >
@@ -118,7 +118,7 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
         style={{ 
           height: "calc(100% - 32px)", 
           width: "100%",
-          minHeight: "768px"
+          minHeight: "468px"
         }}
       ></div>
       <div className="tradingview-widget-copyright">
