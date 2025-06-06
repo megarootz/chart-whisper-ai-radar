@@ -101,6 +101,7 @@ export const useChartAnalysis = () => {
       }
 
       console.log('🔍 Starting chart analysis for authenticated user:', user.id, 'email:', user.email);
+      console.log('📊 Analysis parameters:', { pairName, timeframe });
 
       // Check usage limits BEFORE proceeding
       console.log('📊 Checking usage limits before analysis...');
@@ -189,8 +190,8 @@ export const useChartAnalysis = () => {
       const resultText = responseData.choices[0].message.content || '';
       console.log("📝 Raw API Response content received");
       
-      // Process response as text format
-      const analysisData = processTextResult(resultText);
+      // Process response as text format, using provided parameters when available
+      const analysisData = processTextResult(resultText, pairName, timeframe);
       console.log("🔄 Analysis data processed:", { pairName: analysisData.pairName, timeframe: analysisData.timeframe });
       
       // CRITICAL: Increment usage count AFTER successful analysis
@@ -259,60 +260,64 @@ export const useChartAnalysis = () => {
     }
   };
 
-  const processTextResult = (resultText: string): AnalysisResultData => {
-    // Enhanced regex patterns for accurate pair detection
-    const titlePatterns = [
-      // Standard format in brackets with Technical Analysis
-      /\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i,
-      
-      // Standard format without brackets
-      /([A-Z0-9\/]{3,10})\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i,
-      
-      // Direct pair and timeframe at start of text
-      /^([A-Z0-9\/]{3,10})\s+.*?\s+\(([0-9]+[Hh]|[A-Z][a-z]+)\)/i,
-      
-      // Pair name at beginning of text
-      /^([A-Z0-9\/]{3,10})\s+/
-    ];
+  const processTextResult = (resultText: string, providedPairName?: string, providedTimeframe?: string): AnalysisResultData => {
+    // Use provided parameters if available (from automated analysis), otherwise detect from text
+    let symbol = providedPairName || "";
+    let timeframe = providedTimeframe || "";
     
-    // Try each pattern to extract pair and timeframe
-    let symbol = "";
-    let timeframe = "";
-    
-    for (const pattern of titlePatterns) {
-      const match = resultText.match(pattern);
-      if (match) {
-        symbol = match[1].trim();
-        if (match[2]) {
-          timeframe = match[2].trim();
-        }
-        break;
-      }
-    }
-    
-    // If still no pair found, use these stronger extraction methods for pairs
-    if (!symbol) {
-      // Look for standard forex/crypto/commodity pairs with slash
-      const pairMatch = resultText.match(/\b([A-Z]{3}\/[A-Z]{3}|[A-Z]{3,4}\/USD[T]?|[A-Z0-9]{3,6}\/[A-Z0-9]{3,6})\b/);
-      if (pairMatch) {
-        symbol = pairMatch[1];
-      } else {
-        // Look for major currency pairs without slash
-        const currencyPairMatch = resultText.match(/\b(EUR|USD|GBP|JPY|AUD|NZD|CAD|CHF|XAU|XAG|BTC|ETH)[A-Z]{3}\b/i);
-        if (currencyPairMatch) {
-          const fullPair = currencyPairMatch[0].toUpperCase();
-          const baseCurrency = currencyPairMatch[1].toUpperCase();
-          const quoteCurrency = fullPair.substring(baseCurrency.length);
-          symbol = `${baseCurrency}/${quoteCurrency}`;
+    // Only try to detect from text if parameters weren't provided
+    if (!symbol || !timeframe) {
+      // Enhanced regex patterns for accurate pair detection
+      const titlePatterns = [
+        // Standard format in brackets with Technical Analysis
+        /\[([^\]]+)\]\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i,
+        
+        // Standard format without brackets
+        /([A-Z0-9\/]{3,10})\s+Technical\s+Analysis\s+\(\s*([^\)]+)\s*Chart\)/i,
+        
+        // Direct pair and timeframe at start of text
+        /^([A-Z0-9\/]{3,10})\s+.*?\s+\(([0-9]+[Hh]|[A-Z][a-z]+)\)/i,
+        
+        // Pair name at beginning of text
+        /^([A-Z0-9\/]{3,10})\s+/
+      ];
+      
+      // Try each pattern to extract pair and timeframe
+      for (const pattern of titlePatterns) {
+        const match = resultText.match(pattern);
+        if (match) {
+          if (!symbol) symbol = match[1].trim();
+          if (!timeframe && match[2]) {
+            timeframe = match[2].trim();
+          }
+          break;
         }
       }
-    }
-    
-    // If still no timeframe found, look for standard timeframes
-    if (!timeframe) {
-      const timeframeMatch = resultText.match(/\b(1[mh]|5[mh]|15[mh]|30[mh]|1h|4h|daily|weekly|monthly)\b/i);
-      if (timeframeMatch) {
-        timeframe = timeframeMatch[1];
+      
+      // If still no pair found, use these stronger extraction methods for pairs
+      if (!symbol) {
+        // Look for standard forex/crypto/commodity pairs with slash
+        const pairMatch = resultText.match(/\b([A-Z]{3}\/[A-Z]{3}|[A-Z]{3,4}\/USD[T]?|[A-Z0-9]{3,6}\/[A-Z0-9]{3,6})\b/);
+        if (pairMatch) {
+          symbol = pairMatch[1];
+        } else {
+          // Look for major currency pairs without slash
+          const currencyPairMatch = resultText.match(/\b(EUR|USD|GBP|JPY|AUD|NZD|CAD|CHF|XAU|XAG|BTC|ETH)[A-Z]{3}\b/i);
+          if (currencyPairMatch) {
+            const fullPair = currencyPairMatch[0].toUpperCase();
+            const baseCurrency = currencyPairMatch[1].toUpperCase();
+            const quoteCurrency = fullPair.substring(baseCurrency.length);
+            symbol = `${baseCurrency}/${quoteCurrency}`;
+          }
+        }
+      }
+      
+      // If still no timeframe found, look for standard timeframes
+      if (!timeframe) {
+        const timeframeMatch = resultText.match(/\b(1[mh]|5[mh]|15[mh]|30[mh]|1h|4h|daily|weekly|monthly)\b/i);
+        if (timeframeMatch) {
+          timeframe = timeframeMatch[1];
+        }
       }
     }
     
