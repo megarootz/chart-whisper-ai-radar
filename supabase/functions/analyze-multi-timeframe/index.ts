@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -35,77 +36,67 @@ serve(async (req) => {
     // Get trading technique specific instructions
     const getTechniqueInstructions = (technique: string) => {
       const techniques: Record<string, string> = {
-        'general': 'Focus on comprehensive technical analysis including all major indicators and patterns.',
-        'breakout': 'Focus specifically on breakout patterns, key levels, volume confirmation, and breakout targets. Look for consolidation patterns, resistance/support breaks, and volume spikes.',
-        'supply-demand': 'Focus on supply and demand zones, imbalances, institutional levels, and order flow. Identify where smart money is likely positioned.',
-        'support-resistance': 'Focus on dynamic and static support/resistance levels, confluence areas, and how price reacts at these levels across timeframes.',
-        'fibonacci': 'Focus on Fibonacci retracement levels, extension targets, time zones, and how price respects these mathematical levels.',
-        'ict': 'Focus on ICT concepts including order blocks, fair value gaps, liquidity pools, market structure breaks, and institutional trading patterns.',
-        'smart-money': 'Focus on smart money concepts including market structure, inducement, manipulation, and where institutional money is flowing.',
-        'price-action': 'Focus purely on price action including candlestick patterns, market structure, and naked chart analysis without indicators.',
-        'harmonic': 'Focus on harmonic patterns like Gartley, Butterfly, Bat, and Crab patterns with precise Fibonacci measurements.',
-        'elliott-wave': 'Focus on Elliott Wave theory including impulse waves, corrective waves, and wave counts across multiple timeframes.'
+        'general': 'Comprehensive technical analysis including all major indicators and patterns.',
+        'breakout': 'Focus on breakout patterns, key levels, volume confirmation, and breakout targets.',
+        'supply-demand': 'Focus on supply and demand zones, imbalances, institutional levels.',
+        'support-resistance': 'Focus on dynamic and static support/resistance levels and confluence areas.',
+        'fibonacci': 'Focus on Fibonacci retracement levels, extension targets, and mathematical levels.',
+        'ict': 'Focus on ICT concepts including order blocks, fair value gaps, liquidity pools.',
+        'smart-money': 'Focus on smart money concepts including market structure and institutional flow.',
+        'price-action': 'Focus purely on price action including candlestick patterns and market structure.',
+        'harmonic': 'Focus on harmonic patterns like Gartley, Butterfly, Bat, and Crab patterns.',
+        'elliott-wave': 'Focus on Elliott Wave theory including impulse and corrective waves.'
       };
       return techniques[technique] || techniques['general'];
     };
 
     const techniqueInstructions = getTechniqueInstructions(technique);
 
-    // Create the prompt for multi-timeframe analysis
-    const systemPrompt = `You are an expert forex analyst specializing in multi-timeframe analysis and ${technique} techniques. 
+    // Create a concise, efficient prompt
+    const systemPrompt = `You are an expert forex analyst. Analyze these chart images and provide structured multi-timeframe analysis.
 
-${techniqueInstructions}
+FOCUS: ${techniqueInstructions}
 
-Analyze the provided chart images from multiple timeframes and provide a comprehensive analysis that considers:
+Provide your analysis in this EXACT format:
 
-1. **Auto-Detection**: First identify the trading pair and timeframe for each chart
-2. **Multi-Timeframe Trend Analysis**: How trends align or diverge across timeframes
-3. **Confluence Analysis**: Where multiple timeframes and techniques agree
-4. **Key Levels**: Support/resistance levels that appear across multiple timeframes
-5. **Entry Strategy**: Best timeframe for entries based on the overall analysis
-6. **Risk Management**: Appropriate stops and targets considering all timeframes
+**PAIR:** [Auto-detect trading pair]
+**TIMEFRAMES:** [List detected timeframes for each chart]
 
-Format your response as follows:
+**TREND ANALYSIS:**
+- Overall trend: [Bullish/Bearish/Neutral]
+- Multi-timeframe alignment: [Description]
 
-# Multi-Timeframe Analysis (${technique.toUpperCase()} Focus)
+**SUPPORT LEVELS:**
+- Level 1: [Price] - [Description]
+- Level 2: [Price] - [Description]
 
-## Auto-Detected Information:
-[List detected pair and timeframe for each chart]
+**RESISTANCE LEVELS:**  
+- Level 1: [Price] - [Description]
+- Level 2: [Price] - [Description]
 
-## Overall Multi-Timeframe Assessment:
-[Provide overview of how all timeframes align and the dominant trend bias]
+**CHART PATTERNS:**
+- Pattern 1: [Name] - [Confidence%] - [Bullish/Bearish signal]
+- Pattern 2: [Name] - [Confidence%] - [Bullish/Bearish signal]
 
-## 1. Trend Direction Analysis:
-[Analyze trend on each timeframe and overall confluence]
+**TECHNICAL INDICATORS:**
+- [Indicator 1]: [Analysis]
+- [Indicator 2]: [Analysis]
 
-## 2. Key Support Levels:
-[List support levels that appear across multiple timeframes]
+**TRADING SCENARIOS:**
 
-## 3. Key Resistance Levels:
-[List resistance levels that appear across multiple timeframes]
+Bullish Setup:
+Entry: [Price] | Stop: [Price] | Target: [Price]
+Description: [Brief explanation]
 
-## 4. Chart Patterns:
-[Identify patterns visible across timeframes with ${technique} focus]
+Bearish Setup:  
+Entry: [Price] | Stop: [Price] | Target: [Price]
+Description: [Brief explanation]
 
-## 5. Technical Indicators:
-[Technical analysis specific to ${technique} methodology]
+Neutral Setup:
+Range: [Price range] | Breakout levels: [Levels]
+Description: [Brief explanation]
 
-## 6. Trading Insights:
-
-### Bullish Scenario:
-[Multi-timeframe bullish setup with entry, stop, targets]
-
-### Bearish Scenario:
-[Multi-timeframe bearish setup with entry, stop, targets]
-
-### Neutral/Consolidation Scenario:
-[Range-bound scenarios and breakout levels]
-
-## Summary:
-Trading Bias: [Bullish/Bearish/Neutral]
-Confidence: [High/Medium/Low] based on timeframe alignment
-Best Entry Timeframe: [Which timeframe to use for entries]
-Key Confluence Levels: [Most important levels across timeframes]`;
+Be specific with prices and levels. Provide actionable analysis.`;
 
     // Prepare the content for the API call
     const content = [
@@ -117,10 +108,6 @@ Key Confluence Levels: [Most important levels across timeframes]`;
 
     // Add each chart image to the content
     charts.forEach((chart: any, index: number) => {
-      content.push({
-        type: "text",
-        text: `Chart ${index + 1}:`
-      });
       content.push({
         type: "image_url",
         image_url: {
@@ -147,8 +134,8 @@ Key Confluence Levels: [Most important levels across timeframes]`;
             content: content
           }
         ],
-        max_tokens: 4000,
-        temperature: 0.1,
+        max_tokens: 2000,
+        temperature: 0.3,
         top_p: 0.9,
       }),
     });
