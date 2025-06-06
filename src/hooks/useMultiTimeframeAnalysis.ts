@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData } from '@/components/AnalysisResult';
@@ -155,92 +154,75 @@ export const useMultiTimeframeAnalysis = () => {
                      resultText.match(/\b([A-Z]{3}\/[A-Z]{3})\b/);
     const symbol = pairMatch ? pairMatch[1] : "Multi-Timeframe Analysis";
     
-    // Extract timeframes
-    const timeframeMatch = resultText.match(/\*\*TIMEFRAMES:\*\*\s*([^\n\*]+)/i);
-    const timeframes = timeframeMatch ? timeframeMatch[1].trim() : `${chartCount} charts`;
-    
-    // Extract trend analysis
-    const trendMatch = resultText.match(/\*\*TREND ANALYSIS:\*\*\s*([\s\S]*?)(?=\*\*|$)/i);
-    const trendSection = trendMatch ? trendMatch[1] : "";
-    
-    // Extract overall trend
-    const overallTrendMatch = trendSection.match(/Overall trend:\s*(Bullish|Bearish|Neutral)/i);
+    // Extract trend with brief description
+    const trendMatch = resultText.match(/\*\*TREND:\*\*\s*([\s\S]*?)(?=\*\*|$)/i);
     let overallSentiment: 'bullish' | 'bearish' | 'neutral' = 'neutral';
-    if (overallTrendMatch) {
-      overallSentiment = overallTrendMatch[1].toLowerCase() as 'bullish' | 'bearish' | 'neutral';
+    let trendDescription = "";
+    
+    if (trendMatch) {
+      const trendText = trendMatch[1].trim();
+      trendDescription = trendText;
+      if (trendText.toLowerCase().includes('bullish')) {
+        overallSentiment = 'bullish';
+      } else if (trendText.toLowerCase().includes('bearish')) {
+        overallSentiment = 'bearish';
+      }
     }
     
     // Extract support levels
-    const supportMatch = resultText.match(/\*\*SUPPORT LEVELS:\*\*\s*([\s\S]*?)(?=\*\*|$)/i);
+    const supportMatch = resultText.match(/\*\*SUPPORT:\*\*\s*([^\n\*]+)/i);
     const supportLevels = [];
     if (supportMatch) {
       const supportText = supportMatch[1];
-      const levelMatches = supportText.match(/Level \d+:\s*([^\n]+)/gi);
-      if (levelMatches) {
-        levelMatches.forEach(match => {
-          const parts = match.split(' - ');
-          if (parts.length >= 2) {
-            const priceMatch = parts[0].match(/([\d.]+)/);
-            if (priceMatch) {
-              supportLevels.push({
-                name: `Support: ${parts[1] || 'Key Level'}`,
-                price: priceMatch[1],
-                direction: 'up' as const
-              });
-            }
-          }
+      const prices = supportText.match(/[\d.]+/g);
+      if (prices) {
+        prices.forEach((price, index) => {
+          supportLevels.push({
+            name: `Support Level ${index + 1}`,
+            price: price,
+            direction: 'up' as const
+          });
         });
       }
     }
     
     // Extract resistance levels
-    const resistanceMatch = resultText.match(/\*\*RESISTANCE LEVELS:\*\*\s*([\s\S]*?)(?=\*\*|$)/i);
+    const resistanceMatch = resultText.match(/\*\*RESISTANCE:\*\*\s*([^\n\*]+)/i);
     const resistanceLevels = [];
     if (resistanceMatch) {
       const resistanceText = resistanceMatch[1];
-      const levelMatches = resistanceText.match(/Level \d+:\s*([^\n]+)/gi);
-      if (levelMatches) {
-        levelMatches.forEach(match => {
-          const parts = match.split(' - ');
-          if (parts.length >= 2) {
-            const priceMatch = parts[0].match(/([\d.]+)/);
-            if (priceMatch) {
-              resistanceLevels.push({
-                name: `Resistance: ${parts[1] || 'Key Level'}`,
-                price: priceMatch[1],
-                direction: 'down' as const
-              });
-            }
-          }
+      const prices = resistanceText.match(/[\d.]+/g);
+      if (prices) {
+        prices.forEach((price, index) => {
+          resistanceLevels.push({
+            name: `Resistance Level ${index + 1}`,
+            price: price,
+            direction: 'down' as const
+          });
         });
       }
     }
     
-    // Extract chart patterns
-    const patternMatch = resultText.match(/\*\*CHART PATTERNS:\*\*\s*([\s\S]*?)(?=\*\*|$)/i);
+    // Extract patterns
+    const patternMatch = resultText.match(/\*\*PATTERNS:\*\*\s*([^\n\*]+)/i);
     const chartPatterns = [];
     if (patternMatch) {
       const patternText = patternMatch[1];
-      const patternMatches = patternText.match(/Pattern \d+:\s*([^\n]+)/gi);
-      if (patternMatches) {
-        patternMatches.forEach(match => {
-          const parts = match.split(' - ');
-          if (parts.length >= 3) {
-            const confidenceMatch = parts[1].match(/(\d+)%/);
-            const signal = parts[2].toLowerCase().includes('bullish') ? 'bullish' : 
-                          parts[2].toLowerCase().includes('bearish') ? 'bearish' : 'neutral';
-            chartPatterns.push({
-              name: parts[0].replace(/Pattern \d+:\s*/, ''),
-              confidence: confidenceMatch ? parseInt(confidenceMatch[1]) : 75,
-              signal: signal as 'bullish' | 'bearish' | 'neutral'
-            });
-          }
+      const parts = patternText.split(' - ');
+      if (parts.length >= 3) {
+        const confidenceMatch = parts[1].match(/(\d+)%/);
+        const signal = parts[2].toLowerCase().includes('bullish') ? 'bullish' : 
+                      parts[2].toLowerCase().includes('bearish') ? 'bearish' : 'neutral';
+        chartPatterns.push({
+          name: parts[0],
+          confidence: confidenceMatch ? parseInt(confidenceMatch[1]) : 75,
+          signal: signal as 'bullish' | 'bearish' | 'neutral'
         });
       }
     }
     
-    // Extract technical indicators
-    const indicatorMatch = resultText.match(/\*\*TECHNICAL INDICATORS:\*\*\s*([\s\S]*?)(?=\*\*|$)/i);
+    // Extract indicators
+    const indicatorMatch = resultText.match(/\*\*INDICATORS:\*\*\s*([\s\S]*?)(?=\*\*|$)/i);
     const marketFactors = [];
     if (indicatorMatch) {
       const indicatorText = indicatorMatch[1];
@@ -251,7 +233,7 @@ export const useMultiTimeframeAnalysis = () => {
           const sentiment = line.toLowerCase().includes('bullish') ? 'bullish' : 
                            line.toLowerCase().includes('bearish') ? 'bearish' : 'neutral';
           marketFactors.push({
-            name: parts[0].trim().replace(/^-\s*/, ''),
+            name: parts[0].trim(),
             description: parts[1].trim(),
             sentiment: sentiment as 'bullish' | 'bearish' | 'neutral'
           });
@@ -259,17 +241,37 @@ export const useMultiTimeframeAnalysis = () => {
       });
     }
     
+    // Only return data if we have meaningful content, otherwise return minimal structure
+    const hasContent = supportLevels.length > 0 || resistanceLevels.length > 0 || 
+                      chartPatterns.length > 0 || marketFactors.length > 0 || 
+                      trendDescription.length > 0;
+    
+    if (!hasContent) {
+      return {
+        pairName: symbol,
+        timeframe: `${chartCount} charts analyzed`,
+        overallSentiment: 'neutral',
+        confidenceScore: 50,
+        marketAnalysis: "Multi-timeframe analysis completed. Please check the charts for clearer patterns or try uploading higher quality images.",
+        trendDirection: 'neutral',
+        marketFactors: [],
+        chartPatterns: [],
+        priceLevels: [],
+        tradingInsight: "Analysis requires clearer chart patterns to provide specific insights."
+      };
+    }
+    
     return {
       pairName: symbol,
-      timeframe: timeframes,
+      timeframe: `${chartCount} charts analyzed`,
       overallSentiment,
       confidenceScore: 85,
-      marketAnalysis: resultText,
+      marketAnalysis: trendDescription || resultText.substring(0, 500),
       trendDirection: overallSentiment,
       marketFactors,
       chartPatterns,
       priceLevels: [...supportLevels, ...resistanceLevels],
-      tradingInsight: trendSection
+      tradingInsight: resultText
     };
   };
 

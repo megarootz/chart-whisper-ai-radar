@@ -33,70 +33,20 @@ serve(async (req) => {
       throw new Error("OPENROUTER_API_KEY is not configured");
     }
 
-    // Get trading technique specific instructions
-    const getTechniqueInstructions = (technique: string) => {
-      const techniques: Record<string, string> = {
-        'general': 'Comprehensive technical analysis including all major indicators and patterns.',
-        'breakout': 'Focus on breakout patterns, key levels, volume confirmation, and breakout targets.',
-        'supply-demand': 'Focus on supply and demand zones, imbalances, institutional levels.',
-        'support-resistance': 'Focus on dynamic and static support/resistance levels and confluence areas.',
-        'fibonacci': 'Focus on Fibonacci retracement levels, extension targets, and mathematical levels.',
-        'ict': 'Focus on ICT concepts including order blocks, fair value gaps, liquidity pools.',
-        'smart-money': 'Focus on smart money concepts including market structure and institutional flow.',
-        'price-action': 'Focus purely on price action including candlestick patterns and market structure.',
-        'harmonic': 'Focus on harmonic patterns like Gartley, Butterfly, Bat, and Crab patterns.',
-        'elliott-wave': 'Focus on Elliott Wave theory including impulse and corrective waves.'
-      };
-      return techniques[technique] || techniques['general'];
-    };
+    // Create a very concise, efficient prompt to minimize tokens
+    const systemPrompt = `Analyze these forex charts. Provide structured analysis:
 
-    const techniqueInstructions = getTechniqueInstructions(technique);
+**PAIR:** [trading pair]
+**TREND:** [Bullish/Bearish/Neutral] - [brief reason]
+**SUPPORT:** [price1, price2] 
+**RESISTANCE:** [price1, price2]
+**PATTERNS:** [pattern name - confidence% - signal]
+**INDICATORS:** [indicator: analysis]
+**SETUPS:**
+Long: Entry [price] | Stop [price] | Target [price]
+Short: Entry [price] | Stop [price] | Target [price]
 
-    // Create a concise, efficient prompt
-    const systemPrompt = `You are an expert forex analyst. Analyze these chart images and provide structured multi-timeframe analysis.
-
-FOCUS: ${techniqueInstructions}
-
-Provide your analysis in this EXACT format:
-
-**PAIR:** [Auto-detect trading pair]
-**TIMEFRAMES:** [List detected timeframes for each chart]
-
-**TREND ANALYSIS:**
-- Overall trend: [Bullish/Bearish/Neutral]
-- Multi-timeframe alignment: [Description]
-
-**SUPPORT LEVELS:**
-- Level 1: [Price] - [Description]
-- Level 2: [Price] - [Description]
-
-**RESISTANCE LEVELS:**  
-- Level 1: [Price] - [Description]
-- Level 2: [Price] - [Description]
-
-**CHART PATTERNS:**
-- Pattern 1: [Name] - [Confidence%] - [Bullish/Bearish signal]
-- Pattern 2: [Name] - [Confidence%] - [Bullish/Bearish signal]
-
-**TECHNICAL INDICATORS:**
-- [Indicator 1]: [Analysis]
-- [Indicator 2]: [Analysis]
-
-**TRADING SCENARIOS:**
-
-Bullish Setup:
-Entry: [Price] | Stop: [Price] | Target: [Price]
-Description: [Brief explanation]
-
-Bearish Setup:  
-Entry: [Price] | Stop: [Price] | Target: [Price]
-Description: [Brief explanation]
-
-Neutral Setup:
-Range: [Price range] | Breakout levels: [Levels]
-Description: [Brief explanation]
-
-Be specific with prices and levels. Provide actionable analysis.`;
+Be specific with prices. Keep analysis concise.`;
 
     // Prepare the content for the API call
     const content = [
@@ -111,7 +61,8 @@ Be specific with prices and levels. Provide actionable analysis.`;
       content.push({
         type: "image_url",
         image_url: {
-          url: chart.base64Image
+          url: chart.base64Image,
+          detail: "low" // Use low detail to reduce token usage
         }
       });
     });
@@ -134,8 +85,8 @@ Be specific with prices and levels. Provide actionable analysis.`;
             content: content
           }
         ],
-        max_tokens: 2000,
-        temperature: 0.3,
+        max_tokens: 800, // Significantly reduced from 2000
+        temperature: 0.1, // Lower temperature for more consistent output
         top_p: 0.9,
       }),
     });
