@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -137,38 +136,83 @@
     padding: 0.5rem 1rem;
   }
   
-  /* TradingView chart responsive adjustments */
+  /* TradingView chart responsive adjustments - ENHANCED */
   .tradingview-widget-container {
-    min-height: 400px !important;
-    height: 450px !important;
+    min-height: 450px !important;
+    height: 500px !important;
   }
   
   .tradingview-widget-container__widget {
-    min-height: 368px !important;
+    min-height: 418px !important;
   }
 }
 
-/* Medium screens */
+/* Medium screens - ENHANCED */
 @media (min-width: 641px) and (max-width: 1024px) {
   .tradingview-widget-container {
-    height: 550px !important;
-    min-height: 500px !important;
-  }
-  
-  .tradingview-widget-container__widget {
-    min-height: 518px !important;
-  }
-}
-
-/* Large screens */
-@media (min-width: 1025px) {
-  .tradingview-widget-container {
     height: 600px !important;
-    min-height: 500px !important;
+    min-height: 550px !important;
   }
   
   .tradingview-widget-container__widget {
     min-height: 568px !important;
+  }
+}
+
+/* Large screens - ENHANCED */
+@media (min-width: 1025px) {
+  .tradingview-widget-container {
+    height: 700px !important;
+    min-height: 600px !important;
+  }
+  
+  .tradingview-widget-container__widget {
+    min-height: 668px !important;
+  }
+}
+
+/* Super large screens - NEW */
+@media (min-width: 1440px) {
+  .tradingview-widget-container {
+    height: 800px !important;
+  }
+  
+  .tradingview-widget-container__widget {
+    min-height: 768px !important;
+  }
+}
+
+/* Fix for potential rendering issues on tablets - NEW */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .tradingview-widget-container {
+    height: 650px !important;
+  }
+  
+  .tradingview-widget-container__widget {
+    height: calc(100% - 32px) !important;
+  }
+}
+
+/* Fix for TVWidget rendering issues - NEW */
+.TVWrapperContainer-centered-placeholder,
+.TVChartContainer--with-overflown-content {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Extra small devices - ENHANCED */
+@media (max-width: 480px) {
+  .tradingview-widget-container {
+    min-height: 400px !important;
+    height: 450px !important;
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+    width: calc(100% + 1.5rem) !important;
+    border-radius: 0;
+  }
+  
+  .tradingview-widget-container__widget {
+    min-height: 368px !important;
   }
 }
 
@@ -317,25 +361,15 @@
   }
 }
 
-/* TradingView widget specific responsive styles */
+/* TradingView widget specific responsive styles - ENHANCED */
 .tradingview-widget-container {
   width: 100% !important;
   overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tradingview-widget-container iframe {
   width: 100% !important;
   height: 100% !important;
-}
-
-/* Ensure proper scaling on mobile devices */
-@media (max-width: 480px) {
-  .tradingview-widget-container {
-    min-height: 350px !important;
-    height: 400px !important;
-  }
-  
-  .tradingview-widget-container__widget {
-    min-height: 318px !important;
-  }
 }

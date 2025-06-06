@@ -39,15 +39,45 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
         "hide_side_toolbar": false,
         "hide_top_toolbar": false,
         "save_image": false,
-        "container_id": "tradingview_chart"
+        "container_id": "tradingview_chart_${Date.now()}",
+        "studies": [],
+        "show_popup_button": false,
+        "popup_width": "1000",
+        "popup_height": "650",
+        "details": true,
+        "hotlist": true,
+        "calendar": false,
+        "studies_overrides": {},
+        "overrides": {
+          "mainSeriesProperties.candleStyle.upColor": "#26a69a",
+          "mainSeriesProperties.candleStyle.downColor": "#ef5350",
+          "mainSeriesProperties.candleStyle.drawWick": true,
+          "mainSeriesProperties.candleStyle.drawBorder": true,
+          "mainSeriesProperties.candleStyle.borderColor": "#378658",
+          "mainSeriesProperties.candleStyle.borderUpColor": "#26a69a",
+          "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
+          "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
+          "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350",
+          "paneProperties.background": "#1a1a1a",
+          "paneProperties.vertGridProperties.color": "#363636",
+          "paneProperties.horzGridProperties.color": "#363636",
+          "symbolWatermarkProperties.transparency": 90,
+          "scalesProperties.text"
+        }
       }`;
     
     script.onload = () => {
+      console.log("✅ TradingView widget script loaded successfully!");
       scriptLoaded.current = true;
-      // Give the widget time to fully render
+      // Give the widget more time to fully render and be interactive
       setTimeout(() => {
+        console.log("🏁 TradingView widget render time completed, marking as loaded");
         onLoad?.();
-      }, 3000);
+      }, 5000);
+    };
+
+    script.onerror = (e) => {
+      console.error("❌ TradingView widget script failed to load:", e);
     };
 
     container.current.appendChild(script);
@@ -58,7 +88,8 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
   }, [symbol, interval, onLoad]);
 
   useEffect(() => {
-    // Only recreate widget if symbol or interval actually changed
+    console.log("🔄 TradingView widget rendering:", { symbol, interval });
+    // Only recreate widget if symbol or interval actually changed or if not loaded
     if (currentSymbol.current !== symbol || currentInterval.current !== interval || !scriptLoaded.current) {
       createWidget();
     }
@@ -69,8 +100,8 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
       className="tradingview-widget-container w-full" 
       ref={container} 
       style={{ 
-        height: "600px", 
-        minHeight: "500px",
+        height: "700px", 
+        minHeight: "600px",
         width: "100%" 
       }}
     >
@@ -79,7 +110,7 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
         style={{ 
           height: "calc(100% - 32px)", 
           width: "100%",
-          minHeight: "468px"
+          minHeight: "568px"
         }}
       ></div>
       <div className="tradingview-widget-copyright">

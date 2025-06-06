@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Download } from 'lucide-react';
+import { TrendingUp, Download, Eye, AlertTriangle } from 'lucide-react';
 import AutoTradingViewWidget from './AutoTradingViewWidget';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
@@ -45,6 +45,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const [selectedTimeframe, setSelectedTimeframe] = useState("D");
   const [isWidgetLoaded, setIsWidgetLoaded] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [lastCapturedImage, setLastCapturedImage] = useState<string | null>(null);
   const widgetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
@@ -65,50 +66,59 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsCapturing(true);
 
     try {
-      console.log("🎯 Starting chart capture for:", { selectedSymbol, selectedTimeframe });
+      console.log("🎯 Starting enhanced chart capture for:", { selectedSymbol, selectedTimeframe });
       
-      // Wait a bit more to ensure chart is fully rendered
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Extended wait time for chart to fully render
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
-      // Try multiple capture strategies
+      // Enhanced capture with multiple strategies and higher quality settings
       let canvas;
       
-      // Strategy 1: Try to capture the entire widget container
       try {
-        console.log("📸 Attempting strategy 1: Full widget capture");
+        console.log("📸 Attempting high-quality capture");
         canvas = await html2canvas(widgetRef.current, {
           useCORS: true,
           allowTaint: false,
           backgroundColor: '#1a1a1a',
-          scale: 1,
-          logging: true, // Enable logging for debugging
-          imageTimeout: 15000,
+          scale: 2, // Higher scale for better quality
+          logging: true,
+          imageTimeout: 20000, // Longer timeout
           removeContainer: false,
           width: widgetRef.current.offsetWidth,
           height: widgetRef.current.offsetHeight,
+          x: 0,
+          y: 0,
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: window.innerWidth,
+          windowHeight: window.innerHeight,
         });
-        console.log("✅ Strategy 1 successful, canvas size:", canvas.width, "x", canvas.height);
+        console.log("✅ High-quality capture successful, canvas size:", canvas.width, "x", canvas.height);
       } catch (error) {
-        console.log("❌ Strategy 1 failed, trying strategy 2:", error);
+        console.log("❌ High-quality capture failed, trying fallback method:", error);
         
-        // Strategy 2: Try with different options
+        // Fallback with different settings
         canvas = await html2canvas(widgetRef.current, {
           useCORS: false,
           allowTaint: true,
           backgroundColor: '#1a1a1a',
-          scale: 1,
+          scale: 1.5, // Medium scale
           logging: true,
-          imageTimeout: 10000,
+          imageTimeout: 15000,
           foreignObjectRendering: false,
+          ignoreElements: (element) => {
+            // Ignore potential problematic elements
+            return element.tagName === 'IFRAME' && element.getAttribute('src')?.includes('tradingview');
+          }
         });
-        console.log("✅ Strategy 2 successful, canvas size:", canvas.width, "x", canvas.height);
+        console.log("✅ Fallback capture successful, canvas size:", canvas.width, "x", canvas.height);
       }
 
       if (!canvas) {
         throw new Error("Failed to create canvas");
       }
 
-      // Check if canvas has meaningful content
+      // Enhanced content validation
       const ctx = canvas.getContext('2d');
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
       
@@ -116,48 +126,62 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         throw new Error("Failed to get image data from canvas");
       }
 
-      // More sophisticated blank check - check for non-background pixels
+      // More sophisticated content analysis
       const pixels = imageData.data;
-      let nonBackgroundPixels = 0;
+      let colorVariations = new Set();
+      let nonBlackPixels = 0;
       const totalPixels = pixels.length / 4;
       
-      for (let i = 0; i < pixels.length; i += 4) {
+      // Sample every 10th pixel for performance
+      for (let i = 0; i < pixels.length; i += 40) { // Every 10th pixel
         const r = pixels[i];
         const g = pixels[i + 1];
         const b = pixels[i + 2];
         const a = pixels[i + 3];
         
-        // Check if pixel is not black/dark background
-        if (a > 0 && (r > 30 || g > 30 || b > 30)) {
-          nonBackgroundPixels++;
+        if (a > 0) {
+          const colorKey = `${Math.floor(r/10)}-${Math.floor(g/10)}-${Math.floor(b/10)}`;
+          colorVariations.add(colorKey);
+          
+          // Count non-black/dark pixels
+          if (r > 20 || g > 20 || b > 20) {
+            nonBlackPixels++;
+          }
         }
       }
       
-      const contentPercentage = (nonBackgroundPixels / totalPixels) * 100;
-      console.log("📊 Image analysis:", {
+      const contentPercentage = (nonBlackPixels / (totalPixels / 10)) * 100;
+      const colorDiversity = colorVariations.size;
+      
+      console.log("📊 Enhanced image analysis:", {
         totalPixels,
-        nonBackgroundPixels,
-        contentPercentage: contentPercentage.toFixed(2) + "%"
+        sampledPixels: totalPixels / 10,
+        nonBlackPixels,
+        contentPercentage: contentPercentage.toFixed(2) + "%",
+        colorVariations: colorDiversity,
+        canvasSize: `${canvas.width}x${canvas.height}`
       });
       
-      if (contentPercentage < 5) {
-        throw new Error(`Captured image appears to be mostly blank (${contentPercentage.toFixed(1)}% content). This may be due to browser security restrictions with the TradingView widget.`);
+      // More lenient validation but still check for meaningful content
+      if (contentPercentage < 2 || colorDiversity < 5) {
+        throw new Error(`Captured image appears to lack chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). The TradingView widget may not have loaded properly.`);
       }
 
-      // Create a temporary preview for debugging (optional)
-      const previewUrl = canvas.toDataURL('image/png');
-      console.log("🖼️ Canvas preview URL created, size:", previewUrl.length, "characters");
+      // Create preview URL for validation
+      const previewUrl = canvas.toDataURL('image/png', 0.95); // High quality
+      setLastCapturedImage(previewUrl);
+      console.log("🖼️ High-quality preview URL created, size:", previewUrl.length, "characters");
 
-      // Convert to blob
+      // Convert to blob with high quality
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((result) => {
           if (result) {
-            console.log("✅ Blob created successfully, size:", result.size, "bytes");
+            console.log("✅ High-quality blob created, size:", result.size, "bytes");
             resolve(result);
           } else {
             reject(new Error("Failed to convert canvas to blob"));
           }
-        }, 'image/png', 0.9);
+        }, 'image/png', 0.95);
       });
 
       // Create file from blob
@@ -172,41 +196,51 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending to analysis:", {
+      console.log("🚀 Sending enhanced capture to analysis:", {
         fileName: file.name,
         fileSize: file.size,
         cleanSymbol,
         timeframeLabel,
         canvasSize: `${canvas.width}x${canvas.height}`,
-        contentPercentage: contentPercentage.toFixed(2) + "%"
+        contentPercentage: contentPercentage.toFixed(2) + "%",
+        colorDiversity
       });
       
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error capturing chart:", error);
+      console.error("❌ Error in enhanced capture:", error);
       
       let errorMessage = "Failed to capture the chart. ";
       
       if (error instanceof Error) {
-        if (error.message.includes("blank") || error.message.includes("content")) {
-          errorMessage += error.message + " Please try using the Manual Upload option instead.";
+        if (error.message.includes("content") || error.message.includes("variations")) {
+          errorMessage += error.message + " Try waiting longer for the chart to load, or use Manual Upload instead.";
         } else if (error.message.includes("CORS") || error.message.includes("cross-origin")) {
-          errorMessage += "Browser security restrictions prevent capturing this widget. Please use the Manual Upload option to upload a screenshot instead.";
+          errorMessage += "Browser security restrictions detected. Please use Manual Upload to upload a screenshot.";
         } else {
           errorMessage += error.message;
         }
       } else {
-        errorMessage += "Please try again or use the Manual Upload option.";
+        errorMessage += "Please try again or use Manual Upload.";
       }
       
       toast({
-        title: "Capture Failed",
+        title: "Enhanced Capture Failed",
         description: errorMessage,
         variant: "destructive"
       });
     } finally {
       setIsCapturing(false);
+    }
+  };
+
+  const previewLastCapture = () => {
+    if (lastCapturedImage) {
+      const newWindow = window.open();
+      if (newWindow) {
+        newWindow.document.write(`<img src="${lastCapturedImage}" style="max-width: 100%; height: auto;" />`);
+      }
     }
   };
 
@@ -220,7 +254,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       <CardHeader>
         <CardTitle className="text-white flex items-center gap-2">
           <TrendingUp className="h-6 w-6 text-primary" />
-          Automated Chart Analysis
+          Enhanced Automated Chart Analysis
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -271,8 +305,8 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               ref={widgetRef} 
               className="w-full overflow-hidden rounded-lg border border-gray-700 bg-gray-900"
               style={{ 
-                minHeight: "500px",
-                height: "600px"
+                minHeight: "600px",
+                height: "700px"
               }}
             >
               <AutoTradingViewWidget 
@@ -283,46 +317,63 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             </div>
           </div>
 
-          {/* Status Indicator */}
+          {/* Enhanced Status Indicators */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className={`w-3 h-3 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className="text-sm text-gray-400">
-                {isWidgetLoaded ? 'Chart loaded and ready' : 'Loading chart...'}
+                {isWidgetLoaded ? 'Chart loaded and ready for high-quality capture' : 'Loading chart...'}
               </span>
             </div>
+            {lastCapturedImage && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={previewLastCapture}
+                className="text-xs"
+              >
+                <Eye className="mr-1 h-3 w-3" />
+                Preview Last Capture
+              </Button>
+            )}
           </div>
 
-          {/* Debug Info */}
+          {/* Enhanced Debug Info */}
           {isWidgetLoaded && (
             <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
               <p className="text-blue-400 text-sm">
-                <strong>Debug Info:</strong> Widget loaded for {getSelectedSymbolLabel()} on {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label} timeframe. 
-                Check browser console for capture details when analyzing.
+                <strong>Enhanced Capture Ready:</strong> Using high-quality capture (2x scale) for {getSelectedSymbolLabel()} on {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label} timeframe. 
+                Extended wait time and content validation ensure better analysis accuracy.
               </p>
             </div>
           )}
 
-          {/* Analyze Button */}
+          {/* Enhanced Analyze Button */}
           <Button 
             onClick={captureAndAnalyze}
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className="w-full bg-primary hover:bg-primary/90 text-white"
           >
-            {isCapturing ? 'Capturing Chart...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing Chart (Enhanced)...' : isAnalyzing ? 'Analyzing...' : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Capture & Analyze Chart
+                Enhanced Capture & Analyze Chart
               </>
             )}
           </Button>
 
-          {/* Help Text */}
-          <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
-            <p className="text-blue-400 text-sm">
-              <strong>Note:</strong> Due to browser security restrictions, automatic chart capture may not always work with external widgets. 
-              If you encounter issues, please use the "Manual Upload" tab to upload a screenshot of your chart instead.
-            </p>
+          {/* Enhanced Help Text */}
+          <div className="bg-orange-900/20 border border-orange-800/50 rounded-lg p-3">
+            <div className="flex items-start">
+              <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-orange-400 font-medium text-sm mb-1">Enhanced Capture Method</h4>
+                <p className="text-gray-400 text-xs">
+                  This version uses high-quality capture (2x resolution), extended loading time, and enhanced content validation. 
+                  If issues persist, the TradingView widget may have built-in restrictions. Manual Upload remains available as a reliable alternative.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </CardContent>
