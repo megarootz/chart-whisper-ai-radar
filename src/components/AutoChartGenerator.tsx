@@ -1,5 +1,4 @@
-
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -48,9 +47,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const widgetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  const handleWidgetLoad = () => {
+  const handleWidgetLoad = useCallback(() => {
     setIsWidgetLoaded(true);
-  };
+  }, []);
 
   const captureAndAnalyze = async () => {
     if (!widgetRef.current || !isWidgetLoaded) {

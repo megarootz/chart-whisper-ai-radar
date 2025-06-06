@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, memo } from 'react';
+import React, { useEffect, useRef, memo, useCallback } from 'react';
 
 interface AutoTradingViewWidgetProps {
   symbol: string;
@@ -9,12 +9,16 @@ interface AutoTradingViewWidgetProps {
 
 function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidgetProps) {
   const container = useRef<HTMLDivElement>(null);
+  const scriptLoaded = useRef(false);
+  const currentSymbol = useRef<string>('');
+  const currentInterval = useRef<string>('');
 
-  useEffect(() => {
+  const createWidget = useCallback(() => {
     if (!container.current) return;
 
     // Clear previous widget
     container.current.innerHTML = '';
+    scriptLoaded.current = false;
 
     const script = document.createElement("script");
     script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
@@ -34,6 +38,7 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
       }`;
     
     script.onload = () => {
+      scriptLoaded.current = true;
       // Give the widget time to fully render
       setTimeout(() => {
         onLoad?.();
@@ -41,7 +46,18 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
     };
 
     container.current.appendChild(script);
+    
+    // Update refs to track current values
+    currentSymbol.current = symbol;
+    currentInterval.current = interval;
   }, [symbol, interval, onLoad]);
+
+  useEffect(() => {
+    // Only recreate widget if symbol or interval actually changed
+    if (currentSymbol.current !== symbol || currentInterval.current !== interval || !scriptLoaded.current) {
+      createWidget();
+    }
+  }, [symbol, interval, createWidget]);
 
   return (
     <div 
