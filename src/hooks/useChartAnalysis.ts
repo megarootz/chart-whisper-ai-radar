@@ -101,7 +101,13 @@ export const useChartAnalysis = () => {
       }
 
       console.log('🔍 Starting chart analysis for authenticated user:', user.id, 'email:', user.email);
-      console.log('📊 Analysis parameters:', { pairName, timeframe });
+      console.log('📊 Analysis parameters:', { 
+        pairName, 
+        timeframe, 
+        fileName: file.name, 
+        fileSize: file.size,
+        fileType: file.type 
+      });
 
       // Check usage limits BEFORE proceeding
       console.log('📊 Checking usage limits before analysis...');
@@ -118,7 +124,6 @@ export const useChartAnalysis = () => {
           monthly_remaining: usageData.monthly_remaining
         });
 
-        // Check if user has reached their limits
         if (!usageData.can_analyze) {
           console.log('❌ Usage limit reached - cannot analyze');
           toast({
@@ -129,7 +134,6 @@ export const useChartAnalysis = () => {
           return;
         }
 
-        // Additional check for daily limits specifically
         if (usageData.daily_count >= usageData.daily_limit) {
           console.log('❌ Daily limit specifically reached');
           toast({
@@ -140,7 +144,6 @@ export const useChartAnalysis = () => {
           return;
         }
 
-        // Additional check for monthly limits specifically
         if (usageData.monthly_count >= usageData.monthly_limit) {
           console.log('❌ Monthly limit specifically reached');
           toast({
@@ -155,9 +158,21 @@ export const useChartAnalysis = () => {
       console.log('✅ Usage limits check passed, proceeding with analysis');
       
       // Convert image to base64
+      console.log('🔄 Converting image to base64...');
       const base64Image = await fileToBase64(file);
+      console.log('✅ Base64 conversion complete, length:', base64Image.length, 'characters');
+      
+      // Log the first few characters of the base64 to verify it's a real image
+      const base64Header = base64Image.substring(0, 50);
+      console.log('🖼️ Base64 header:', base64Header);
       
       console.log("🤖 Calling Supabase Edge Function to analyze chart");
+      console.log('📤 Sending data:', {
+        pairName,
+        timeframe,
+        base64Length: base64Image.length,
+        hasValidImageHeader: base64Image.startsWith('data:image/')
+      });
       
       // Call our Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("analyze-chart", {
@@ -178,21 +193,29 @@ export const useChartAnalysis = () => {
       }
 
       console.log("✅ Edge function response received");
+      console.log('📥 Raw response type:', typeof data);
       
       // Parse the API response
       const responseData = data as any;
       
       if (!responseData.choices || responseData.choices.length === 0) {
+        console.error('❌ Invalid response structure:', responseData);
         throw new Error('No response content from API');
       }
 
       // Parse the text response to extract JSON
       const resultText = responseData.choices[0].message.content || '';
-      console.log("📝 Raw API Response content received");
+      console.log("📝 Raw API Response content length:", resultText.length);
+      console.log("📝 First 200 chars of response:", resultText.substring(0, 200));
       
       // Process response as text format, using provided parameters when available
+      console.log('🔄 Processing text result with provided parameters:', { pairName, timeframe });
       const analysisData = processTextResult(resultText, pairName, timeframe);
-      console.log("🔄 Analysis data processed:", { pairName: analysisData.pairName, timeframe: analysisData.timeframe });
+      console.log("🎯 Analysis data processed:", { 
+        pairName: analysisData.pairName, 
+        timeframe: analysisData.timeframe,
+        overallSentiment: analysisData.overallSentiment
+      });
       
       // CRITICAL: Increment usage count AFTER successful analysis
       console.log('📈 Analysis successful, incrementing usage count...');
@@ -264,6 +287,12 @@ export const useChartAnalysis = () => {
     // CRITICAL FIX: Always use provided parameters when available (from automated analysis)
     let symbol = "";
     let timeframe = "";
+    
+    console.log('🎯 processTextResult called with:', { 
+      providedPairName, 
+      providedTimeframe, 
+      resultTextLength: resultText.length 
+    });
     
     // If we have provided parameters (from automated analysis), use them directly
     if (providedPairName && providedPairName.trim() !== "") {
@@ -337,10 +366,12 @@ export const useChartAnalysis = () => {
     // Default values if nothing is found
     if (!symbol) {
       symbol = "Unknown Pair";
+      console.log("⚠️ No symbol detected, using default");
     }
     
     if (!timeframe) {
       timeframe = "Unknown Timeframe";
+      console.log("⚠️ No timeframe detected, using default");
     }
     
     // Format the pair correctly using our utility function
@@ -658,8 +689,15 @@ export const useChartAnalysis = () => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = error => reject(error);
+      reader.onload = () => {
+        const result = reader.result as string;
+        console.log('📄 File converted to base64, size:', file.size, 'bytes -> base64 length:', result.length);
+        resolve(result);
+      };
+      reader.onerror = error => {
+        console.error('❌ Error converting file to base64:', error);
+        reject(error);
+      };
     });
   };
 

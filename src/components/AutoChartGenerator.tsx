@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -64,25 +65,31 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsCapturing(true);
 
     try {
+      console.log("🎯 Starting chart capture for:", { selectedSymbol, selectedTimeframe });
+      
       // Wait a bit more to ensure chart is fully rendered
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      await new Promise(resolve => setTimeout(resolve, 3000));
 
       // Try multiple capture strategies
       let canvas;
       
       // Strategy 1: Try to capture the entire widget container
       try {
+        console.log("📸 Attempting strategy 1: Full widget capture");
         canvas = await html2canvas(widgetRef.current, {
           useCORS: true,
           allowTaint: false,
           backgroundColor: '#1a1a1a',
           scale: 1,
-          logging: false,
+          logging: true, // Enable logging for debugging
           imageTimeout: 15000,
           removeContainer: false,
+          width: widgetRef.current.offsetWidth,
+          height: widgetRef.current.offsetHeight,
         });
+        console.log("✅ Strategy 1 successful, canvas size:", canvas.width, "x", canvas.height);
       } catch (error) {
-        console.log("Strategy 1 failed, trying strategy 2:", error);
+        console.log("❌ Strategy 1 failed, trying strategy 2:", error);
         
         // Strategy 2: Try with different options
         canvas = await html2canvas(widgetRef.current, {
@@ -90,28 +97,62 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           allowTaint: true,
           backgroundColor: '#1a1a1a',
           scale: 1,
-          logging: false,
+          logging: true,
           imageTimeout: 10000,
           foreignObjectRendering: false,
         });
+        console.log("✅ Strategy 2 successful, canvas size:", canvas.width, "x", canvas.height);
       }
 
       if (!canvas) {
         throw new Error("Failed to create canvas");
       }
 
-      // Check if canvas has content (not just blank)
+      // Check if canvas has meaningful content
       const ctx = canvas.getContext('2d');
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
       
-      if (!imageData || imageData.data.every(pixel => pixel === 0)) {
-        throw new Error("Captured image appears to be blank. This may be due to browser security restrictions with the TradingView widget.");
+      if (!imageData) {
+        throw new Error("Failed to get image data from canvas");
       }
+
+      // More sophisticated blank check - check for non-background pixels
+      const pixels = imageData.data;
+      let nonBackgroundPixels = 0;
+      const totalPixels = pixels.length / 4;
+      
+      for (let i = 0; i < pixels.length; i += 4) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        const a = pixels[i + 3];
+        
+        // Check if pixel is not black/dark background
+        if (a > 0 && (r > 30 || g > 30 || b > 30)) {
+          nonBackgroundPixels++;
+        }
+      }
+      
+      const contentPercentage = (nonBackgroundPixels / totalPixels) * 100;
+      console.log("📊 Image analysis:", {
+        totalPixels,
+        nonBackgroundPixels,
+        contentPercentage: contentPercentage.toFixed(2) + "%"
+      });
+      
+      if (contentPercentage < 5) {
+        throw new Error(`Captured image appears to be mostly blank (${contentPercentage.toFixed(1)}% content). This may be due to browser security restrictions with the TradingView widget.`);
+      }
+
+      // Create a temporary preview for debugging (optional)
+      const previewUrl = canvas.toDataURL('image/png');
+      console.log("🖼️ Canvas preview URL created, size:", previewUrl.length, "characters");
 
       // Convert to blob
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((result) => {
           if (result) {
+            console.log("✅ Blob created successfully, size:", result.size, "bytes");
             resolve(result);
           } else {
             reject(new Error("Failed to convert canvas to blob"));
@@ -120,7 +161,8 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       });
 
       // Create file from blob
-      const file = new File([blob], `chart-${Date.now()}.png`, { type: 'image/png' });
+      const timestamp = Date.now();
+      const file = new File([blob], `chart-${selectedSymbol.replace(':', '-')}-${selectedTimeframe}-${timestamp}.png`, { type: 'image/png' });
       
       // Extract clean symbol name for analysis
       const symbolParts = selectedSymbol.split(':');
@@ -130,16 +172,25 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
+      console.log("🚀 Sending to analysis:", {
+        fileName: file.name,
+        fileSize: file.size,
+        cleanSymbol,
+        timeframeLabel,
+        canvasSize: `${canvas.width}x${canvas.height}`,
+        contentPercentage: contentPercentage.toFixed(2) + "%"
+      });
+      
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("Error capturing chart:", error);
+      console.error("❌ Error capturing chart:", error);
       
       let errorMessage = "Failed to capture the chart. ";
       
       if (error instanceof Error) {
-        if (error.message.includes("blank")) {
-          errorMessage += "The captured image appears to be blank. This usually happens due to browser security restrictions with external widgets. Please try using the Manual Upload option instead.";
+        if (error.message.includes("blank") || error.message.includes("content")) {
+          errorMessage += error.message + " Please try using the Manual Upload option instead.";
         } else if (error.message.includes("CORS") || error.message.includes("cross-origin")) {
           errorMessage += "Browser security restrictions prevent capturing this widget. Please use the Manual Upload option to upload a screenshot instead.";
         } else {
@@ -233,6 +284,16 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               </span>
             </div>
           </div>
+
+          {/* Debug Info */}
+          {isWidgetLoaded && (
+            <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
+              <p className="text-blue-400 text-sm">
+                <strong>Debug Info:</strong> Widget loaded for {getSelectedSymbolLabel()} on {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label} timeframe. 
+                Check browser console for capture details when analyzing.
+              </p>
+            </div>
+          )}
 
           {/* Analyze Button */}
           <Button 
