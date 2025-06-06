@@ -261,12 +261,25 @@ export const useChartAnalysis = () => {
   };
 
   const processTextResult = (resultText: string, providedPairName?: string, providedTimeframe?: string): AnalysisResultData => {
-    // Use provided parameters if available (from automated analysis), otherwise detect from text
-    let symbol = providedPairName || "";
-    let timeframe = providedTimeframe || "";
+    // CRITICAL FIX: Always use provided parameters when available (from automated analysis)
+    let symbol = "";
+    let timeframe = "";
     
-    // Only try to detect from text if parameters weren't provided
+    // If we have provided parameters (from automated analysis), use them directly
+    if (providedPairName && providedPairName.trim() !== "") {
+      symbol = providedPairName.trim();
+      console.log("✅ Using provided pair name:", symbol);
+    }
+    
+    if (providedTimeframe && providedTimeframe.trim() !== "") {
+      timeframe = providedTimeframe.trim();
+      console.log("✅ Using provided timeframe:", timeframe);
+    }
+    
+    // Only try to detect from text if parameters weren't provided (manual upload case)
     if (!symbol || !timeframe) {
+      console.log("🔍 No provided parameters, attempting to detect from text...");
+      
       // Enhanced regex patterns for accurate pair detection
       const titlePatterns = [
         // Standard format in brackets with Technical Analysis
@@ -335,6 +348,8 @@ export const useChartAnalysis = () => {
     
     // Ensure correct capitalization for timeframe
     timeframe = timeframe.charAt(0).toUpperCase() + timeframe.slice(1).toLowerCase();
+    
+    console.log("🎯 Final processed values:", { symbol, timeframe });
     
     // Extract trend direction
     const trendMatch = resultText.match(/(?:Overall\s+trend|Trend\s+Direction):\s*([^\.\n]+)/i);
