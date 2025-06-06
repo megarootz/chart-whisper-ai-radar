@@ -65,44 +65,94 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsCapturing(true);
 
     try {
-      // Find the TradingView chart iframe
-      const chartContainer = widgetRef.current.querySelector('.tradingview-widget-container__widget');
+      // Wait a bit more to ensure chart is fully rendered
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Try multiple capture strategies
+      let canvas;
       
-      if (!chartContainer) {
-        throw new Error("Chart container not found");
+      // Strategy 1: Try to capture the entire widget container
+      try {
+        canvas = await html2canvas(widgetRef.current, {
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#1a1a1a',
+          scale: 1,
+          logging: false,
+          imageTimeout: 15000,
+          removeContainer: false,
+        });
+      } catch (error) {
+        console.log("Strategy 1 failed, trying strategy 2:", error);
+        
+        // Strategy 2: Try with different options
+        canvas = await html2canvas(widgetRef.current, {
+          useCORS: false,
+          allowTaint: true,
+          backgroundColor: '#1a1a1a',
+          scale: 1,
+          logging: false,
+          imageTimeout: 10000,
+          foreignObjectRendering: false,
+        });
       }
 
-      // Capture the chart
-      const canvas = await html2canvas(chartContainer as HTMLElement, {
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#1a1a1a',
-        scale: 2, // Higher quality
-      });
+      if (!canvas) {
+        throw new Error("Failed to create canvas");
+      }
+
+      // Check if canvas has content (not just blank)
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+      
+      if (!imageData || imageData.data.every(pixel => pixel === 0)) {
+        throw new Error("Captured image appears to be blank. This may be due to browser security restrictions with the TradingView widget.");
+      }
 
       // Convert to blob
-      canvas.toBlob((blob) => {
-        if (blob) {
-          // Create file from blob
-          const file = new File([blob], `chart-${Date.now()}.png`, { type: 'image/png' });
-          
-          // Extract clean symbol name for analysis
-          const symbolParts = selectedSymbol.split(':');
-          const cleanSymbol = symbolParts[1] || selectedSymbol;
-          
-          // Get timeframe label
-          const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
-          const timeframeLabel = timeframeObj?.label || selectedTimeframe;
-          
-          onAnalyze(file, cleanSymbol, timeframeLabel);
-        }
-      }, 'image/png');
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) {
+            resolve(result);
+          } else {
+            reject(new Error("Failed to convert canvas to blob"));
+          }
+        }, 'image/png', 0.9);
+      });
+
+      // Create file from blob
+      const file = new File([blob], `chart-${Date.now()}.png`, { type: 'image/png' });
+      
+      // Extract clean symbol name for analysis
+      const symbolParts = selectedSymbol.split(':');
+      const cleanSymbol = symbolParts[1] || selectedSymbol;
+      
+      // Get timeframe label
+      const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
+      const timeframeLabel = timeframeObj?.label || selectedTimeframe;
+      
+      onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
       console.error("Error capturing chart:", error);
+      
+      let errorMessage = "Failed to capture the chart. ";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("blank")) {
+          errorMessage += "The captured image appears to be blank. This usually happens due to browser security restrictions with external widgets. Please try using the Manual Upload option instead.";
+        } else if (error.message.includes("CORS") || error.message.includes("cross-origin")) {
+          errorMessage += "Browser security restrictions prevent capturing this widget. Please use the Manual Upload option to upload a screenshot instead.";
+        } else {
+          errorMessage += error.message;
+        }
+      } else {
+        errorMessage += "Please try again or use the Manual Upload option.";
+      }
+      
       toast({
         title: "Capture Failed",
-        description: "Failed to capture the chart. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -198,6 +248,14 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               </>
             )}
           </Button>
+
+          {/* Help Text */}
+          <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
+            <p className="text-blue-400 text-sm">
+              <strong>Note:</strong> Due to browser security restrictions, automatic chart capture may not always work with external widgets. 
+              If you encounter issues, please use the "Manual Upload" tab to upload a screenshot of your chart instead.
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
