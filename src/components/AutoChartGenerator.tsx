@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,6 +7,7 @@ import { TrendingUp, Download, AlertTriangle } from 'lucide-react';
 import AutoTradingViewWidget from './AutoTradingViewWidget';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface AutoChartGeneratorProps {
   onAnalyze: (file: File, symbol: string, timeframe: string) => void;
@@ -48,6 +48,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const [isCapturing, setIsCapturing] = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const handleWidgetLoad = useCallback(() => {
     console.log("📊 Widget loaded callback triggered for symbol:", selectedSymbol);
@@ -213,19 +214,21 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
 
   return (
     <Card className="w-full bg-chart-card border-gray-700">
-      <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
-          <TrendingUp className="h-6 w-6 text-primary" />
-          Enhanced Automated Chart Analysis
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Symbol and Timeframe Selection */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label htmlFor="symbol-select" className="text-white">Trading Pair</Label>
+      {!isMobile && (
+        <CardHeader>
+          <CardTitle className="text-white flex items-center gap-2">
+            <TrendingUp className="h-6 w-6 text-primary" />
+            Enhanced Automated Chart Analysis
+          </CardTitle>
+        </CardHeader>
+      )}
+      <CardContent className={`${isMobile ? 'pt-4 px-3 pb-3' : 'space-y-6'}`}>
+        {/* Mobile optimized Symbol and Timeframe Selection */}
+        <div className={`${isMobile ? 'grid grid-cols-2 gap-2 mb-3' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}`}>
+          <div className="space-y-1">
+            <Label htmlFor="symbol-select" className={`text-white ${isMobile ? 'text-sm' : ''}`}>Trading Pair</Label>
             <Select value={selectedSymbol} onValueChange={handleSymbolChange}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+              <SelectTrigger className={`bg-gray-800 border-gray-700 text-white ${isMobile ? 'h-9 text-sm' : ''}`}>
                 <SelectValue placeholder="Select a trading pair" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-700">
@@ -238,10 +241,10 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             </Select>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="timeframe-select" className="text-white">Timeframe</Label>
+          <div className="space-y-1">
+            <Label htmlFor="timeframe-select" className={`text-white ${isMobile ? 'text-sm' : ''}`}>Timeframe</Label>
             <Select value={selectedTimeframe} onValueChange={handleTimeframeChange}>
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+              <SelectTrigger className={`bg-gray-800 border-gray-700 text-white ${isMobile ? 'h-9 text-sm' : ''}`}>
                 <SelectValue placeholder="Select timeframe" />
               </SelectTrigger>
               <SelectContent className="bg-gray-800 border-gray-700">
@@ -256,12 +259,22 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         </div>
 
         {/* TradingView Chart */}
-        <div className="space-y-4">
-          <div className="bg-gray-800/50 rounded-lg p-4">
-            <h3 className="text-white font-medium mb-2">Live Chart Preview</h3>
-            <p className="text-gray-400 text-sm mb-4">
-              Currently showing: {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
-            </p>
+        <div className={`${isMobile ? 'space-y-2' : 'space-y-4'}`}>
+          <div className={`bg-gray-800/50 rounded-lg ${isMobile ? 'p-2' : 'p-4'}`}>
+            {!isMobile && (
+              <>
+                <h3 className="text-white font-medium mb-2">Live Chart Preview</h3>
+                <p className="text-gray-400 text-sm mb-4">
+                  Currently showing: {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
+                </p>
+              </>
+            )}
+            
+            {isMobile && (
+              <p className="text-gray-400 text-xs mb-2">
+                {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
+              </p>
+            )}
             
             <div 
               ref={widgetRef} 
@@ -278,9 +291,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           {/* Status Indicators */}
           <div className="flex items-center">
             <div className="flex items-center space-x-2">
-              <div className={`w-3 h-3 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-              <span className="text-sm text-gray-400">
-                {isWidgetLoaded ? 'Chart loaded and ready for capture' : 'Loading chart...'}
+              <div className={`w-2 h-2 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+              <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                {isWidgetLoaded ? 'Chart ready' : 'Loading...'}
               </span>
             </div>
           </div>
@@ -289,28 +302,30 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           <Button 
             onClick={captureAndAnalyze}
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
-            className="w-full bg-primary hover:bg-primary/90 text-white"
+            className={`w-full bg-primary hover:bg-primary/90 text-white ${isMobile ? 'h-10 text-sm' : ''}`}
           >
-            {isCapturing ? 'Capturing Chart...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing...' : isAnalyzing ? 'Analyzing...' : (
               <>
-                <Download className="mr-2 h-4 w-4" />
-                Enhanced Capture & Analyze Chart
+                <Download className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
+                {isMobile ? 'Capture & Analyze' : 'Enhanced Capture & Analyze Chart'}
               </>
             )}
           </Button>
 
           {/* Help Text */}
-          <div className="bg-orange-900/20 border border-orange-800/50 rounded-lg p-3">
-            <div className="flex items-start">
-              <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" />
-              <div>
-                <h4 className="text-orange-400 font-medium text-sm mb-1">Trading Chart Tips</h4>
-                <p className="text-gray-400 text-xs">
-                  For best results, wait for the chart to fully load before analysis. The system will automatically detect and analyze the selected trading pair.
-                </p>
+          {!isMobile && (
+            <div className="bg-orange-900/20 border border-orange-800/50 rounded-lg p-3">
+              <div className="flex items-start">
+                <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="text-orange-400 font-medium text-sm mb-1">Trading Chart Tips</h4>
+                  <p className="text-gray-400 text-xs">
+                    For best results, wait for the chart to fully load before analysis. The system will automatically detect and analyze the selected trading pair.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </CardContent>
     </Card>
