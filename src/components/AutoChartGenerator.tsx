@@ -15,45 +15,45 @@ interface AutoChartGeneratorProps {
   isAnalyzing: boolean;
 }
 
-// Comprehensive Forex pairs including majors, minors (removed all exotic pairs)
+// Comprehensive Forex pairs including majors, minors (using Oanda data source for Forex and precious metals)
 const FOREX_PAIRS = [
-  // Major Pairs
-  { value: "FX:EURUSD", label: "EUR/USD", cleanSymbol: "EUR/USD", category: "Major" },
-  { value: "FX:GBPUSD", label: "GBP/USD", cleanSymbol: "GBP/USD", category: "Major" },
-  { value: "FX:USDJPY", label: "USD/JPY", cleanSymbol: "USD/JPY", category: "Major" },
-  { value: "FX:USDCHF", label: "USD/CHF", cleanSymbol: "USD/CHF", category: "Major" },
-  { value: "FX:AUDUSD", label: "AUD/USD", cleanSymbol: "AUD/USD", category: "Major" },
-  { value: "FX:USDCAD", label: "USD/CAD", cleanSymbol: "USD/CAD", category: "Major" },
-  { value: "FX:NZDUSD", label: "NZD/USD", cleanSymbol: "NZD/USD", category: "Major" },
+  // Major Pairs (Oanda)
+  { value: "OANDA:EURUSD", label: "EUR/USD", cleanSymbol: "EUR/USD", category: "Major" },
+  { value: "OANDA:GBPUSD", label: "GBP/USD", cleanSymbol: "GBP/USD", category: "Major" },
+  { value: "OANDA:USDJPY", label: "USD/JPY", cleanSymbol: "USD/JPY", category: "Major" },
+  { value: "OANDA:USDCHF", label: "USD/CHF", cleanSymbol: "USD/CHF", category: "Major" },
+  { value: "OANDA:AUDUSD", label: "AUD/USD", cleanSymbol: "AUD/USD", category: "Major" },
+  { value: "OANDA:USDCAD", label: "USD/CAD", cleanSymbol: "USD/CAD", category: "Major" },
+  { value: "OANDA:NZDUSD", label: "NZD/USD", cleanSymbol: "NZD/USD", category: "Major" },
   
-  // Minor Pairs (Cross Currency Pairs)
-  { value: "FX:EURGBP", label: "EUR/GBP", cleanSymbol: "EUR/GBP", category: "Minor" },
-  { value: "FX:EURJPY", label: "EUR/JPY", cleanSymbol: "EUR/JPY", category: "Minor" },
-  { value: "FX:EURCHF", label: "EUR/CHF", cleanSymbol: "EUR/CHF", category: "Minor" },
-  { value: "FX:EURAUD", label: "EUR/AUD", cleanSymbol: "EUR/AUD", category: "Minor" },
-  { value: "FX:EURCAD", label: "EUR/CAD", cleanSymbol: "EUR/CAD", category: "Minor" },
-  { value: "FX:EURNZD", label: "EUR/NZD", cleanSymbol: "EUR/NZD", category: "Minor" },
-  { value: "FX:GBPJPY", label: "GBP/JPY", cleanSymbol: "GBP/JPY", category: "Minor" },
-  { value: "FX:GBPCHF", label: "GBP/CHF", cleanSymbol: "GBP/CHF", category: "Minor" },
-  { value: "FX:GBPAUD", label: "GBP/AUD", cleanSymbol: "GBP/AUD", category: "Minor" },
-  { value: "FX:GBPCAD", label: "GBP/CAD", cleanSymbol: "GBP/CAD", category: "Minor" },
-  { value: "FX:GBPNZD", label: "GBP/NZD", cleanSymbol: "GBP/NZD", category: "Minor" },
-  { value: "FX:AUDJPY", label: "AUD/JPY", cleanSymbol: "AUD/JPY", category: "Minor" },
-  { value: "FX:AUDCHF", label: "AUD/CHF", cleanSymbol: "AUD/CHF", category: "Minor" },
-  { value: "FX:AUDCAD", label: "AUD/CAD", cleanSymbol: "AUD/CAD", category: "Minor" },
-  { value: "FX:AUDNZD", label: "AUD/NZD", cleanSymbol: "AUD/NZD", category: "Minor" },
-  { value: "FX:CADJPY", label: "CAD/JPY", cleanSymbol: "CAD/JPY", category: "Minor" },
-  { value: "FX:CADCHF", label: "CAD/CHF", cleanSymbol: "CAD/CHF", category: "Minor" },
-  { value: "FX:CHFJPY", label: "CHF/JPY", cleanSymbol: "CHF/JPY", category: "Minor" },
-  { value: "FX:NZDJPY", label: "NZD/JPY", cleanSymbol: "NZD/JPY", category: "Minor" },
-  { value: "FX:NZDCHF", label: "NZD/CHF", cleanSymbol: "NZD/CHF", category: "Minor" },
-  { value: "FX:NZDCAD", label: "NZD/CAD", cleanSymbol: "NZD/CAD", category: "Minor" },
+  // Minor Pairs (Cross Currency Pairs) (Oanda)
+  { value: "OANDA:EURGBP", label: "EUR/GBP", cleanSymbol: "EUR/GBP", category: "Minor" },
+  { value: "OANDA:EURJPY", label: "EUR/JPY", cleanSymbol: "EUR/JPY", category: "Minor" },
+  { value: "OANDA:EURCHF", label: "EUR/CHF", cleanSymbol: "EUR/CHF", category: "Minor" },
+  { value: "OANDA:EURAUD", label: "EUR/AUD", cleanSymbol: "EUR/AUD", category: "Minor" },
+  { value: "OANDA:EURCAD", label: "EUR/CAD", cleanSymbol: "EUR/CAD", category: "Minor" },
+  { value: "OANDA:EURNZD", label: "EUR/NZD", cleanSymbol: "EUR/NZD", category: "Minor" },
+  { value: "OANDA:GBPJPY", label: "GBP/JPY", cleanSymbol: "GBP/JPY", category: "Minor" },
+  { value: "OANDA:GBPCHF", label: "GBP/CHF", cleanSymbol: "GBP/CHF", category: "Minor" },
+  { value: "OANDA:GBPAUD", label: "GBP/AUD", cleanSymbol: "GBP/AUD", category: "Minor" },
+  { value: "OANDA:GBPCAD", label: "GBP/CAD", cleanSymbol: "GBP/CAD", category: "Minor" },
+  { value: "OANDA:GBPNZD", label: "GBP/NZD", cleanSymbol: "GBP/NZD", category: "Minor" },
+  { value: "OANDA:AUDJPY", label: "AUD/JPY", cleanSymbol: "AUD/JPY", category: "Minor" },
+  { value: "OANDA:AUDCHF", label: "AUD/CHF", cleanSymbol: "AUD/CHF", category: "Minor" },
+  { value: "OANDA:AUDCAD", label: "AUD/CAD", cleanSymbol: "AUD/CAD", category: "Minor" },
+  { value: "OANDA:AUDNZD", label: "AUD/NZD", cleanSymbol: "AUD/NZD", category: "Minor" },
+  { value: "OANDA:CADJPY", label: "CAD/JPY", cleanSymbol: "CAD/JPY", category: "Minor" },
+  { value: "OANDA:CADCHF", label: "CAD/CHF", cleanSymbol: "CAD/CHF", category: "Minor" },
+  { value: "OANDA:CHFJPY", label: "CHF/JPY", cleanSymbol: "CHF/JPY", category: "Minor" },
+  { value: "OANDA:NZDJPY", label: "NZD/JPY", cleanSymbol: "NZD/JPY", category: "Minor" },
+  { value: "OANDA:NZDCHF", label: "NZD/CHF", cleanSymbol: "NZD/CHF", category: "Minor" },
+  { value: "OANDA:NZDCAD", label: "NZD/CAD", cleanSymbol: "NZD/CAD", category: "Minor" },
   
-  // Commodities
-  { value: "TVC:GOLD", label: "XAU/USD (Gold)", cleanSymbol: "XAU/USD", category: "Commodity" },
-  { value: "TVC:SILVER", label: "XAG/USD (Silver)", cleanSymbol: "XAG/USD", category: "Commodity" },
+  // Commodities (Oanda for precious metals)
+  { value: "OANDA:XAUUSD", label: "XAU/USD (Gold)", cleanSymbol: "XAU/USD", category: "Commodity" },
+  { value: "OANDA:XAGUSD", label: "XAG/USD (Silver)", cleanSymbol: "XAG/USD", category: "Commodity" },
   
-  // Major Cryptocurrencies
+  // Major Cryptocurrencies (keeping Binance for crypto)
   { value: "BINANCE:BTCUSDT", label: "BTC/USDT", cleanSymbol: "BTC/USDT", category: "Crypto" },
   { value: "BINANCE:ETHUSDT", label: "ETH/USDT", cleanSymbol: "ETH/USDT", category: "Crypto" },
   { value: "BINANCE:ADAUSDT", label: "ADA/USDT", cleanSymbol: "ADA/USDT", category: "Crypto" },
@@ -71,7 +71,7 @@ const TIMEFRAMES = [
 ];
 
 const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAnalyzing }) => {
-  const [selectedSymbol, setSelectedSymbol] = useState("FX:EURUSD");
+  const [selectedSymbol, setSelectedSymbol] = useState("OANDA:EURUSD");
   const [selectedTimeframe, setSelectedTimeframe] = useState("D");
   const [isWidgetLoaded, setIsWidgetLoaded] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
