@@ -36,36 +36,7 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
         "style": "1",
         "locale": "en",
         "allow_symbol_change": true,
-        "support_host": "https://www.tradingview.com",
-        "withdateranges": true,
-        "hide_side_toolbar": false,
-        "hide_top_toolbar": false,
-        "save_image": false,
-        "container_id": "tradingview_chart_${Date.now()}",
-        "studies": [],
-        "show_popup_button": true,
-        "popup_width": "1000",
-        "popup_height": "650",
-        "details": true,
-        "hotlist": true,
-        "calendar": true,
-        "studies_overrides": {},
-        "overrides": {
-          "mainSeriesProperties.candleStyle.upColor": "#26a69a",
-          "mainSeriesProperties.candleStyle.downColor": "#ef5350",
-          "mainSeriesProperties.candleStyle.drawWick": true,
-          "mainSeriesProperties.candleStyle.drawBorder": true,
-          "mainSeriesProperties.candleStyle.borderColor": "#378658",
-          "mainSeriesProperties.candleStyle.borderUpColor": "#26a69a",
-          "mainSeriesProperties.candleStyle.borderDownColor": "#ef5350",
-          "mainSeriesProperties.candleStyle.wickUpColor": "#26a69a",
-          "mainSeriesProperties.candleStyle.wickDownColor": "#ef5350",
-          "paneProperties.background": "#131722",
-          "paneProperties.vertGridProperties.color": "#242632",
-          "paneProperties.horzGridProperties.color": "#242632",
-          "symbolWatermarkProperties.transparency": 90,
-          "scalesProperties.backgroundColor": "#131722"
-        }
+        "support_host": "https://www.tradingview.com"
       }`;
     
     script.onload = () => {
@@ -106,20 +77,13 @@ function AutoTradingViewWidget({ symbol, interval, onLoad }: AutoTradingViewWidg
 
   return (
     <div 
-      className="tradingview-widget-container w-full" 
+      className="tradingview-widget-container" 
       ref={container} 
-      style={{ 
-        height: "600px",  
-        minHeight: "550px",
-        width: "100%" 
-      }}
+      style={{ height: "100%", width: "100%" }}
     >
       <div 
-        className="tradingview-widget-container__widget w-full h-full" 
-        style={{ 
-          height: "calc(100% - 32px)", 
-          width: "100%"
-        }}
+        className="tradingview-widget-container__widget" 
+        style={{ height: "calc(100% - 32px)", width: "100%" }}
       ></div>
       <div className="tradingview-widget-copyright">
         <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">
