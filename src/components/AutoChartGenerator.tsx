@@ -1,9 +1,11 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, Download, AlertTriangle } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { TrendingUp, Download, AlertTriangle, Plus } from 'lucide-react';
 import AutoTradingViewWidget from './AutoTradingViewWidget';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
@@ -14,20 +16,70 @@ interface AutoChartGeneratorProps {
   isAnalyzing: boolean;
 }
 
-// Updated symbol mappings with correct TradingView symbols
-const POPULAR_SYMBOLS = [
-  { value: "FX:EURUSD", label: "EUR/USD", cleanSymbol: "EUR/USD" },
-  { value: "FX:GBPUSD", label: "GBP/USD", cleanSymbol: "GBP/USD" },
-  { value: "FX:USDJPY", label: "USD/JPY", cleanSymbol: "USD/JPY" },
-  { value: "FX:AUDUSD", label: "AUD/USD", cleanSymbol: "AUD/USD" },
-  { value: "FX:USDCAD", label: "USD/CAD", cleanSymbol: "USD/CAD" },
-  { value: "FX:USDCHF", label: "USD/CHF", cleanSymbol: "USD/CHF" },
-  { value: "FX:NZDUSD", label: "NZD/USD", cleanSymbol: "NZD/USD" },
-  { value: "TVC:GOLD", label: "XAU/USD (Gold)", cleanSymbol: "XAU/USD" },
-  { value: "TVC:SILVER", label: "XAG/USD (Silver)", cleanSymbol: "XAG/USD" },
-  { value: "BINANCE:BTCUSDT", label: "BTC/USDT", cleanSymbol: "BTC/USDT" },
-  { value: "BINANCE:ETHUSDT", label: "ETH/USDT", cleanSymbol: "ETH/USDT" },
-  { value: "BINANCE:ADAUSDT", label: "ADA/USDT", cleanSymbol: "ADA/USDT" },
+// Comprehensive Forex pairs including majors, minors, and exotics
+const FOREX_PAIRS = [
+  // Major Pairs
+  { value: "FX:EURUSD", label: "EUR/USD", cleanSymbol: "EUR/USD", category: "Major" },
+  { value: "FX:GBPUSD", label: "GBP/USD", cleanSymbol: "GBP/USD", category: "Major" },
+  { value: "FX:USDJPY", label: "USD/JPY", cleanSymbol: "USD/JPY", category: "Major" },
+  { value: "FX:USDCHF", label: "USD/CHF", cleanSymbol: "USD/CHF", category: "Major" },
+  { value: "FX:AUDUSD", label: "AUD/USD", cleanSymbol: "AUD/USD", category: "Major" },
+  { value: "FX:USDCAD", label: "USD/CAD", cleanSymbol: "USD/CAD", category: "Major" },
+  { value: "FX:NZDUSD", label: "NZD/USD", cleanSymbol: "NZD/USD", category: "Major" },
+  
+  // Minor Pairs (Cross Currency Pairs)
+  { value: "FX:EURGBP", label: "EUR/GBP", cleanSymbol: "EUR/GBP", category: "Minor" },
+  { value: "FX:EURJPY", label: "EUR/JPY", cleanSymbol: "EUR/JPY", category: "Minor" },
+  { value: "FX:EURCHF", label: "EUR/CHF", cleanSymbol: "EUR/CHF", category: "Minor" },
+  { value: "FX:EURAUD", label: "EUR/AUD", cleanSymbol: "EUR/AUD", category: "Minor" },
+  { value: "FX:EURCAD", label: "EUR/CAD", cleanSymbol: "EUR/CAD", category: "Minor" },
+  { value: "FX:EURNZD", label: "EUR/NZD", cleanSymbol: "EUR/NZD", category: "Minor" },
+  { value: "FX:GBPJPY", label: "GBP/JPY", cleanSymbol: "GBP/JPY", category: "Minor" },
+  { value: "FX:GBPCHF", label: "GBP/CHF", cleanSymbol: "GBP/CHF", category: "Minor" },
+  { value: "FX:GBPAUD", label: "GBP/AUD", cleanSymbol: "GBP/AUD", category: "Minor" },
+  { value: "FX:GBPCAD", label: "GBP/CAD", cleanSymbol: "GBP/CAD", category: "Minor" },
+  { value: "FX:GBPNZD", label: "GBP/NZD", cleanSymbol: "GBP/NZD", category: "Minor" },
+  { value: "FX:AUDJPY", label: "AUD/JPY", cleanSymbol: "AUD/JPY", category: "Minor" },
+  { value: "FX:AUDCHF", label: "AUD/CHF", cleanSymbol: "AUD/CHF", category: "Minor" },
+  { value: "FX:AUDCAD", label: "AUD/CAD", cleanSymbol: "AUD/CAD", category: "Minor" },
+  { value: "FX:AUDNZD", label: "AUD/NZD", cleanSymbol: "AUD/NZD", category: "Minor" },
+  { value: "FX:CADJPY", label: "CAD/JPY", cleanSymbol: "CAD/JPY", category: "Minor" },
+  { value: "FX:CADCHF", label: "CAD/CHF", cleanSymbol: "CAD/CHF", category: "Minor" },
+  { value: "FX:CHFJPY", label: "CHF/JPY", cleanSymbol: "CHF/JPY", category: "Minor" },
+  { value: "FX:NZDJPY", label: "NZD/JPY", cleanSymbol: "NZD/JPY", category: "Minor" },
+  { value: "FX:NZDCHF", label: "NZD/CHF", cleanSymbol: "NZD/CHF", category: "Minor" },
+  { value: "FX:NZDCAD", label: "NZD/CAD", cleanSymbol: "NZD/CAD", category: "Minor" },
+  
+  // Exotic Pairs (Major currencies vs emerging market currencies)
+  { value: "FX:USDMXN", label: "USD/MXN", cleanSymbol: "USD/MXN", category: "Exotic" },
+  { value: "FX:USDTRY", label: "USD/TRY", cleanSymbol: "USD/TRY", category: "Exotic" },
+  { value: "FX:USDZAR", label: "USD/ZAR", cleanSymbol: "USD/ZAR", category: "Exotic" },
+  { value: "FX:USDHKD", label: "USD/HKD", cleanSymbol: "USD/HKD", category: "Exotic" },
+  { value: "FX:USDSGD", label: "USD/SGD", cleanSymbol: "USD/SGD", category: "Exotic" },
+  { value: "FX:USDNOK", label: "USD/NOK", cleanSymbol: "USD/NOK", category: "Exotic" },
+  { value: "FX:USDSEK", label: "USD/SEK", cleanSymbol: "USD/SEK", category: "Exotic" },
+  { value: "FX:USDDKK", label: "USD/DKK", cleanSymbol: "USD/DKK", category: "Exotic" },
+  { value: "FX:USDPLN", label: "USD/PLN", cleanSymbol: "USD/PLN", category: "Exotic" },
+  { value: "FX:USDCZK", label: "USD/CZK", cleanSymbol: "USD/CZK", category: "Exotic" },
+  { value: "FX:USDHUF", label: "USD/HUF", cleanSymbol: "USD/HUF", category: "Exotic" },
+  { value: "FX:EURTRY", label: "EUR/TRY", cleanSymbol: "EUR/TRY", category: "Exotic" },
+  { value: "FX:EURZAR", label: "EUR/ZAR", cleanSymbol: "EUR/ZAR", category: "Exotic" },
+  { value: "FX:EURNOK", label: "EUR/NOK", cleanSymbol: "EUR/NOK", category: "Exotic" },
+  { value: "FX:EURSEK", label: "EUR/SEK", cleanSymbol: "EUR/SEK", category: "Exotic" },
+  { value: "FX:EURPLN", label: "EUR/PLN", cleanSymbol: "EUR/PLN", category: "Exotic" },
+  { value: "FX:GBPTRY", label: "GBP/TRY", cleanSymbol: "GBP/TRY", category: "Exotic" },
+  { value: "FX:GBPZAR", label: "GBP/ZAR", cleanSymbol: "GBP/ZAR", category: "Exotic" },
+  { value: "FX:GBPNOK", label: "GBP/NOK", cleanSymbol: "GBP/NOK", category: "Exotic" },
+  { value: "FX:GBPSEK", label: "GBP/SEK", cleanSymbol: "GBP/SEK", category: "Exotic" },
+  
+  // Commodities
+  { value: "TVC:GOLD", label: "XAU/USD (Gold)", cleanSymbol: "XAU/USD", category: "Commodity" },
+  { value: "TVC:SILVER", label: "XAG/USD (Silver)", cleanSymbol: "XAG/USD", category: "Commodity" },
+  
+  // Major Cryptocurrencies
+  { value: "BINANCE:BTCUSDT", label: "BTC/USDT", cleanSymbol: "BTC/USDT", category: "Crypto" },
+  { value: "BINANCE:ETHUSDT", label: "ETH/USDT", cleanSymbol: "ETH/USDT", category: "Crypto" },
+  { value: "BINANCE:ADAUSDT", label: "ADA/USDT", cleanSymbol: "ADA/USDT", category: "Crypto" },
 ];
 
 const TIMEFRAMES = [
@@ -46,6 +98,8 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const [selectedTimeframe, setSelectedTimeframe] = useState("D");
   const [isWidgetLoaded, setIsWidgetLoaded] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customPair, setCustomPair] = useState("");
   const widgetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
@@ -69,13 +123,19 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
 
     try {
       // Get clean symbol for analysis
-      const symbolObj = POPULAR_SYMBOLS.find(s => s.value === selectedSymbol);
-      const cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
+      let cleanSymbol;
+      if (showCustomInput && customPair) {
+        cleanSymbol = customPair.toUpperCase();
+      } else {
+        const symbolObj = FOREX_PAIRS.find(s => s.value === selectedSymbol);
+        cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
+      }
       
       console.log("🎯 Starting capture for:", { 
         selectedSymbol, 
         cleanSymbol, 
-        selectedTimeframe 
+        selectedTimeframe,
+        isCustomPair: showCustomInput
       });
       
       // Extended wait time for chart to fully render with correct symbol
@@ -195,7 +255,10 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   };
 
   const getSelectedSymbolLabel = () => {
-    const symbol = POPULAR_SYMBOLS.find(s => s.value === selectedSymbol);
+    if (showCustomInput && customPair) {
+      return customPair.toUpperCase();
+    }
+    const symbol = FOREX_PAIRS.find(s => s.value === selectedSymbol);
     return symbol?.label || selectedSymbol;
   };
 
@@ -203,14 +266,43 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const handleSymbolChange = (newSymbol: string) => {
     console.log("🔄 Symbol change from", selectedSymbol, "to", newSymbol);
     setSelectedSymbol(newSymbol);
-    setIsWidgetLoaded(false); // Reset loaded state
+    setIsWidgetLoaded(false);
+    setShowCustomInput(false);
   };
 
   const handleTimeframeChange = (newTimeframe: string) => {
     console.log("🔄 Timeframe change from", selectedTimeframe, "to", newTimeframe);
     setSelectedTimeframe(newTimeframe);
-    setIsWidgetLoaded(false); // Reset loaded state
+    setIsWidgetLoaded(false);
   };
+
+  const handleCustomPairSubmit = () => {
+    if (!customPair.trim()) {
+      toast({
+        title: "Invalid Pair",
+        description: "Please enter a valid trading pair (e.g., EUR/USD)",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Format the custom pair for TradingView
+    const formattedPair = customPair.toUpperCase().replace('/', '');
+    const tradingViewSymbol = `FX:${formattedPair}`;
+    
+    console.log("🔄 Custom pair submitted:", { customPair, tradingViewSymbol });
+    setSelectedSymbol(tradingViewSymbol);
+    setIsWidgetLoaded(false);
+  };
+
+  // Group pairs by category for better organization
+  const groupedPairs = FOREX_PAIRS.reduce((acc, pair) => {
+    if (!acc[pair.category]) {
+      acc[pair.category] = [];
+    }
+    acc[pair.category].push(pair);
+    return acc;
+  }, {} as Record<string, typeof FOREX_PAIRS>);
 
   return (
     <Card className="w-full bg-chart-card border-gray-700">
@@ -223,22 +315,72 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         </CardHeader>
       )}
       <CardContent className={`${isMobile ? 'pt-4 px-3 pb-3' : 'space-y-6'}`}>
-        {/* Mobile optimized Symbol and Timeframe Selection */}
+        {/* Symbol and Timeframe Selection */}
         <div className={`${isMobile ? 'grid grid-cols-2 gap-2 mb-3' : 'grid grid-cols-1 md:grid-cols-2 gap-4'}`}>
           <div className="space-y-1">
             <Label htmlFor="symbol-select" className={`text-white ${isMobile ? 'text-sm' : ''}`}>Trading Pair</Label>
-            <Select value={selectedSymbol} onValueChange={handleSymbolChange}>
-              <SelectTrigger className={`bg-gray-800 border-gray-700 text-white ${isMobile ? 'h-9 text-sm' : ''}`}>
-                <SelectValue placeholder="Select a trading pair" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                {POPULAR_SYMBOLS.map((symbol) => (
-                  <SelectItem key={symbol.value} value={symbol.value} className="text-white hover:bg-gray-700">
-                    {symbol.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {!showCustomInput ? (
+              <div className="space-y-2">
+                <Select value={selectedSymbol} onValueChange={handleSymbolChange}>
+                  <SelectTrigger className={`bg-gray-800 border-gray-700 text-white ${isMobile ? 'h-9 text-sm' : ''}`}>
+                    <SelectValue placeholder="Select a trading pair" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700 max-h-[300px]">
+                    {Object.entries(groupedPairs).map(([category, pairs]) => (
+                      <div key={category}>
+                        <div className="px-2 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
+                          {category} Pairs
+                        </div>
+                        {pairs.map((pair) => (
+                          <SelectItem key={pair.value} value={pair.value} className="text-white hover:bg-gray-700">
+                            {pair.label}
+                          </SelectItem>
+                        ))}
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size={isMobile ? "sm" : "default"}
+                  onClick={() => setShowCustomInput(true)}
+                  className="w-full bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+                >
+                  <Plus className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
+                  Add Custom Pair
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Input
+                  placeholder="Enter pair (e.g., EUR/USD)"
+                  value={customPair}
+                  onChange={(e) => setCustomPair(e.target.value)}
+                  className={`bg-gray-800 border-gray-700 text-white ${isMobile ? 'h-9 text-sm' : ''}`}
+                  onKeyPress={(e) => e.key === 'Enter' && handleCustomPairSubmit()}
+                />
+                <div className="flex gap-2">
+                  <Button
+                    size={isMobile ? "sm" : "default"}
+                    onClick={handleCustomPairSubmit}
+                    className="flex-1 bg-primary hover:bg-primary/90"
+                  >
+                    Use Pair
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size={isMobile ? "sm" : "default"}
+                    onClick={() => {
+                      setShowCustomInput(false);
+                      setCustomPair("");
+                    }}
+                    className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-1">
@@ -320,7 +462,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                 <div>
                   <h4 className="text-orange-400 font-medium text-sm mb-1">Trading Chart Tips</h4>
                   <p className="text-gray-400 text-xs">
-                    For best results, wait for the chart to fully load before analysis. The system will automatically detect and analyze the selected trading pair.
+                    For best results, wait for the chart to fully load before analysis. Use the custom pair input for any trading pair not in the list.
                   </p>
                 </div>
               </div>
