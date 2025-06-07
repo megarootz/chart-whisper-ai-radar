@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -16,7 +15,7 @@ interface AutoChartGeneratorProps {
   isAnalyzing: boolean;
 }
 
-// Comprehensive Forex pairs including majors, minors, and exotics
+// Comprehensive Forex pairs including majors, minors (removed all exotic pairs)
 const FOREX_PAIRS = [
   // Major Pairs
   { value: "FX:EURUSD", label: "EUR/USD", cleanSymbol: "EUR/USD", category: "Major" },
@@ -49,28 +48,6 @@ const FOREX_PAIRS = [
   { value: "FX:NZDJPY", label: "NZD/JPY", cleanSymbol: "NZD/JPY", category: "Minor" },
   { value: "FX:NZDCHF", label: "NZD/CHF", cleanSymbol: "NZD/CHF", category: "Minor" },
   { value: "FX:NZDCAD", label: "NZD/CAD", cleanSymbol: "NZD/CAD", category: "Minor" },
-  
-  // Exotic Pairs (Major currencies vs emerging market currencies)
-  { value: "FX:USDMXN", label: "USD/MXN", cleanSymbol: "USD/MXN", category: "Exotic" },
-  { value: "FX:USDTRY", label: "USD/TRY", cleanSymbol: "USD/TRY", category: "Exotic" },
-  { value: "FX:USDZAR", label: "USD/ZAR", cleanSymbol: "USD/ZAR", category: "Exotic" },
-  { value: "FX:USDHKD", label: "USD/HKD", cleanSymbol: "USD/HKD", category: "Exotic" },
-  { value: "FX:USDSGD", label: "USD/SGD", cleanSymbol: "USD/SGD", category: "Exotic" },
-  { value: "FX:USDNOK", label: "USD/NOK", cleanSymbol: "USD/NOK", category: "Exotic" },
-  { value: "FX:USDSEK", label: "USD/SEK", cleanSymbol: "USD/SEK", category: "Exotic" },
-  { value: "FX:USDDKK", label: "USD/DKK", cleanSymbol: "USD/DKK", category: "Exotic" },
-  { value: "FX:USDPLN", label: "USD/PLN", cleanSymbol: "USD/PLN", category: "Exotic" },
-  { value: "FX:USDCZK", label: "USD/CZK", cleanSymbol: "USD/CZK", category: "Exotic" },
-  { value: "FX:USDHUF", label: "USD/HUF", cleanSymbol: "USD/HUF", category: "Exotic" },
-  { value: "FX:EURTRY", label: "EUR/TRY", cleanSymbol: "EUR/TRY", category: "Exotic" },
-  { value: "FX:EURZAR", label: "EUR/ZAR", cleanSymbol: "EUR/ZAR", category: "Exotic" },
-  { value: "FX:EURNOK", label: "EUR/NOK", cleanSymbol: "EUR/NOK", category: "Exotic" },
-  { value: "FX:EURSEK", label: "EUR/SEK", cleanSymbol: "EUR/SEK", category: "Exotic" },
-  { value: "FX:EURPLN", label: "EUR/PLN", cleanSymbol: "EUR/PLN", category: "Exotic" },
-  { value: "FX:GBPTRY", label: "GBP/TRY", cleanSymbol: "GBP/TRY", category: "Exotic" },
-  { value: "FX:GBPZAR", label: "GBP/ZAR", cleanSymbol: "GBP/ZAR", category: "Exotic" },
-  { value: "FX:GBPNOK", label: "GBP/NOK", cleanSymbol: "GBP/NOK", category: "Exotic" },
-  { value: "FX:GBPSEK", label: "GBP/SEK", cleanSymbol: "GBP/SEK", category: "Exotic" },
   
   // Commodities
   { value: "TVC:GOLD", label: "XAU/USD (Gold)", cleanSymbol: "XAU/USD", category: "Commodity" },
