@@ -23,21 +23,26 @@ serve(async (req) => {
 
     const { base64Image, pairName, timeframe } = await req.json();
     
-    // Validate base64 image
+    // Enhanced image validation
     if (!base64Image || !base64Image.startsWith('data:image/')) {
       console.error("❌ Invalid image format:", { 
         hasImage: !!base64Image, 
         hasHeader: base64Image?.startsWith('data:image/'),
         imageStart: base64Image?.substring(0, 50) 
       });
-      throw new Error("Invalid image format. Expected base64 encoded image.");
+      throw new Error("Invalid image format. Expected base64 encoded image with proper data URI header.");
     }
     
-    // Calculate estimated token usage for monitoring
+    // Validate image size and content
     const imageSize = base64Image?.length || 0;
+    if (imageSize < 1000) {
+      console.error("❌ Image too small, likely invalid:", { imageSize });
+      throw new Error("Image appears to be too small or invalid. Please ensure the chart is fully loaded.");
+    }
+    
     const estimatedImageTokens = Math.round(imageSize / 750); // Rough estimate
     
-    console.log("📊 OpenRouter GPT-4o-mini analysis request:", { 
+    console.log("📊 OpenRouter GPT-4.1 Mini analysis request:", { 
       pairName, 
       timeframe, 
       imageSizeKB: Math.round(imageSize / 1024),
@@ -47,19 +52,46 @@ serve(async (req) => {
       imageType: base64Image.split(';')[0]?.split('/')[1] || 'unknown'
     });
     
-    // Enhanced prompt specifically for forex chart analysis
-    const analysisPrompt = `I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze this ${pairName} chart image on the ${timeframe} timeframe.
+    // Comprehensive prompt specifically designed for accurate forex chart analysis
+    const analysisPrompt = `You are a professional Forex technical analyst with expertise in reading trading charts. I am providing you with a chart image for ${pairName} on the ${timeframe} timeframe.
 
-Please provide a comprehensive technical analysis including:
-1. Overall trend direction (bullish/bearish/sideways)
-2. Key support and resistance levels visible on the chart
-3. Chart patterns you can identify
-4. Technical indicators if visible (moving averages, RSI, etc.)
-5. Price action analysis
-6. Potential trading opportunities
-7. Risk management considerations
+CRITICAL INSTRUCTION: You MUST analyze the actual chart image I'm providing. This is a real trading chart screenshot with candlesticks, price levels, and time data.
 
-Be specific about what you see in the chart and provide actionable insights for forex trading.`;
+Please provide a detailed technical analysis that includes:
+
+1. **Price Action Analysis**:
+   - Current price level and recent price movement
+   - Identify the trend direction (bullish/bearish/sideways)
+   - Key support and resistance levels visible on the chart
+   - Any significant price breaks or bounces
+
+2. **Candlestick Pattern Analysis**:
+   - Identify any recognizable candlestick patterns
+   - Recent candle formations and their implications
+   - Volume patterns if visible
+
+3. **Technical Indicators** (if visible on the chart):
+   - Moving averages and their positions relative to price
+   - RSI, MACD, or other oscillators if present
+   - Trend lines or channels drawn on the chart
+
+4. **Market Structure**:
+   - Higher highs/lower lows pattern
+   - Market phases (accumulation, trending, distribution)
+   - Potential reversal or continuation signals
+
+5. **Trading Opportunities**:
+   - Potential entry points based on the analysis
+   - Suggested stop loss and take profit levels
+   - Risk/reward assessment for potential trades
+   - Timeframe-appropriate position sizing considerations
+
+6. **Risk Factors**:
+   - Key levels that could invalidate the analysis
+   - Market conditions that could affect the trade
+   - Economic events or news that might impact this pair
+
+Please be specific about what you observe in the actual chart image. Reference actual price levels, timeframes, and patterns you can see. Do not provide generic trading advice - analyze this specific chart.`;
     
     const requestData = {
       model: "openai/gpt-4o-mini",
@@ -75,17 +107,17 @@ Be specific about what you see in the chart and provide actionable insights for 
               type: "image_url",
               image_url: {
                 url: base64Image,
-                detail: "high" // High detail for better chart analysis
+                detail: "high" // High detail for precise chart analysis
               }
             }
           ]
         }
       ],
-      temperature: 0.2, // Lower temperature for more focused analysis
+      temperature: 0.1, // Very low temperature for precise, consistent analysis
       max_tokens: 4000 // Sufficient for detailed analysis
     };
 
-    console.log("🚀 Sending request to OpenRouter GPT-4o-mini API:", {
+    console.log("🚀 Sending request to OpenRouter GPT-4.1 Mini API:", {
       pair: pairName,
       timeframe,
       model: requestData.model,
@@ -100,10 +132,10 @@ Be specific about what you see in the chart and provide actionable insights for 
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'Forex Chart Analyzer - GPT-4o-mini'
+      'X-Title': 'Forex Chart Analyzer - GPT-4.1 Mini Advanced'
     };
     
-    // Call OpenRouter API with retry logic
+    // Enhanced retry logic with better error handling
     let response;
     let attempts = 0;
     const maxAttempts = 3;
@@ -125,13 +157,25 @@ Be specific about what you see in the chart and provide actionable insights for 
           const errorText = await response.text();
           console.error(`❌ API call failed (attempt ${attempts}):`, response.status, errorText);
           
+          // Check for specific error types
+          if (response.status === 400) {
+            throw new Error(`Invalid request: ${errorText}. Please check the chart image quality.`);
+          } else if (response.status === 401) {
+            throw new Error("Authentication failed. Please check API key configuration.");
+          } else if (response.status === 429) {
+            console.log("⚠️ Rate limit hit, waiting before retry...");
+            await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+          }
+          
           if (attempts === maxAttempts) {
             throw new Error(`API call failed after ${maxAttempts} attempts: ${response.status} - ${errorText}`);
           }
         }
         
-        // Wait before retry
-        await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+        // Wait before retry for non-rate-limit errors
+        if (!response.ok && response.status !== 429) {
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
+        }
         
       } catch (error) {
         console.error(`❌ API call error (attempt ${attempts}):`, error);
@@ -164,21 +208,32 @@ Be specific about what you see in the chart and provide actionable insights for 
       throw new Error("Invalid response format from OpenRouter API");
     }
     
-    // Validate response structure
+    // Enhanced response validation
     if (!parsedResponse.choices || parsedResponse.choices.length === 0) {
       console.error("❌ Invalid response structure:", parsedResponse);
       throw new Error("No analysis content received from OpenRouter API");
     }
     
     const analysisContent = parsedResponse.choices[0].message?.content;
-    if (!analysisContent) {
+    if (!analysisContent || analysisContent.trim().length === 0) {
       console.error("❌ Empty analysis content:", parsedResponse.choices[0]);
       throw new Error("Empty analysis content received from OpenRouter API");
     }
     
+    // Check if response contains generic template content (indicates vision failure)
+    const isGenericResponse = analysisContent.toLowerCase().includes("i can't analyze the chart directly") ||
+                              analysisContent.toLowerCase().includes("here's a structured approach") ||
+                              analysisContent.toLowerCase().includes("### 1. overall trend direction") ||
+                              (analysisContent.includes("###") && !analysisContent.includes("price") && !analysisContent.includes("level"));
+    
+    if (isGenericResponse) {
+      console.error("❌ Detected generic template response, indicating image analysis failure");
+      throw new Error("AI could not analyze the chart image. Please ensure the chart is fully loaded and visible before capturing.");
+    }
+    
     // Log successful response details
     const usage = parsedResponse.usage;
-    console.log("✅ GPT-4o-mini analysis completed successfully:", {
+    console.log("✅ GPT-4.1 Mini analysis completed successfully:", {
       pairName,
       timeframe,
       responseLength: responseText.length,
@@ -188,19 +243,32 @@ Be specific about what you see in the chart and provide actionable insights for 
         completion: usage.completion_tokens,
         total: usage.total_tokens
       } : 'not available',
-      model: parsedResponse.model || 'unknown'
+      model: parsedResponse.model || 'unknown',
+      containsSpecificAnalysis: analysisContent.includes("price") || analysisContent.includes("level") || analysisContent.includes("support") || analysisContent.includes("resistance")
     });
     
-    // Return the raw response to the client
-    return new Response(responseText, {
+    // Return the response with additional metadata
+    const enhancedResponse = {
+      ...parsedResponse,
+      metadata: {
+        analysis_type: "specific_chart_analysis",
+        image_validated: true,
+        tokens_used: usage?.total_tokens || 0,
+        pair: pairName,
+        timeframe: timeframe
+      }
+    };
+    
+    return new Response(JSON.stringify(enhancedResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
     
   } catch (error) {
-    console.error("❌ Error in OpenRouter GPT-4o-mini analyze-chart function:", error);
+    console.error("❌ Error in OpenRouter GPT-4.1 Mini analyze-chart function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || "An unknown error occurred while analyzing the chart with GPT-4o-mini" 
+        error: error.message || "An unknown error occurred while analyzing the chart with GPT-4.1 Mini",
+        error_type: "analysis_error"
       }),
       {
         status: 500,

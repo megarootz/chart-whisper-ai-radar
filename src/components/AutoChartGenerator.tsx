@@ -86,6 +86,257 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsWidgetLoaded(true);
   }, [selectedSymbol]);
 
+  // Advanced chart validation function
+  const validateChartContent = (canvas: HTMLCanvasElement): { isValid: boolean; reason: string } => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { isValid: false, reason: "No canvas context" };
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Count different colors and patterns
+    const colorMap = new Map();
+    let totalPixels = 0;
+    let nonTransparentPixels = 0;
+    
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const a = data[i + 3];
+      
+      totalPixels++;
+      
+      if (a > 0) {
+        nonTransparentPixels++;
+        const colorKey = `${r}-${g}-${b}`;
+        colorMap.set(colorKey, (colorMap.get(colorKey) || 0) + 1);
+      }
+    }
+    
+    const uniqueColors = colorMap.size;
+    const contentRatio = nonTransparentPixels / totalPixels;
+    
+    console.log("📸 Chart validation:", {
+      dimensions: `${canvas.width}x${canvas.height}`,
+      uniqueColors,
+      contentRatio: contentRatio.toFixed(3),
+      nonTransparentPixels,
+      totalPixels
+    });
+    
+    // Validation criteria for a real chart
+    if (contentRatio < 0.1) {
+      return { isValid: false, reason: "Image appears to be mostly empty" };
+    }
+    
+    if (uniqueColors < 10) {
+      return { isValid: false, reason: "Image has insufficient color variation for a chart" };
+    }
+    
+    // Check for chart-like patterns (look for line variations)
+    let hasChartPatterns = false;
+    const sampleSize = Math.min(1000, data.length / 4);
+    let colorChanges = 0;
+    
+    for (let i = 0; i < sampleSize - 1; i++) {
+      const idx1 = i * 4;
+      const idx2 = (i + 1) * 4;
+      
+      const color1 = data[idx1] + data[idx1 + 1] + data[idx1 + 2];
+      const color2 = data[idx2] + data[idx2 + 1] + data[idx2 + 2];
+      
+      if (Math.abs(color1 - color2) > 30) {
+        colorChanges++;
+      }
+    }
+    
+    if (colorChanges > sampleSize * 0.1) {
+      hasChartPatterns = true;
+    }
+    
+    if (!hasChartPatterns) {
+      return { isValid: false, reason: "No chart-like patterns detected" };
+    }
+    
+    return { isValid: true, reason: "Valid chart content detected" };
+  };
+
+  const captureChartUsingRealScreenshot = async () => {
+    if (!widgetRef.current || !isWidgetLoaded) {
+      toast({
+        title: "Chart Not Ready",
+        description: "Please wait for the chart to fully load before analyzing",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsCapturing(true);
+
+    try {
+      // Get clean symbol for analysis
+      let cleanSymbol;
+      if (showCustomInput && customPair) {
+        cleanSymbol = customPair.toUpperCase();
+      } else {
+        const symbolObj = FOREX_PAIRS.find(s => s.value === selectedSymbol);
+        cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
+      }
+      
+      console.log("📸 Starting advanced chart capture for:", { 
+        selectedSymbol, 
+        cleanSymbol, 
+        selectedTimeframe,
+        isCustomPair: showCustomInput
+      });
+      
+      // Extended wait for TradingView to fully render with actual data
+      console.log("⏳ Waiting for TradingView chart to fully render with real data...");
+      await new Promise(resolve => setTimeout(resolve, 8000)); // Longer wait for real data
+      
+      console.log("📸 Capturing with advanced html2canvas settings...");
+      
+      // Capture with maximum quality settings for better chart analysis
+      const canvas = await html2canvas(widgetRef.current, {
+        backgroundColor: null, // Preserve transparency
+        scale: 1.5, // Higher scale for better detail
+        useCORS: true,
+        allowTaint: false,
+        foreignObjectRendering: true, // Enable for better iframe handling
+        width: Math.min(widgetRef.current.offsetWidth, 1400),
+        height: Math.min(widgetRef.current.offsetHeight, 900),
+        logging: false, // Reduce noise
+        imageTimeout: 45000, // Longer timeout
+        removeContainer: false,
+        ignoreElements: (element) => {
+          // Ignore overlay elements that might interfere
+          return element.classList.contains('tradingview-widget-copyright');
+        },
+        onclone: (clonedDoc) => {
+          // Ensure the cloned document shows the chart properly
+          const clonedWidgets = clonedDoc.querySelectorAll('.tradingview-widget-container');
+          clonedWidgets.forEach(widget => {
+            (widget as HTMLElement).style.background = 'transparent';
+            (widget as HTMLElement).style.overflow = 'visible';
+          });
+        }
+      });
+      
+      console.log(`📸 Raw canvas captured: ${canvas.width}x${canvas.height}`);
+      
+      // Validate chart content before proceeding
+      const validation = validateChartContent(canvas);
+      console.log("🔍 Chart validation result:", validation);
+      
+      if (!validation.isValid) {
+        console.error("❌ Chart validation failed:", validation.reason);
+        toast({
+          title: "Capture Failed", 
+          description: `Chart capture failed: ${validation.reason}. Please wait longer for the chart to load.`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Optimize canvas size for analysis while maintaining quality
+      const targetWidth = 1200;
+      const targetHeight = 800;
+      const aspectRatio = canvas.width / canvas.height;
+      
+      let finalWidth = targetWidth;
+      let finalHeight = Math.round(targetWidth / aspectRatio);
+      
+      if (finalHeight > targetHeight) {
+        finalHeight = targetHeight;
+        finalWidth = Math.round(targetHeight * aspectRatio);
+      }
+      
+      // Create optimized canvas
+      const optimizedCanvas = document.createElement('canvas');
+      optimizedCanvas.width = finalWidth;
+      optimizedCanvas.height = finalHeight;
+      const optimizedCtx = optimizedCanvas.getContext('2d');
+      
+      if (!optimizedCtx) {
+        throw new Error("Failed to create optimized canvas context");
+      }
+      
+      // Draw with high quality scaling
+      optimizedCtx.imageSmoothingEnabled = true;
+      optimizedCtx.imageSmoothingQuality = 'high';
+      optimizedCtx.drawImage(canvas, 0, 0, finalWidth, finalHeight);
+      
+      console.log(`📸 Optimized canvas: ${finalWidth}x${finalHeight}`);
+      
+      // Convert to high-quality blob
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        optimizedCanvas.toBlob((blob) => {
+          if (blob) {
+            console.log(`📸 Final image size: ${Math.round(blob.size / 1024)}KB`);
+            resolve(blob);
+          } else {
+            reject(new Error("Failed to create blob from optimized canvas"));
+          }
+        }, 'image/png', 1.0); // Maximum quality PNG
+      });
+      
+      console.log("✅ Chart image captured and validated successfully");
+
+      // Create file with descriptive name
+      const timestamp = Date.now();
+      const file = new File([blob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
+        type: 'image/png'
+      });
+      
+      const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
+      const timeframeLabel = timeframeObj?.label || selectedTimeframe;
+      
+      console.log("🚀 Sending validated chart to analysis:", {
+        fileName: file.name,
+        fileSize: Math.round(file.size / 1024) + "KB",
+        cleanSymbol,
+        timeframeLabel,
+        dimensions: `${finalWidth}x${finalHeight}`,
+        validationPassed: true
+      });
+      
+      toast({
+        title: "Chart Captured Successfully",
+        description: `Captured ${cleanSymbol} chart (${Math.round(file.size / 1024)}KB). Starting AI analysis...`,
+        variant: "default"
+      });
+      
+      // Send for analysis
+      onAnalyze(file, cleanSymbol, timeframeLabel);
+
+    } catch (error) {
+      console.error("❌ Error in advanced chart capture:", error);
+      
+      let errorMessage = "Failed to capture the chart. ";
+      
+      if (error instanceof Error) {
+        if (error.message.includes('tainted')) {
+          errorMessage += "Security restrictions detected. Try waiting longer for chart to load.";
+        } else if (error.message.includes('timeout')) {
+          errorMessage += "Chart loading timeout. Please try again.";
+        } else {
+          errorMessage += error.message;
+        }
+      } else {
+        errorMessage += "Please ensure the chart is fully loaded and try again.";
+      }
+      
+      toast({
+        title: "Capture Failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
   // Helper function to compress image
   const compressImage = (canvas: HTMLCanvasElement, quality: number = 0.7): Promise<Blob> => {
     return new Promise((resolve) => {
@@ -127,172 +378,6 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     console.log(`📸 Image validation - Color variation ratio: ${variationRatio.toFixed(3)}`);
     
     return variationRatio > 0.1; // At least 10% color variation
-  };
-
-  const captureChartUsingRealScreenshot = async () => {
-    if (!widgetRef.current || !isWidgetLoaded) {
-      toast({
-        title: "Chart Not Ready",
-        description: "Please wait for the chart to fully load before analyzing",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsCapturing(true);
-
-    try {
-      // Get clean symbol for analysis
-      let cleanSymbol;
-      if (showCustomInput && customPair) {
-        cleanSymbol = customPair.toUpperCase();
-      } else {
-        const symbolObj = FOREX_PAIRS.find(s => s.value === selectedSymbol);
-        cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
-      }
-      
-      console.log("📸 Starting chart capture for:", { 
-        selectedSymbol, 
-        cleanSymbol, 
-        selectedTimeframe,
-        isCustomPair: showCustomInput
-      });
-      
-      // Wait longer for TradingView to fully render
-      console.log("⏳ Waiting for TradingView chart to fully render...");
-      await new Promise(resolve => setTimeout(resolve, 5000));
-
-      // Try to find the actual TradingView chart iframe
-      const tradingViewIframe = widgetRef.current.querySelector('iframe');
-      
-      if (tradingViewIframe) {
-        console.log("📸 Found TradingView iframe, attempting to capture...");
-        // Due to CORS, we can't capture iframe content directly
-        // But we can still capture the widget container which should show the chart
-      }
-
-      console.log("📸 Capturing widget container with html2canvas...");
-      
-      // Capture with optimized settings for better chart visibility
-      const canvas = await html2canvas(widgetRef.current, {
-        backgroundColor: '#131722', // TradingView dark theme background
-        scale: 1, // Standard scale to avoid huge images
-        useCORS: true,
-        allowTaint: false, // Strict CORS handling
-        foreignObjectRendering: false, // Disable for better iframe handling
-        width: Math.min(widgetRef.current.offsetWidth, 1200),
-        height: Math.min(widgetRef.current.offsetHeight, 800),
-        logging: true, // Enable logging for debugging
-        imageTimeout: 30000, // Longer timeout for complex charts
-        removeContainer: false,
-        onclone: (clonedDoc) => {
-          // Try to style the cloned document for better capture
-          const clonedWidget = clonedDoc.querySelector('.tradingview-widget-container');
-          if (clonedWidget) {
-            (clonedWidget as HTMLElement).style.background = '#131722';
-          }
-        }
-      });
-      
-      console.log(`📸 Canvas captured: ${canvas.width}x${canvas.height}`);
-      
-      // Validate canvas has content
-      const ctx = canvas.getContext('2d');
-      if (!ctx) {
-        throw new Error("Failed to get canvas context");
-      }
-      
-      // Check if canvas is not empty (basic validation)
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const pixelData = imageData.data;
-      let hasContent = false;
-      
-      // Sample some pixels to check for non-background content
-      for (let i = 0; i < pixelData.length; i += 400) { // Sample every 100th pixel
-        const r = pixelData[i];
-        const g = pixelData[i + 1]; 
-        const b = pixelData[i + 2];
-        
-        // Check if pixel is not pure black/transparent (indicating chart content)
-        if (r > 10 || g > 10 || b > 10) {
-          hasContent = true;
-          break;
-        }
-      }
-      
-      if (!hasContent) {
-        console.warn("⚠️ Captured canvas appears to be mostly empty");
-        toast({
-          title: "Capture Warning", 
-          description: "Chart capture may be incomplete. Proceeding with analysis...",
-          variant: "default"
-        });
-      }
-      
-      // Convert to blob with good quality
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          if (blob) {
-            console.log(`📸 Image compressed to ${Math.round(blob.size / 1024)}KB`);
-            resolve(blob);
-          } else {
-            throw new Error("Failed to create blob from canvas");
-          }
-        }, 'image/png', 0.9); // Use PNG for better chart clarity
-      });
-      
-      console.log("📊 Chart image captured successfully");
-
-      // Create file from blob
-      const timestamp = Date.now();
-      const file = new File([blob], `tradingview-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
-        type: 'image/png'
-      });
-      
-      const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
-      const timeframeLabel = timeframeObj?.label || selectedTimeframe;
-      
-      console.log("🚀 Sending chart image to analysis:", {
-        fileName: file.name,
-        fileSize: Math.round(file.size / 1024) + "KB",
-        cleanSymbol,
-        timeframeLabel,
-        originalSymbol: selectedSymbol,
-        dimensions: `${canvas.width}x${canvas.height}`
-      });
-      
-      toast({
-        title: "Chart Captured Successfully",
-        description: `Captured ${cleanSymbol} chart (${Math.round(file.size / 1024)}KB). Starting analysis...`,
-        variant: "default"
-      });
-      
-      // Pass the clean symbol for analysis
-      onAnalyze(file, cleanSymbol, timeframeLabel);
-
-    } catch (error) {
-      console.error("❌ Error in chart capture:", error);
-      
-      let errorMessage = "Failed to capture the chart. ";
-      
-      if (error instanceof Error) {
-        if (error.message.includes('tainted')) {
-          errorMessage += "Security restrictions prevent chart capture. Try waiting longer for the chart to load.";
-        } else {
-          errorMessage += error.message;
-        }
-      } else {
-        errorMessage += "Please ensure the chart is fully loaded and try again.";
-      }
-      
-      toast({
-        title: "Capture Failed",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setIsCapturing(false);
-    }
   };
 
   const getSelectedSymbolLabel = () => {
@@ -351,7 +436,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
-            Automated Chart Analysis with Real Screenshot
+            Automated Chart Analysis with Advanced Screenshot
           </CardTitle>
         </CardHeader>
       )}
@@ -441,7 +526,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           </div>
         </div>
 
-        {/* TradingView Chart */}
+        {/* TradingView Chart with improved validation feedback */}
         <div className={`${isMobile ? 'space-y-2' : 'space-y-4'}`}>
           <div className={`bg-gray-800/50 rounded-lg ${isMobile ? 'p-2' : 'p-4'}`}>
             {!isMobile && (
@@ -472,17 +557,17 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             </div>
           </div>
 
-          {/* Status Indicators */}
+          {/* Status Indicators with better feedback */}
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isWidgetLoaded ? 'Chart ready for capture' : 'Loading chart...'}
+                {isWidgetLoaded ? 'Chart ready - Advanced capture enabled' : 'Loading chart with real data...'}
               </span>
             </div>
             {!isMobile && (
               <span className="text-xs text-gray-500">
-                Real Screenshot • OpenRouter GPT-4.1 Mini
+                Advanced Screenshot • Content Validation • OpenRouter GPT-4.1 Mini
               </span>
             )}
           </div>
@@ -493,7 +578,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className={`w-full bg-primary hover:bg-primary/90 text-white ${isMobile ? 'h-10 text-sm' : ''}`}
           >
-            {isCapturing ? 'Capturing Chart...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing & Validating Chart...' : isAnalyzing ? 'Analyzing...' : (
               <>
                 <Camera className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
                 {isMobile ? 'Analyze Chart' : 'Capture Real Chart & Analyze'}
@@ -501,15 +586,15 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             )}
           </Button>
 
-          {/* Help Text */}
+          {/* Updated Help Text */}
           {!isMobile && (
             <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
               <div className="flex items-start">
                 <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-blue-400 font-medium text-sm mb-1">Real Chart Analysis</h4>
+                  <h4 className="text-blue-400 font-medium text-sm mb-1">Advanced Chart Analysis</h4>
                   <p className="text-gray-400 text-xs">
-                    Click "Analyze Chart" to capture a real screenshot of the TradingView chart and analyze it with OpenRouter GPT-4.1 Mini. This ensures accurate analysis of actual chart data.
+                    Click "Analyze Chart" to capture a validated screenshot of the TradingView chart. Our advanced system validates chart content before sending to OpenRouter GPT-4.1 Mini for accurate analysis.
                   </p>
                 </div>
               </div>
