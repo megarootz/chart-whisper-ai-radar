@@ -8,6 +8,7 @@ import { TrendingUp, Download, AlertTriangle, Plus, Camera } from 'lucide-react'
 import AutoTradingViewWidget from './AutoTradingViewWidget';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import html2canvas from 'html2canvas';
 
 interface AutoChartGeneratorProps {
   onAnalyze: (file: File, symbol: string, timeframe: string) => void;
@@ -85,7 +86,50 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsWidgetLoaded(true);
   }, [selectedSymbol]);
 
-  const captureChartUsingTradingViewCamera = async () => {
+  // Helper function to compress image
+  const compressImage = (canvas: HTMLCanvasElement, quality: number = 0.7): Promise<Blob> => {
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          console.log(`📸 Image compressed to ${Math.round(blob.size / 1024)}KB`);
+          resolve(blob);
+        }
+      }, 'image/jpeg', quality);
+    });
+  };
+
+  // Helper function to validate if image contains chart content
+  const validateChartImage = (canvas: HTMLCanvasElement): boolean => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Check for color variation to ensure it's not just a blank canvas
+    let colorVariation = 0;
+    let sampleSize = Math.min(1000, data.length / 4); // Sample 1000 pixels or less
+    
+    for (let i = 0; i < sampleSize; i++) {
+      const index = i * 4;
+      const r = data[index];
+      const g = data[index + 1];
+      const b = data[index + 2];
+      
+      // Calculate basic color variation
+      const brightness = (r + g + b) / 3;
+      if (brightness > 50 && brightness < 200) { // Avoid pure black/white
+        colorVariation++;
+      }
+    }
+    
+    const variationRatio = colorVariation / sampleSize;
+    console.log(`📸 Image validation - Color variation ratio: ${variationRatio.toFixed(3)}`);
+    
+    return variationRatio > 0.1; // At least 10% color variation
+  };
+
+  const captureChartUsingRealScreenshot = async () => {
     if (!widgetRef.current || !isWidgetLoaded) {
       toast({
         title: "Chart Not Ready",
@@ -107,90 +151,64 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
       }
       
-      console.log("📸 Using TradingView camera to capture chart for:", { 
+      console.log("📸 Starting real chart capture for:", { 
         selectedSymbol, 
         cleanSymbol, 
         selectedTimeframe,
         isCustomPair: showCustomInput
       });
       
-      // Wait for chart to fully render with correct symbol
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      // Wait for chart to fully render
+      await new Promise(resolve => setTimeout(resolve, 2000));
 
-      // Find and click the TradingView camera button
-      const iframe = widgetRef.current.querySelector('iframe');
-      if (!iframe) {
-        throw new Error("TradingView iframe not found");
-      }
-
-      // Try to access the camera functionality through TradingView's API
-      // Note: TradingView widgets have built-in screenshot functionality
-      // We'll simulate the camera click by triggering the download
+      // Use html2canvas to capture the actual TradingView widget
+      console.log("📸 Capturing TradingView widget with html2canvas...");
       
-      console.log("📸 Attempting to trigger TradingView camera functionality...");
-      
-      // Since we can't directly access iframe content due to CORS,
-      // we'll use a different approach: wait for the chart to be ready
-      // and then use a screenshot approach that's compatible with TradingView
-      
-      // Create a blob from the widget area
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      const rect = widgetRef.current.getBoundingClientRect();
-      
-      canvas.width = rect.width;
-      canvas.height = rect.height;
-      
-      // This is a simplified approach - in practice, TradingView provides
-      // its own screenshot functionality through their API
-      // For now, we'll create a placeholder that represents the chart data
-      
-      // Create a simple chart image representation
-      ctx!.fillStyle = '#131722';
-      ctx!.fillRect(0, 0, canvas.width, canvas.height);
-      ctx!.fillStyle = '#ffffff';
-      ctx!.font = '16px Arial';
-      ctx!.fillText(`${cleanSymbol} - ${selectedTimeframe}`, 20, 30);
-      ctx!.strokeStyle = '#00ff00';
-      ctx!.beginPath();
-      ctx!.moveTo(50, canvas.height - 100);
-      
-      // Draw a simple price line
-      for (let i = 0; i < canvas.width - 100; i += 20) {
-        const y = canvas.height - 100 + Math.sin(i * 0.01) * 50;
-        ctx!.lineTo(50 + i, y);
-      }
-      ctx!.stroke();
-
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          resolve(blob!);
-        }, 'image/png');
+      const canvas = await html2canvas(widgetRef.current, {
+        backgroundColor: '#131722',
+        scale: 1, // Use normal scale to avoid huge images
+        useCORS: true,
+        allowTaint: true,
+        width: Math.min(widgetRef.current.offsetWidth, 1200), // Limit width
+        height: Math.min(widgetRef.current.offsetHeight, 800), // Limit height
+        logging: false,
+        imageTimeout: 15000,
+        removeContainer: false
       });
       
-      console.log("📊 Chart image created using TradingView camera simulation");
+      console.log(`📸 Canvas captured: ${canvas.width}x${canvas.height}`);
+      
+      // Validate that we captured actual chart content
+      if (!validateChartImage(canvas)) {
+        throw new Error("Captured image appears to be blank or invalid. Please try again after the chart fully loads.");
+      }
+      
+      // Compress the image to reduce size
+      const blob = await compressImage(canvas, 0.8);
+      
+      console.log("📊 Real chart image captured successfully");
 
       // Create file from blob
       const timestamp = Date.now();
-      const file = new File([blob], `tradingview-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
-        type: 'image/png' 
+      const file = new File([blob], `tradingview-real-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.jpg`, { 
+        type: 'image/jpeg' 
       });
       
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending TradingView captured image to analysis:", {
+      console.log("🚀 Sending real TradingView image to analysis:", {
         fileName: file.name,
         fileSize: Math.round(file.size / 1024) + "KB",
         cleanSymbol,
         timeframeLabel,
-        originalSymbol: selectedSymbol
+        originalSymbol: selectedSymbol,
+        dimensions: `${canvas.width}x${canvas.height}`
       });
       
       toast({
-        title: "Chart Captured",
-        description: `Captured ${cleanSymbol} chart using TradingView camera. Starting analysis...`,
+        title: "Chart Captured Successfully",
+        description: `Captured real ${cleanSymbol} chart (${Math.round(file.size / 1024)}KB). Starting analysis...`,
         variant: "default"
       });
       
@@ -198,12 +216,14 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error in TradingView camera capture:", error);
+      console.error("❌ Error in real chart capture:", error);
       
-      let errorMessage = "Failed to capture the chart using TradingView camera. ";
+      let errorMessage = "Failed to capture the chart. ";
       
       if (error instanceof Error) {
         errorMessage += error.message;
+      } else {
+        errorMessage += "Please ensure the chart is fully loaded and try again.";
       }
       
       toast({
@@ -272,7 +292,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
-            Automated Chart Analysis with TradingView Camera
+            Automated Chart Analysis with Real Screenshot
           </CardTitle>
         </CardHeader>
       )}
@@ -383,6 +403,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <div 
               ref={widgetRef} 
               className="w-full overflow-hidden rounded-lg border border-gray-700 bg-[#131722]"
+              style={{ height: isMobile ? '300px' : '500px' }}
             >
               <AutoTradingViewWidget 
                 symbol={selectedSymbol}
@@ -397,26 +418,26 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isWidgetLoaded ? 'Chart ready' : 'Loading...'}
+                {isWidgetLoaded ? 'Chart ready for capture' : 'Loading chart...'}
               </span>
             </div>
             {!isMobile && (
               <span className="text-xs text-gray-500">
-                TradingView Camera • OpenRouter GPT-4.1 Mini
+                Real Screenshot • OpenRouter GPT-4.1 Mini
               </span>
             )}
           </div>
 
           {/* Analyze Button */}
           <Button 
-            onClick={captureChartUsingTradingViewCamera}
+            onClick={captureChartUsingRealScreenshot}
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className={`w-full bg-primary hover:bg-primary/90 text-white ${isMobile ? 'h-10 text-sm' : ''}`}
           >
-            {isCapturing ? 'Capturing...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing Chart...' : isAnalyzing ? 'Analyzing...' : (
               <>
                 <Camera className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                {isMobile ? 'Analyze Chart' : 'Capture with TradingView Camera & Analyze'}
+                {isMobile ? 'Analyze Chart' : 'Capture Real Chart & Analyze'}
               </>
             )}
           </Button>
@@ -427,9 +448,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               <div className="flex items-start">
                 <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-blue-400 font-medium text-sm mb-1">TradingView Camera Analysis</h4>
+                  <h4 className="text-blue-400 font-medium text-sm mb-1">Real Chart Analysis</h4>
                   <p className="text-gray-400 text-xs">
-                    Click "Analyze Chart" to use TradingView's camera feature to capture the current chart and analyze it with OpenRouter GPT-4.1 Mini.
+                    Click "Analyze Chart" to capture a real screenshot of the TradingView chart and analyze it with OpenRouter GPT-4.1 Mini. This ensures accurate analysis of actual chart data.
                   </p>
                 </div>
               </div>

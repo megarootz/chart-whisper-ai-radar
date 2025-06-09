@@ -86,6 +86,32 @@ export const useChartAnalysis = () => {
     }
   };
 
+  // Validate image file
+  const validateImageFile = (file: File): boolean => {
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Invalid File Type",
+        description: "Please upload a valid image file (PNG, JPG, JPEG)",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    // Check file size (max 10MB)
+    const maxSizeInMB = 10;
+    if (file.size > maxSizeInMB * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: `Please upload an image smaller than ${maxSizeInMB}MB`,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const analyzeChart = async (file: File, pairName: string, timeframe: string) => {
     try {
       setIsAnalyzing(true);
@@ -101,12 +127,17 @@ export const useChartAnalysis = () => {
         return;
       }
 
-      console.log('🔍 Starting OpenRouter GPT-4.1 Mini chart analysis for authenticated user:', user.id, 'email:', user.email);
+      // Validate the image file
+      if (!validateImageFile(file)) {
+        return;
+      }
+
+      console.log('🔍 Starting OpenRouter GPT-4o-mini chart analysis for authenticated user:', user.id, 'email:', user.email);
       console.log('📊 Analysis parameters:', { 
         pairName, 
         timeframe, 
         fileName: file.name, 
-        fileSize: file.size,
+        fileSize: Math.round(file.size / 1024) + "KB",
         fileType: file.type 
       });
 
@@ -156,26 +187,28 @@ export const useChartAnalysis = () => {
         }
       }
       
-      console.log('✅ Usage limits check passed, proceeding with OpenRouter GPT-4.1 Mini analysis');
+      console.log('✅ Usage limits check passed, proceeding with OpenRouter GPT-4o-mini analysis');
       
       // Convert image to base64
       console.log('🔄 Converting image to base64...');
       const base64Image = await fileToBase64(file);
       console.log('✅ Base64 conversion complete, length:', base64Image.length, 'characters');
       
-      // Log the first few characters of the base64 to verify it's a real image
-      const base64Header = base64Image.substring(0, 50);
-      console.log('🖼️ Base64 header:', base64Header);
+      // Validate base64 image format
+      if (!base64Image.startsWith('data:image/')) {
+        throw new Error('Invalid image format after base64 conversion');
+      }
       
-      console.log("🤖 Calling OpenRouter GPT-4.1 Mini Supabase Edge Function to analyze chart");
+      console.log("🤖 Calling OpenRouter GPT-4o-mini Supabase Edge Function to analyze chart");
       console.log('📤 Sending data:', {
         pairName,
         timeframe,
         base64Length: base64Image.length,
-        hasValidImageHeader: base64Image.startsWith('data:image/')
+        hasValidImageHeader: base64Image.startsWith('data:image/'),
+        imageType: file.type
       });
       
-      // Call our OpenRouter GPT-4.1 Mini Supabase Edge Function
+      // Call our OpenRouter GPT-4o-mini Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("analyze-chart", {
         body: {
           base64Image,
@@ -190,10 +223,10 @@ export const useChartAnalysis = () => {
       }
 
       if (!data) {
-        throw new Error('No response from OpenRouter GPT-4.1 Mini analysis function');
+        throw new Error('No response from OpenRouter GPT-4o-mini analysis function');
       }
 
-      console.log("✅ OpenRouter GPT-4.1 Mini edge function response received");
+      console.log("✅ OpenRouter GPT-4o-mini edge function response received");
       console.log('📥 Raw response type:', typeof data);
       
       // Parse the API response
@@ -201,12 +234,17 @@ export const useChartAnalysis = () => {
       
       if (!responseData.choices || responseData.choices.length === 0) {
         console.error('❌ Invalid response structure:', responseData);
-        throw new Error('No response content from OpenRouter GPT-4.1 Mini API');
+        throw new Error('No response content from OpenRouter GPT-4o-mini API');
       }
 
       // Get the raw analysis text as requested (no formatting changes)
       const rawAnalysisText = responseData.choices[0].message.content || '';
-      console.log("📝 OpenRouter GPT-4.1 Mini Raw Analysis:", rawAnalysisText.substring(0, 300));
+      console.log("📝 OpenRouter GPT-4o-mini Raw Analysis:", rawAnalysisText.substring(0, 300) + "...");
+      
+      // Validate analysis content
+      if (!rawAnalysisText.trim()) {
+        throw new Error('Empty analysis received from OpenRouter API');
+      }
       
       // Create a simple analysis data structure with raw text
       const analysisData: AnalysisResultData = {
@@ -214,7 +252,7 @@ export const useChartAnalysis = () => {
         timeframe: timeframe,
         overallSentiment: 'neutral', // Default since we're showing raw output
         confidenceScore: 80,
-        marketAnalysis: rawAnalysisText, // Raw output from GPT-4.1 Mini
+        marketAnalysis: rawAnalysisText, // Raw output from GPT-4o-mini
         trendDirection: 'neutral',
         marketFactors: [],
         chartPatterns: [],
@@ -277,7 +315,7 @@ export const useChartAnalysis = () => {
 
       toast({
         title: "Analysis Complete",
-        description: `Successfully analyzed the ${analysisData.pairName} chart with OpenRouter GPT-4.1 Mini`,
+        description: `Successfully analyzed the ${analysisData.pairName} chart with OpenRouter GPT-4o-mini`,
         variant: "default",
       });
       
@@ -301,7 +339,11 @@ export const useChartAnalysis = () => {
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        console.log('📄 File converted to base64, size:', file.size, 'bytes -> base64 length:', result.length);
+        console.log('📄 File converted to base64:', {
+          originalSize: file.size + " bytes",
+          base64Length: result.length + " characters",
+          compressionRatio: (result.length / file.size).toFixed(2)
+        });
         resolve(result);
       };
       reader.onerror = error => {
