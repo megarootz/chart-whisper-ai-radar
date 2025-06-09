@@ -23,13 +23,19 @@ serve(async (req) => {
 
     const { base64Image, pairName, timeframe } = await req.json();
     
-    console.log("📊 Chart analysis request received:", { 
+    // Calculate estimated token usage for monitoring
+    const imageSize = base64Image?.length || 0;
+    const estimatedImageTokens = Math.round(imageSize / 750); // Rough estimate
+    
+    console.log("📊 Optimized chart analysis request:", { 
       pairName, 
       timeframe, 
-      imageLength: base64Image?.length 
+      imageSizeKB: Math.round(imageSize / 1024),
+      estimatedImageTokens,
+      base64Length: imageSize
     });
     
-    // Simplified professional trading analysis prompt
+    // Optimized professional trading analysis prompt
     const requestData = {
       model: "openai/gpt-4o-mini",
       messages: [
@@ -56,24 +62,31 @@ For trading setups include entry, stop loss, take profits with specific prices. 
               type: "image_url",
               image_url: {
                 url: base64Image,
-                detail: "high"
+                detail: "medium" // Changed from "high" to "medium" to reduce token usage
               }
             }
           ]
         }
       ],
       temperature: 0.1,
-      max_tokens: 1500
+      max_tokens: 2000 // Increased from 1500 to allow for more detailed analysis
     };
 
-    console.log("Sending request to OpenRouter API for:", pairName, timeframe);
+    console.log("🚀 Sending optimized request to OpenRouter API:", {
+      pair: pairName,
+      timeframe,
+      model: requestData.model,
+      maxTokens: requestData.max_tokens,
+      imageDetail: "medium",
+      estimatedTotalTokens: estimatedImageTokens + 200 // Prompt + response estimate
+    });
     
     // Create headers with proper authentication
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'Professional Forex Chart Analyzer'
+      'X-Title': 'Optimized Forex Chart Analyzer'
     };
     
     // Call OpenRouter API
@@ -83,14 +96,37 @@ For trading setups include entry, stop loss, take profits with specific prices. 
       body: JSON.stringify(requestData)
     });
 
-    console.log("API Response status:", response.status);
+    console.log("📈 API Response status:", response.status);
     
     // Get full response text
     const responseText = await response.text();
-    console.log("Analysis response received for", pairName, "- length:", responseText.length);
     
     if (!response.ok) {
+      console.error("❌ API Error Response:", responseText);
       throw new Error(`Failed to analyze chart: ${response.status} - ${responseText}`);
+    }
+    
+    // Parse and log response details
+    try {
+      const parsedResponse = JSON.parse(responseText);
+      const usage = parsedResponse.usage;
+      
+      console.log("✅ Analysis completed successfully:", {
+        pairName,
+        timeframe,
+        responseLength: responseText.length,
+        tokensUsed: usage ? {
+          prompt: usage.prompt_tokens,
+          completion: usage.completion_tokens,
+          total: usage.total_tokens
+        } : 'not available',
+        model: parsedResponse.model || 'unknown'
+      });
+    } catch (parseError) {
+      console.log("✅ Analysis completed (couldn't parse usage details):", {
+        pairName,
+        responseLength: responseText.length
+      });
     }
     
     // Return the raw response to the client
@@ -99,7 +135,7 @@ For trading setups include entry, stop loss, take profits with specific prices. 
     });
     
   } catch (error) {
-    console.error("Error in analyze-chart function:", error);
+    console.error("❌ Error in optimized analyze-chart function:", error);
     return new Response(
       JSON.stringify({ 
         error: error.message || "An unknown error occurred while analyzing the chart" 
