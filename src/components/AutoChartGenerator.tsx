@@ -1,10 +1,11 @@
-import React, { useState, useRef, useCallback } from 'react';
+
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { TrendingUp, Download, AlertTriangle, Plus } from 'lucide-react';
+import { TrendingUp, Download, AlertTriangle, Plus, Star } from 'lucide-react';
 import AutoTradingViewWidget from './AutoTradingViewWidget';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
@@ -77,9 +78,41 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const [isCapturing, setIsCapturing] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customPair, setCustomPair] = useState("");
+  const [favorites, setFavorites] = useState<string[]>([]);
   const widgetRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // Load favorites from localStorage on component mount
+  useEffect(() => {
+    const storedFavorites = localStorage.getItem('forexPairFavorites');
+    if (storedFavorites) {
+      try {
+        setFavorites(JSON.parse(storedFavorites));
+      } catch (error) {
+        console.error('Error loading favorites:', error);
+      }
+    }
+  }, []);
+
+  // Save favorites to localStorage whenever favorites change
+  useEffect(() => {
+    localStorage.setItem('forexPairFavorites', JSON.stringify(favorites));
+  }, [favorites]);
+
+  const toggleFavorite = (pairValue: string) => {
+    setFavorites(prev => {
+      if (prev.includes(pairValue)) {
+        return prev.filter(fav => fav !== pairValue);
+      } else {
+        return [...prev, pairValue];
+      }
+    });
+  };
+
+  const getFavoritePairs = () => {
+    return FOREX_PAIRS.filter(pair => favorites.includes(pair.value));
+  };
 
   const handleWidgetLoad = useCallback(() => {
     console.log("📊 Widget loaded callback triggered for symbol:", selectedSymbol);
@@ -281,6 +314,8 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     return acc;
   }, {} as Record<string, typeof FOREX_PAIRS>);
 
+  const favoritePairs = getFavoritePairs();
+
   return (
     <Card className="w-full bg-chart-card border-gray-700">
       {!isMobile && (
@@ -303,6 +338,32 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                     <SelectValue placeholder="Select a trading pair" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 max-h-[300px]">
+                    {/* Favorites Section */}
+                    {favoritePairs.length > 0 && (
+                      <div>
+                        <div className="px-2 py-1.5 text-xs font-medium text-primary uppercase tracking-wider flex items-center gap-2">
+                          <Star className="h-3 w-3 fill-current" />
+                          Favorites
+                        </div>
+                        {favoritePairs.map((pair) => (
+                          <SelectItem key={`fav-${pair.value}`} value={pair.value} className="text-white hover:bg-gray-700">
+                            <div className="flex items-center justify-between w-full">
+                              <span>{pair.label}</span>
+                              <Star 
+                                className="h-3 w-3 fill-current text-primary ml-2" 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(pair.value);
+                                }}
+                              />
+                            </div>
+                          </SelectItem>
+                        ))}
+                        <div className="border-t border-gray-600 my-1"></div>
+                      </div>
+                    )}
+                    
+                    {/* Regular Categories */}
                     {Object.entries(groupedPairs).map(([category, pairs]) => (
                       <div key={category}>
                         <div className="px-2 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -310,7 +371,20 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                         </div>
                         {pairs.map((pair) => (
                           <SelectItem key={pair.value} value={pair.value} className="text-white hover:bg-gray-700">
-                            {pair.label}
+                            <div className="flex items-center justify-between w-full">
+                              <span>{pair.label}</span>
+                              <Star 
+                                className={`h-3 w-3 ml-2 cursor-pointer transition-colors ${
+                                  favorites.includes(pair.value) 
+                                    ? 'fill-current text-primary' 
+                                    : 'text-gray-500 hover:text-primary'
+                                }`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(pair.value);
+                                }}
+                              />
+                            </div>
                           </SelectItem>
                         ))}
                       </div>
