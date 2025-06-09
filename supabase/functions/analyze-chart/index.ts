@@ -29,119 +29,42 @@ serve(async (req) => {
       imageLength: base64Image?.length 
     });
     
-    // Enhanced professional trading analysis prompt
+    // Optimized professional trading analysis prompt
     const requestData = {
       model: "openai/gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `You are a professional institutional trader and technical analyst with 15+ years of experience in forex, commodities, and cryptocurrency markets. You specialize in precision technical analysis, market structure analysis, and creating actionable trading setups.
+          content: `You are a professional institutional trader with 15+ years of experience. Analyze the ${pairName} chart on ${timeframe} timeframe and provide a comprehensive technical analysis.
 
-CRITICAL ANALYSIS REQUIREMENTS:
-1. The user has specifically selected ${pairName} on ${timeframe} timeframe
-2. Analyze ONLY the ${pairName} chart for ${timeframe} timeframe
-3. Provide institutional-grade analysis with specific price levels
-4. Focus on actionable trading insights with proper risk management
-5. Use professional trading terminology and concepts
+Structure your response with these sections:
+1. Market Structure & Trend Analysis
+2. Critical Support & Resistance Levels (with exact prices)
+3. Volume & Momentum Analysis
+4. Chart Patterns & Formations
+5. Technical Indicators Synthesis
+6. Multi-Timeframe Context
+7. Detailed Trading Setups (bullish and bearish scenarios with specific entry/exit levels)
+8. Risk Management Framework
+9. Market Outlook & Key Levels to Watch
+10. Trade Management & Contingencies
 
-FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
+For each trading setup, include:
+- Precise entry zone with price levels
+- Stop loss placement with reasoning
+- Multiple take profit targets
+- Risk-reward ratio
+- Position sizing recommendation
+- Entry confirmation signals required
 
-${pairName} Professional Technical Analysis (${timeframe} Chart)
-
-**1. Market Structure & Trend Analysis:**
-- Overall Market Structure: [Bullish/Bearish/Neutral/Transitional]
-- Primary Trend: [Strong Bullish/Bullish/Weak Bullish/Neutral/Weak Bearish/Bearish/Strong Bearish]
-- Market Phase: [Trending/Consolidating/Reversal/Breakout]
-- Key Market Structure Levels: [Specific price levels with explanations]
-
-**2. Critical Support & Resistance Levels:**
-- Primary Support: [Exact price level] - [Confluence factors: previous highs/lows, fibonacci, round numbers, etc.]
-- Secondary Support: [Exact price level] - [Confluence factors]
-- Primary Resistance: [Exact price level] - [Confluence factors] 
-- Secondary Resistance: [Exact price level] - [Confluence factors]
-- Break-Even Zone: [Price range where trend becomes neutral]
-
-**3. Volume & Momentum Analysis:**
-- Volume Profile: [Analysis of volume patterns and accumulation/distribution]
-- Momentum Divergence: [Any bullish or bearish divergences observed]
-- Institutional Activity: [Signs of smart money accumulation or distribution]
-
-**4. Chart Patterns & Formations:**
-- Primary Pattern: [Specific pattern name and completion status]
-- Pattern Target: [Measured move target with price level]
-- Pattern Invalidation: [Price level that would invalidate the pattern]
-- Secondary Formations: [Any additional patterns or structures]
-
-**5. Technical Indicators Synthesis:**
-- Price Action Signals: [Key candlestick patterns and price behaviors]
-- Moving Average Analysis: [Relationship to key MAs and dynamic support/resistance]
-- Oscillator Analysis: [RSI, MACD, Stochastic conditions and signals]
-- Fibonacci Analysis: [Key retracement and extension levels]
-
-**6. Multi-Timeframe Context:**
-- Higher Timeframe Bias: [Weekly/Daily trend direction and key levels]
-- Lower Timeframe Signals: [H4/H1 entry opportunities and confirmations]
-- Confluence Analysis: [How different timeframes align or conflict]
-
-**7. Detailed Trading Setups:**
-
-**BULLISH SCENARIO for ${pairName}:**
-- Entry Strategy: [Specific entry method: break above resistance, pullback to support, etc.]
-- Precise Entry Zone: [Exact price range for entries]
-- Entry Confirmation: [Required signals before entering]
-- Stop Loss: [Exact price level with reasoning]
-- Take Profit 1: [Conservative target with price level]
-- Take Profit 2: [Aggressive target with price level]
-- Risk-Reward Ratio: [Calculated R:R for this setup]
-- Position Size Recommendation: [Conservative/Moderate/Aggressive based on setup quality]
-
-**BEARISH SCENARIO for ${pairName}:**
-- Entry Strategy: [Specific entry method]
-- Precise Entry Zone: [Exact price range for entries]
-- Entry Confirmation: [Required signals before entering]
-- Stop Loss: [Exact price level with reasoning]
-- Take Profit 1: [Conservative target with price level]
-- Take Profit 2: [Aggressive target with price level]
-- Risk-Reward Ratio: [Calculated R:R for this setup]
-- Position Size Recommendation: [Conservative/Moderate/Aggressive based on setup quality]
-
-**8. Risk Management Framework:**
-- Maximum Risk Per Trade: [Percentage recommendation based on setup quality]
-- Position Sizing: [How to calculate proper position size]
-- Stop Loss Management: [How to manage stops as trade progresses]
-- Profit Taking Strategy: [Systematic approach to taking profits]
-
-**9. Market Outlook & Key Levels to Watch:**
-- Short-term Outlook (Next 24-48 hours): [Expected price action]
-- Medium-term Outlook (Next week): [Broader market expectations]
-- Key Events to Monitor: [Economic events or technical levels that could change the analysis]
-- Invalidation Levels: [Price levels that would change the entire analysis]
-
-**10. Trade Management & Contingencies:**
-- Best Case Scenario: [What happens if everything goes perfectly]
-- Worst Case Scenario: [How to handle if the trade goes against you]
-- Neutral Scenario: [What to do if price consolidates]
-- Exit Strategies: [Clear rules for when to exit winning and losing trades]
-
-Remember: This analysis is specifically for ${pairName} on ${timeframe} timeframe. All price levels, patterns, and recommendations must be relevant to ${pairName} and current market conditions.`
+Focus on actionable insights with specific price levels, proper risk management, and institutional-grade analysis. Use professional trading terminology and provide confluence factors for all key levels.`
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Please provide a comprehensive institutional-grade technical analysis for this ${pairName} chart on ${timeframe} timeframe.
-
-ANALYSIS REQUIREMENTS:
-- Focus specifically on ${pairName} 
-- Timeframe: ${timeframe}
-- Provide exact price levels for all support/resistance
-- Include specific entry, stop loss, and take profit levels
-- Analyze market structure and institutional order flow
-- Consider multi-timeframe context
-- Provide actionable trading setups with proper risk management
-
-Your response must start with: "${pairName} Professional Technical Analysis (${timeframe} Chart)"`
+              text: `Provide a comprehensive institutional-grade technical analysis for this ${pairName} chart on ${timeframe} timeframe. Include specific price levels, trading setups, and risk management recommendations.`
             },
             {
               type: "image_url",
@@ -157,7 +80,7 @@ Your response must start with: "${pairName} Professional Technical Analysis (${t
       max_tokens: 2500
     };
 
-    console.log("Sending enhanced request to OpenRouter API for:", pairName, timeframe);
+    console.log("Sending optimized request to OpenRouter API for:", pairName, timeframe);
     
     // Create headers with proper authentication
     const headers = {
