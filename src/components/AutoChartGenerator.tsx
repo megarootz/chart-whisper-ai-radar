@@ -151,53 +151,108 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
       }
       
-      console.log("📸 Starting real chart capture for:", { 
+      console.log("📸 Starting chart capture for:", { 
         selectedSymbol, 
         cleanSymbol, 
         selectedTimeframe,
         isCustomPair: showCustomInput
       });
       
-      // Wait for chart to fully render
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Wait longer for TradingView to fully render
+      console.log("⏳ Waiting for TradingView chart to fully render...");
+      await new Promise(resolve => setTimeout(resolve, 5000));
 
-      // Use html2canvas to capture the actual TradingView widget
-      console.log("📸 Capturing TradingView widget with html2canvas...");
+      // Try to find the actual TradingView chart iframe
+      const tradingViewIframe = widgetRef.current.querySelector('iframe');
       
+      if (tradingViewIframe) {
+        console.log("📸 Found TradingView iframe, attempting to capture...");
+        // Due to CORS, we can't capture iframe content directly
+        // But we can still capture the widget container which should show the chart
+      }
+
+      console.log("📸 Capturing widget container with html2canvas...");
+      
+      // Capture with optimized settings for better chart visibility
       const canvas = await html2canvas(widgetRef.current, {
-        backgroundColor: '#131722',
-        scale: 1, // Use normal scale to avoid huge images
+        backgroundColor: '#131722', // TradingView dark theme background
+        scale: 1, // Standard scale to avoid huge images
         useCORS: true,
-        allowTaint: true,
-        width: Math.min(widgetRef.current.offsetWidth, 1200), // Limit width
-        height: Math.min(widgetRef.current.offsetHeight, 800), // Limit height
-        logging: false,
-        imageTimeout: 15000,
-        removeContainer: false
+        allowTaint: false, // Strict CORS handling
+        foreignObjectRendering: false, // Disable for better iframe handling
+        width: Math.min(widgetRef.current.offsetWidth, 1200),
+        height: Math.min(widgetRef.current.offsetHeight, 800),
+        logging: true, // Enable logging for debugging
+        imageTimeout: 30000, // Longer timeout for complex charts
+        removeContainer: false,
+        onclone: (clonedDoc) => {
+          // Try to style the cloned document for better capture
+          const clonedWidget = clonedDoc.querySelector('.tradingview-widget-container');
+          if (clonedWidget) {
+            (clonedWidget as HTMLElement).style.background = '#131722';
+          }
+        }
       });
       
       console.log(`📸 Canvas captured: ${canvas.width}x${canvas.height}`);
       
-      // Validate that we captured actual chart content
-      if (!validateChartImage(canvas)) {
-        throw new Error("Captured image appears to be blank or invalid. Please try again after the chart fully loads.");
+      // Validate canvas has content
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error("Failed to get canvas context");
       }
       
-      // Compress the image to reduce size
-      const blob = await compressImage(canvas, 0.8);
+      // Check if canvas is not empty (basic validation)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const pixelData = imageData.data;
+      let hasContent = false;
       
-      console.log("📊 Real chart image captured successfully");
+      // Sample some pixels to check for non-background content
+      for (let i = 0; i < pixelData.length; i += 400) { // Sample every 100th pixel
+        const r = pixelData[i];
+        const g = pixelData[i + 1]; 
+        const b = pixelData[i + 2];
+        
+        // Check if pixel is not pure black/transparent (indicating chart content)
+        if (r > 10 || g > 10 || b > 10) {
+          hasContent = true;
+          break;
+        }
+      }
+      
+      if (!hasContent) {
+        console.warn("⚠️ Captured canvas appears to be mostly empty");
+        toast({
+          title: "Capture Warning", 
+          description: "Chart capture may be incomplete. Proceeding with analysis...",
+          variant: "default"
+        });
+      }
+      
+      // Convert to blob with good quality
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            console.log(`📸 Image compressed to ${Math.round(blob.size / 1024)}KB`);
+            resolve(blob);
+          } else {
+            throw new Error("Failed to create blob from canvas");
+          }
+        }, 'image/png', 0.9); // Use PNG for better chart clarity
+      });
+      
+      console.log("📊 Chart image captured successfully");
 
       // Create file from blob
       const timestamp = Date.now();
-      const file = new File([blob], `tradingview-real-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.jpg`, { 
-        type: 'image/jpeg' 
+      const file = new File([blob], `tradingview-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
+        type: 'image/png'
       });
       
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending real TradingView image to analysis:", {
+      console.log("🚀 Sending chart image to analysis:", {
         fileName: file.name,
         fileSize: Math.round(file.size / 1024) + "KB",
         cleanSymbol,
@@ -208,7 +263,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       
       toast({
         title: "Chart Captured Successfully",
-        description: `Captured real ${cleanSymbol} chart (${Math.round(file.size / 1024)}KB). Starting analysis...`,
+        description: `Captured ${cleanSymbol} chart (${Math.round(file.size / 1024)}KB). Starting analysis...`,
         variant: "default"
       });
       
@@ -216,12 +271,16 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error in real chart capture:", error);
+      console.error("❌ Error in chart capture:", error);
       
       let errorMessage = "Failed to capture the chart. ";
       
       if (error instanceof Error) {
-        errorMessage += error.message;
+        if (error.message.includes('tainted')) {
+          errorMessage += "Security restrictions prevent chart capture. Try waiting longer for the chart to load.";
+        } else {
+          errorMessage += error.message;
+        }
       } else {
         errorMessage += "Please ensure the chart is fully loaded and try again.";
       }

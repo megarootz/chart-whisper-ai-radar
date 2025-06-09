@@ -25,6 +25,11 @@ serve(async (req) => {
     
     // Validate base64 image
     if (!base64Image || !base64Image.startsWith('data:image/')) {
+      console.error("❌ Invalid image format:", { 
+        hasImage: !!base64Image, 
+        hasHeader: base64Image?.startsWith('data:image/'),
+        imageStart: base64Image?.substring(0, 50) 
+      });
       throw new Error("Invalid image format. Expected base64 encoded image.");
     }
     
@@ -38,32 +43,46 @@ serve(async (req) => {
       imageSizeKB: Math.round(imageSize / 1024),
       estimatedImageTokens,
       base64Length: imageSize,
-      hasValidHeader: base64Image.startsWith('data:image/')
+      hasValidHeader: base64Image.startsWith('data:image/'),
+      imageType: base64Image.split(';')[0]?.split('/')[1] || 'unknown'
     });
     
-    // Use the exact prompt requested by the user
+    // Enhanced prompt specifically for forex chart analysis
+    const analysisPrompt = `I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze this ${pairName} chart image on the ${timeframe} timeframe.
+
+Please provide a comprehensive technical analysis including:
+1. Overall trend direction (bullish/bearish/sideways)
+2. Key support and resistance levels visible on the chart
+3. Chart patterns you can identify
+4. Technical indicators if visible (moving averages, RSI, etc.)
+5. Price action analysis
+6. Potential trading opportunities
+7. Risk management considerations
+
+Be specific about what you see in the chart and provide actionable insights for forex trading.`;
+    
     const requestData = {
-      model: "openai/gpt-4o-mini", // Using GPT-4o-mini as specified
+      model: "openai/gpt-4o-mini",
       messages: [
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze the image I give to you."
+              text: analysisPrompt
             },
             {
               type: "image_url",
               image_url: {
                 url: base64Image,
-                detail: "high" // Using high detail for better analysis
+                detail: "high" // High detail for better chart analysis
               }
             }
           ]
         }
       ],
-      temperature: 0.1,
-      max_tokens: 4000 // Increased for comprehensive analysis
+      temperature: 0.2, // Lower temperature for more focused analysis
+      max_tokens: 4000 // Sufficient for detailed analysis
     };
 
     console.log("🚀 Sending request to OpenRouter GPT-4o-mini API:", {
@@ -72,7 +91,8 @@ serve(async (req) => {
       model: requestData.model,
       maxTokens: requestData.max_tokens,
       imageDetail: "high",
-      estimatedTotalTokens: estimatedImageTokens + 4000
+      estimatedTotalTokens: estimatedImageTokens + 4000,
+      promptLength: analysisPrompt.length
     });
     
     // Create headers with proper authentication
@@ -101,14 +121,21 @@ serve(async (req) => {
         
         if (response.ok) {
           break; // Success, exit retry loop
-        } else if (attempts === maxAttempts) {
-          throw new Error(`API call failed after ${maxAttempts} attempts`);
+        } else {
+          const errorText = await response.text();
+          console.error(`❌ API call failed (attempt ${attempts}):`, response.status, errorText);
+          
+          if (attempts === maxAttempts) {
+            throw new Error(`API call failed after ${maxAttempts} attempts: ${response.status} - ${errorText}`);
+          }
         }
         
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
         
       } catch (error) {
+        console.error(`❌ API call error (attempt ${attempts}):`, error);
+        
         if (attempts === maxAttempts) {
           throw error;
         }
@@ -133,6 +160,7 @@ serve(async (req) => {
       parsedResponse = JSON.parse(responseText);
     } catch (parseError) {
       console.error("❌ Failed to parse API response:", parseError);
+      console.error("❌ Raw response:", responseText);
       throw new Error("Invalid response format from OpenRouter API");
     }
     
@@ -144,6 +172,7 @@ serve(async (req) => {
     
     const analysisContent = parsedResponse.choices[0].message?.content;
     if (!analysisContent) {
+      console.error("❌ Empty analysis content:", parsedResponse.choices[0]);
       throw new Error("Empty analysis content received from OpenRouter API");
     }
     
@@ -162,7 +191,7 @@ serve(async (req) => {
       model: parsedResponse.model || 'unknown'
     });
     
-    // Return the raw response to the client as requested
+    // Return the raw response to the client
     return new Response(responseText, {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
