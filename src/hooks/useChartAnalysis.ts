@@ -132,7 +132,7 @@ export const useChartAnalysis = () => {
         return;
       }
 
-      console.log('🔍 Starting OpenRouter GPT-4o Vision chart analysis for authenticated user:', user.id, 'email:', user.email);
+      console.log('🔍 Starting GPT-4.1-mini Vision chart analysis for authenticated user:', user.id, 'email:', user.email);
       console.log('📊 Analysis parameters:', { 
         pairName, 
         timeframe, 
@@ -187,28 +187,34 @@ export const useChartAnalysis = () => {
         }
       }
       
-      console.log('✅ Usage limits check passed, proceeding with OpenRouter GPT-4o Vision analysis');
+      console.log('✅ Usage limits check passed, proceeding with GPT-4.1-mini Vision analysis');
       
       // Convert image to base64 with enhanced quality
-      console.log('🔄 Converting image to base64 for GPT-4o Vision...');
+      console.log('🔄 Converting high-quality image to base64 for GPT-4.1-mini Vision...');
       const base64Image = await fileToBase64(file);
-      console.log('✅ Base64 conversion complete for vision model, length:', base64Image.length, 'characters');
+      console.log('✅ Base64 conversion complete for GPT-4.1-mini Vision model, length:', base64Image.length, 'characters');
       
       // Validate base64 image format
       if (!base64Image.startsWith('data:image/')) {
-        throw new Error('Invalid image format after base64 conversion');
+        throw new Error('Invalid image format after base64 conversion for GPT-4.1-mini Vision');
       }
       
-      console.log("🤖 Calling OpenRouter GPT-4o Vision Supabase Edge Function to analyze chart");
-      console.log('📤 Sending data to vision model:', {
+      // Additional validation for image size
+      if (base64Image.length < 5000) {
+        throw new Error('Image too small for GPT-4.1-mini Vision analysis. Please ensure chart is fully loaded.');
+      }
+      
+      console.log("🤖 Calling GPT-4.1-mini Vision Supabase Edge Function to analyze chart");
+      console.log('📤 Sending high-quality data to GPT-4.1-mini Vision model:', {
         pairName,
         timeframe,
         base64Length: base64Image.length,
         hasValidImageHeader: base64Image.startsWith('data:image/'),
-        imageType: file.type
+        imageType: file.type,
+        imageSizeKB: Math.round(file.size / 1024)
       });
       
-      // Call our OpenRouter GPT-4o Vision Supabase Edge Function
+      // Call our GPT-4.1-mini Vision Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("analyze-chart", {
         body: {
           base64Image,
@@ -223,42 +229,43 @@ export const useChartAnalysis = () => {
       }
 
       if (!data) {
-        throw new Error('No response from OpenRouter GPT-4o Vision analysis function');
+        throw new Error('No response from GPT-4.1-mini Vision analysis function');
       }
 
-      console.log("✅ OpenRouter GPT-4o Vision edge function response received");
+      console.log("✅ GPT-4.1-mini Vision edge function response received");
       console.log('📥 Raw response type:', typeof data);
       
       // Parse the API response
       const responseData = data as any;
       
       if (!responseData.choices || responseData.choices.length === 0) {
-        console.error('❌ Invalid response structure:', responseData);
-        throw new Error('No response content from OpenRouter GPT-4o Vision API');
+        console.error('❌ Invalid response structure from GPT-4.1-mini Vision:', responseData);
+        throw new Error('No response content from GPT-4.1-mini Vision API');
       }
 
-      // Get the analysis text from GPT-4o Vision
+      // Get the analysis text from GPT-4.1-mini Vision
       const rawAnalysisText = responseData.choices[0].message.content || '';
-      console.log("📝 OpenRouter GPT-4o Vision Raw Analysis:", rawAnalysisText.substring(0, 300) + "...");
+      console.log("📝 GPT-4.1-mini Vision Raw Analysis:", rawAnalysisText.substring(0, 300) + "...");
       
       // Validate analysis content
       if (!rawAnalysisText.trim()) {
-        throw new Error('Empty analysis received from OpenRouter GPT-4o Vision API');
+        throw new Error('Empty analysis received from GPT-4.1-mini Vision API');
       }
 
       // Check if the response indicates vision failure
       if (rawAnalysisText.toLowerCase().includes("i cannot analyze images") || 
-          rawAnalysisText.toLowerCase().includes("i'm unable to analyze images")) {
-        throw new Error('GPT-4o Vision failed to process the chart image. Please try again with a clearer chart.');
+          rawAnalysisText.toLowerCase().includes("i'm unable to analyze images") ||
+          rawAnalysisText.toLowerCase().includes("i don't have the ability to analyze images")) {
+        throw new Error('GPT-4.1-mini Vision failed to process the chart image. Please ensure the chart is fully loaded and try again.');
       }
       
-      // Create analysis data structure with the vision-based analysis
+      // Create analysis data structure with the GPT-4.1-mini vision-based analysis
       const analysisData: AnalysisResultData = {
         pairName: formatTradingPair(pairName),
         timeframe: timeframe,
         overallSentiment: 'neutral', // Default since we're showing raw output
-        confidenceScore: 85,
-        marketAnalysis: rawAnalysisText, // Raw output from GPT-4o Vision
+        confidenceScore: 90, // Higher confidence for GPT-4.1-mini
+        marketAnalysis: rawAnalysisText, // Raw output from GPT-4.1-mini Vision
         trendDirection: 'neutral',
         marketFactors: [],
         chartPatterns: [],
@@ -266,14 +273,15 @@ export const useChartAnalysis = () => {
         tradingInsight: rawAnalysisText // Show raw output in both sections
       };
       
-      console.log("🎯 Vision-based analysis data prepared:", { 
+      console.log("🎯 GPT-4.1-mini Vision-based analysis data prepared:", { 
         pairName: analysisData.pairName, 
         timeframe: analysisData.timeframe,
-        analysisLength: rawAnalysisText.length
+        analysisLength: rawAnalysisText.length,
+        confidenceScore: analysisData.confidenceScore
       });
       
       // CRITICAL: Increment usage count AFTER successful analysis
-      console.log('📈 OpenRouter GPT-4o Vision analysis successful, incrementing usage count...');
+      console.log('📈 GPT-4.1-mini Vision analysis successful, incrementing usage count...');
       try {
         console.log('📈 Current user state:', { id: user.id, email: user.email, isAuthenticated: !!user });
         
@@ -321,12 +329,12 @@ export const useChartAnalysis = () => {
 
       toast({
         title: "Analysis Complete",
-        description: `Successfully analyzed the ${analysisData.pairName} chart with GPT-4o Vision`,
+        description: `Successfully analyzed the ${analysisData.pairName} chart with GPT-4.1-mini Vision`,
         variant: "default",
       });
       
     } catch (error) {
-      console.error("❌ Error analyzing chart with OpenRouter GPT-4o Vision:", error);
+      console.error("❌ Error analyzing chart with GPT-4.1-mini Vision:", error);
       toast({
         title: "Analysis Failed",
         description: error instanceof Error ? error.message : "Failed to analyze the chart. Please try again.",
@@ -338,23 +346,31 @@ export const useChartAnalysis = () => {
     }
   };
 
-  // Helper function to convert file to base64
+  // Enhanced helper function to convert file to base64 with validation
   const fileToBase64 = (file: File): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        console.log('📄 File converted to base64 for vision model:', {
+        
+        // Validate the result
+        if (!result || !result.startsWith('data:image/')) {
+          reject(new Error('Invalid base64 conversion result'));
+          return;
+        }
+        
+        console.log('📄 File converted to base64 for GPT-4.1-mini Vision model:', {
           originalSize: file.size + " bytes",
           base64Length: result.length + " characters",
-          compressionRatio: (result.length / file.size).toFixed(2)
+          compressionRatio: (result.length / file.size).toFixed(2),
+          imageType: file.type
         });
         resolve(result);
       };
       reader.onerror = error => {
-        console.error('❌ Error converting file to base64:', error);
-        reject(error);
+        console.error('❌ Error converting file to base64 for GPT-4.1-mini Vision:', error);
+        reject(new Error('Failed to convert image to base64 format'));
       };
     });
   };

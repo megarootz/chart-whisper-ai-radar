@@ -158,7 +158,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
       }
       
-      console.log("📸 Starting optimized chart capture for:", { 
+      console.log("📸 Starting enhanced chart capture for:", { 
         selectedSymbol, 
         cleanSymbol, 
         selectedTimeframe,
@@ -167,24 +167,24 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       
       // Extended wait time for chart data to load properly
       console.log("⏳ Waiting for chart data to stabilize...");
-      await new Promise(resolve => setTimeout(resolve, 5000));
+      await new Promise(resolve => setTimeout(resolve, 8000)); // Increased wait time
       
-      console.log("📸 Capturing chart with enhanced settings...");
+      console.log("📸 Capturing chart with maximum quality settings...");
       
       // Target the TradingView chart specifically
       const chartContainer = widgetRef.current.querySelector('.tradingview-widget-container__widget') as HTMLElement || widgetRef.current;
       
-      // Optimized capture with higher quality
+      // Maximum quality capture settings
       const canvas = await html2canvas(chartContainer, {
         backgroundColor: '#131722',
-        scale: 1.5, // Higher scale for better detail
+        scale: 2, // Maximum scale for highest quality
         useCORS: true,
         allowTaint: true,
         foreignObjectRendering: false,
-        width: Math.min(chartContainer.offsetWidth, 1200),
-        height: Math.min(chartContainer.offsetHeight, 800),
-        logging: false,
-        imageTimeout: 30000,
+        width: Math.min(chartContainer.offsetWidth, 1600), // Increased width
+        height: Math.min(chartContainer.offsetHeight, 1200), // Increased height
+        logging: true, // Enable logging for debugging
+        imageTimeout: 45000, // Increased timeout
         removeContainer: false,
         x: 0,
         y: 0,
@@ -199,24 +199,50 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         }
       });
       
-      console.log(`📸 Canvas captured: ${canvas.width}x${canvas.height}`);
+      console.log(`📸 Canvas captured successfully: ${canvas.width}x${canvas.height}`);
       
-      // Validate but proceed regardless
-      const validation = validateChartContent(canvas);
-      console.log("🔍 Chart validation result:", validation);
+      // Validate canvas has content
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        throw new Error("Failed to get canvas context");
+      }
       
-      // Convert to high-quality PNG
+      // Check if canvas has actual content
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const data = imageData.data;
+      let hasContent = false;
+      
+      // Sample pixels to check for non-transparent content
+      for (let i = 0; i < data.length; i += 400) { // Sample every 100th pixel
+        const alpha = data[i + 3];
+        if (alpha > 0) {
+          hasContent = true;
+          break;
+        }
+      }
+      
+      if (!hasContent) {
+        throw new Error("Chart capture appears to be empty. Please ensure the chart is fully loaded.");
+      }
+      
+      // Convert to highest quality PNG
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) {
+            console.log(`📸 High-quality PNG created: ${Math.round(blob.size / 1024)}KB`);
             resolve(blob);
           } else {
-            reject(new Error("Failed to create blob from canvas"));
+            reject(new Error("Failed to create high-quality image blob"));
           }
-        }, 'image/png', 1.0);
+        }, 'image/png', 1.0); // Maximum quality PNG
       });
       
-      console.log(`📸 Final image size: ${Math.round(blob.size / 1024)}KB`);
+      // Validate blob size
+      if (blob.size < 5000) {
+        throw new Error("Generated image is too small, likely empty. Please try again.");
+      }
+      
+      console.log(`📸 Final high-quality image: ${Math.round(blob.size / 1024)}KB`);
       
       // Create file with timestamp
       const timestamp = Date.now();
@@ -227,17 +253,18 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending enhanced chart for analysis:", {
+      console.log("🚀 Sending high-quality chart for analysis:", {
         fileName: file.name,
         fileSize: Math.round(file.size / 1024) + "KB",
         cleanSymbol,
         timeframeLabel,
-        dimensions: `${canvas.width}x${canvas.height}`
+        dimensions: `${canvas.width}x${canvas.height}`,
+        quality: "Maximum PNG"
       });
       
       toast({
         title: "Chart Captured Successfully",
-        description: `Captured ${cleanSymbol} chart (${Math.round(blob.size / 1024)}KB). Starting AI analysis...`,
+        description: `High-quality ${cleanSymbol} chart captured (${Math.round(blob.size / 1024)}KB). Starting AI analysis...`,
         variant: "default"
       });
       
@@ -245,11 +272,11 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error in enhanced chart capture:", error);
+      console.error("❌ Error in chart capture:", error);
       
       toast({
         title: "Capture Failed",
-        description: "Failed to capture the chart. Please ensure the chart is fully loaded and try again.",
+        description: error instanceof Error ? error.message : "Failed to capture the chart. Please ensure the chart is fully loaded and try again.",
         variant: "destructive"
       });
     } finally {
@@ -355,7 +382,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
-            Automated Chart Analysis with Advanced Screenshot
+            Automated Chart Analysis with High-Quality Screenshot
           </CardTitle>
         </CardHeader>
       )}
@@ -481,12 +508,12 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isWidgetLoaded ? 'Chart ready - Enhanced capture enabled' : 'Loading chart...'}
+                {isWidgetLoaded ? 'Chart ready - High-quality capture enabled' : 'Loading chart...'}
               </span>
             </div>
             {!isMobile && (
               <span className="text-xs text-gray-500">
-                Enhanced Screenshot • Real Chart Analysis • GPT-4o-mini Vision
+                High-Quality PNG • Real Chart Analysis • GPT-4.1-mini Vision
               </span>
             )}
           </div>
@@ -497,7 +524,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className={`w-full bg-primary hover:bg-primary/90 text-white ${isMobile ? 'h-10 text-sm' : ''}`}
           >
-            {isCapturing ? 'Capturing Chart...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing High-Quality Chart...' : isAnalyzing ? 'Analyzing...' : (
               <>
                 <Camera className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
                 {isMobile ? 'Analyze Chart' : 'Capture & Analyze Chart'}
@@ -511,9 +538,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               <div className="flex items-start">
                 <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-blue-400 font-medium text-sm mb-1">Real Chart Analysis</h4>
+                  <h4 className="text-blue-400 font-medium text-sm mb-1">High-Quality Chart Analysis</h4>
                   <p className="text-gray-400 text-xs">
-                    Enhanced capture system ensures the AI analyzes your actual chart data with specific price levels and patterns.
+                    Enhanced capture system with maximum quality PNG ensures AI analyzes your actual chart data with specific price levels and patterns.
                   </p>
                 </div>
               </div>
