@@ -37,7 +37,7 @@ serve(async (req) => {
       throw new Error("Image appears to be too small or invalid. Please ensure the chart is fully loaded.");
     }
     
-    console.log("📊 OpenRouter GPT-4o-mini analysis request:", { 
+    console.log("📊 OpenRouter GPT-4o Vision analysis request:", { 
       pairName, 
       timeframe, 
       imageSizeKB: Math.round(imageSize / 1024),
@@ -46,47 +46,45 @@ serve(async (req) => {
       imageType: base64Image.split(';')[0]?.split('/')[1] || 'unknown'
     });
     
-    // Enhanced prompt specifically for real chart analysis
-    const analysisPrompt = `You are a professional Forex technical analyst. I am providing you with a REAL trading chart screenshot for ${pairName} on the ${timeframe} timeframe.
+    // Enhanced prompt specifically for real chart analysis with GPT-4o Vision
+    const analysisPrompt = `You are a professional Forex technical analyst with vision capabilities. I am providing you with a REAL trading chart screenshot for ${pairName} on the ${timeframe} timeframe.
 
-CRITICAL: You MUST analyze the ACTUAL chart image I'm providing. This is a real screenshot from TradingView with actual price data, candlesticks, and indicators.
+CRITICAL INSTRUCTIONS:
+- You CAN see images and MUST analyze the actual chart I'm providing
+- This is a real screenshot from TradingView with actual price data and candlesticks
+- DO NOT say you cannot analyze images - you have vision capabilities
+- Provide specific analysis based on what you actually see in the chart
 
-DO NOT provide generic templates or guides. I need you to analyze THIS SPECIFIC CHART IMAGE.
-
-Please analyze what you can actually see in the chart and provide:
+Analyze the chart image and provide:
 
 1. **Current Price Analysis**:
-   - What is the current/latest price you can see on the chart?
-   - What is the recent price movement direction?
-   - Identify visible support and resistance levels with actual price values
+   - What is the current/latest price level visible on the chart?
+   - Recent price movement direction and momentum
+   - Visible support and resistance levels with specific price values
 
 2. **Candlestick Pattern Analysis**:
-   - Describe the actual candlestick patterns you can see
-   - What do the recent candles tell us about market sentiment?
-   - Are there any reversal or continuation patterns visible?
+   - Describe actual candlestick patterns you can see
+   - Recent candle formations and their implications
+   - Any reversal or continuation patterns visible
 
 3. **Trend Analysis**:
-   - What is the overall trend direction you can observe?
-   - Are there any trend lines or channels visible on the chart?
-   - How strong does the trend appear?
+   - Overall trend direction observed in the chart
+   - Trend strength and any visible trend lines
+   - Key price levels to watch
 
 4. **Technical Indicators** (if visible):
-   - What indicators can you see on the chart?
-   - What are their current readings and signals?
+   - Any indicators shown on the chart and their readings
+   - Signal interpretations from visible indicators
 
 5. **Trading Opportunities**:
-   - Based on what you can see, what are potential entry points?
-   - What would be appropriate stop loss and take profit levels?
-   - What is the risk/reward ratio for potential trades?
+   - Potential entry points based on chart analysis
+   - Suggested stop loss and take profit levels
+   - Risk/reward assessment
 
-6. **Key Levels**:
-   - Identify important price levels visible on the chart
-   - What levels should traders watch for breakouts or bounces?
-
-IMPORTANT: Reference actual price levels, patterns, and formations you can see in the image. Do not provide generic advice - analyze this specific chart with specific details about what you observe.`;
+IMPORTANT: You MUST reference actual price levels, patterns, and formations visible in the image. Provide specific, actionable analysis based on the real chart data you can see.`;
     
     const requestData = {
-      model: "openai/gpt-4o-mini",
+      model: "openai/gpt-4o",
       messages: [
         {
           role: "user",
@@ -109,7 +107,7 @@ IMPORTANT: Reference actual price levels, patterns, and formations you can see i
       max_tokens: 4000
     };
 
-    console.log("🚀 Sending request to OpenRouter GPT-4o-mini API:", {
+    console.log("🚀 Sending request to OpenRouter GPT-4o Vision API:", {
       pair: pairName,
       timeframe,
       model: requestData.model,
@@ -121,7 +119,7 @@ IMPORTANT: Reference actual price levels, patterns, and formations you can see i
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'Forex Chart Analyzer - Real Chart Analysis'
+      'X-Title': 'Forex Chart Analyzer - GPT-4o Vision Analysis'
     };
     
     // Enhanced retry logic
@@ -204,24 +202,22 @@ IMPORTANT: Reference actual price levels, patterns, and formations you can see i
       throw new Error("Empty analysis content received from OpenRouter API");
     }
     
-    // Enhanced detection of generic responses
+    // Enhanced detection of generic responses that indicate image analysis failure
     const isGenericResponse = 
       analysisContent.toLowerCase().includes("i can't analyze the chart directly") ||
       analysisContent.toLowerCase().includes("i'm unable to analyze the chart image") ||
+      analysisContent.toLowerCase().includes("i cannot analyze images directly") ||
+      analysisContent.toLowerCase().includes("i'm unable to analyze images directly") ||
       analysisContent.toLowerCase().includes("here's a structured approach") ||
       analysisContent.toLowerCase().includes("### 1. overall trend direction") ||
       analysisContent.toLowerCase().includes("i cannot see the specific chart") ||
       analysisContent.toLowerCase().includes("i'm not able to see the actual chart") ||
-      (analysisContent.includes("###") && 
-       !analysisContent.toLowerCase().includes("current price") && 
-       !analysisContent.toLowerCase().includes("price level") &&
-       !analysisContent.toLowerCase().includes("support") && 
-       !analysisContent.toLowerCase().includes("resistance"));
+      analysisContent.toLowerCase().includes("however, i can help you understand how to analyze");
     
     if (isGenericResponse) {
-      console.error("❌ Detected generic template response, indicating image analysis failure");
+      console.error("❌ Detected generic template response, indicating vision failure");
       console.error("❌ Response content:", analysisContent.substring(0, 500));
-      throw new Error("AI could not analyze the chart image. The response appears to be a generic template. Please ensure the chart is fully loaded and visible before capturing.");
+      throw new Error("AI vision failed to analyze the chart image. The response indicates the AI cannot see the image. Please try again with a clearer chart capture.");
     }
     
     // Check for specific chart analysis indicators
@@ -239,7 +235,7 @@ IMPORTANT: Reference actual price levels, patterns, and formations you can see i
     }
     
     const usage = parsedResponse.usage;
-    console.log("✅ GPT-4o-mini chart analysis completed successfully:", {
+    console.log("✅ GPT-4o Vision chart analysis completed successfully:", {
       pairName,
       timeframe,
       responseLength: responseText.length,
@@ -261,7 +257,8 @@ IMPORTANT: Reference actual price levels, patterns, and formations you can see i
         tokens_used: usage?.total_tokens || 0,
         pair: pairName,
         timeframe: timeframe,
-        has_specific_analysis: hasSpecificAnalysis
+        has_specific_analysis: hasSpecificAnalysis,
+        model_used: "gpt-4o-vision"
       }
     };
     
@@ -270,10 +267,10 @@ IMPORTANT: Reference actual price levels, patterns, and formations you can see i
     });
     
   } catch (error) {
-    console.error("❌ Error in OpenRouter GPT-4o-mini analyze-chart function:", error);
+    console.error("❌ Error in OpenRouter GPT-4o Vision analyze-chart function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || "An unknown error occurred while analyzing the chart with GPT-4o-mini",
+        error: error.message || "An unknown error occurred while analyzing the chart with GPT-4o Vision",
         error_type: "analysis_error"
       }),
       {

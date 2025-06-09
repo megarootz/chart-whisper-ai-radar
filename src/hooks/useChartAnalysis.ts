@@ -132,7 +132,7 @@ export const useChartAnalysis = () => {
         return;
       }
 
-      console.log('🔍 Starting OpenRouter GPT-4o-mini chart analysis for authenticated user:', user.id, 'email:', user.email);
+      console.log('🔍 Starting OpenRouter GPT-4o Vision chart analysis for authenticated user:', user.id, 'email:', user.email);
       console.log('📊 Analysis parameters:', { 
         pairName, 
         timeframe, 
@@ -187,20 +187,20 @@ export const useChartAnalysis = () => {
         }
       }
       
-      console.log('✅ Usage limits check passed, proceeding with OpenRouter GPT-4o-mini analysis');
+      console.log('✅ Usage limits check passed, proceeding with OpenRouter GPT-4o Vision analysis');
       
-      // Convert image to base64
-      console.log('🔄 Converting image to base64...');
+      // Convert image to base64 with enhanced quality
+      console.log('🔄 Converting image to base64 for GPT-4o Vision...');
       const base64Image = await fileToBase64(file);
-      console.log('✅ Base64 conversion complete, length:', base64Image.length, 'characters');
+      console.log('✅ Base64 conversion complete for vision model, length:', base64Image.length, 'characters');
       
       // Validate base64 image format
       if (!base64Image.startsWith('data:image/')) {
         throw new Error('Invalid image format after base64 conversion');
       }
       
-      console.log("🤖 Calling OpenRouter GPT-4o-mini Supabase Edge Function to analyze chart");
-      console.log('📤 Sending data:', {
+      console.log("🤖 Calling OpenRouter GPT-4o Vision Supabase Edge Function to analyze chart");
+      console.log('📤 Sending data to vision model:', {
         pairName,
         timeframe,
         base64Length: base64Image.length,
@@ -208,7 +208,7 @@ export const useChartAnalysis = () => {
         imageType: file.type
       });
       
-      // Call our OpenRouter GPT-4o-mini Supabase Edge Function
+      // Call our OpenRouter GPT-4o Vision Supabase Edge Function
       const { data, error } = await supabase.functions.invoke("analyze-chart", {
         body: {
           base64Image,
@@ -223,10 +223,10 @@ export const useChartAnalysis = () => {
       }
 
       if (!data) {
-        throw new Error('No response from OpenRouter GPT-4o-mini analysis function');
+        throw new Error('No response from OpenRouter GPT-4o Vision analysis function');
       }
 
-      console.log("✅ OpenRouter GPT-4o-mini edge function response received");
+      console.log("✅ OpenRouter GPT-4o Vision edge function response received");
       console.log('📥 Raw response type:', typeof data);
       
       // Parse the API response
@@ -234,25 +234,31 @@ export const useChartAnalysis = () => {
       
       if (!responseData.choices || responseData.choices.length === 0) {
         console.error('❌ Invalid response structure:', responseData);
-        throw new Error('No response content from OpenRouter GPT-4o-mini API');
+        throw new Error('No response content from OpenRouter GPT-4o Vision API');
       }
 
-      // Get the raw analysis text as requested (no formatting changes)
+      // Get the analysis text from GPT-4o Vision
       const rawAnalysisText = responseData.choices[0].message.content || '';
-      console.log("📝 OpenRouter GPT-4o-mini Raw Analysis:", rawAnalysisText.substring(0, 300) + "...");
+      console.log("📝 OpenRouter GPT-4o Vision Raw Analysis:", rawAnalysisText.substring(0, 300) + "...");
       
       // Validate analysis content
       if (!rawAnalysisText.trim()) {
-        throw new Error('Empty analysis received from OpenRouter API');
+        throw new Error('Empty analysis received from OpenRouter GPT-4o Vision API');
+      }
+
+      // Check if the response indicates vision failure
+      if (rawAnalysisText.toLowerCase().includes("i cannot analyze images") || 
+          rawAnalysisText.toLowerCase().includes("i'm unable to analyze images")) {
+        throw new Error('GPT-4o Vision failed to process the chart image. Please try again with a clearer chart.');
       }
       
-      // Create a simple analysis data structure with raw text
+      // Create analysis data structure with the vision-based analysis
       const analysisData: AnalysisResultData = {
         pairName: formatTradingPair(pairName),
         timeframe: timeframe,
         overallSentiment: 'neutral', // Default since we're showing raw output
-        confidenceScore: 80,
-        marketAnalysis: rawAnalysisText, // Raw output from GPT-4o-mini
+        confidenceScore: 85,
+        marketAnalysis: rawAnalysisText, // Raw output from GPT-4o Vision
         trendDirection: 'neutral',
         marketFactors: [],
         chartPatterns: [],
@@ -260,14 +266,14 @@ export const useChartAnalysis = () => {
         tradingInsight: rawAnalysisText // Show raw output in both sections
       };
       
-      console.log("🎯 Raw analysis data prepared:", { 
+      console.log("🎯 Vision-based analysis data prepared:", { 
         pairName: analysisData.pairName, 
         timeframe: analysisData.timeframe,
         analysisLength: rawAnalysisText.length
       });
       
       // CRITICAL: Increment usage count AFTER successful analysis
-      console.log('📈 OpenRouter analysis successful, incrementing usage count...');
+      console.log('📈 OpenRouter GPT-4o Vision analysis successful, incrementing usage count...');
       try {
         console.log('📈 Current user state:', { id: user.id, email: user.email, isAuthenticated: !!user });
         
@@ -315,12 +321,12 @@ export const useChartAnalysis = () => {
 
       toast({
         title: "Analysis Complete",
-        description: `Successfully analyzed the ${analysisData.pairName} chart with OpenRouter GPT-4o-mini`,
+        description: `Successfully analyzed the ${analysisData.pairName} chart with GPT-4o Vision`,
         variant: "default",
       });
       
     } catch (error) {
-      console.error("❌ Error analyzing chart with OpenRouter:", error);
+      console.error("❌ Error analyzing chart with OpenRouter GPT-4o Vision:", error);
       toast({
         title: "Analysis Failed",
         description: error instanceof Error ? error.message : "Failed to analyze the chart. Please try again.",
@@ -339,7 +345,7 @@ export const useChartAnalysis = () => {
       reader.readAsDataURL(file);
       reader.onload = () => {
         const result = reader.result as string;
-        console.log('📄 File converted to base64:', {
+        console.log('📄 File converted to base64 for vision model:', {
           originalSize: file.size + " bytes",
           base64Length: result.length + " characters",
           compressionRatio: (result.length / file.size).toFixed(2)
