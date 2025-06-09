@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -133,22 +132,20 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       });
       
       // Extended wait time for chart to fully render with correct symbol
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      await new Promise(resolve => setTimeout(resolve, 6000));
 
       // Optimized capture with reduced scale and better settings
       const canvas = await html2canvas(widgetRef.current, {
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#131722',
-        scale: 1, // Reduced from 2 to 1 to save tokens
-        logging: false, // Reduced logging for cleaner output
+        scale: 1,
+        logging: false,
         imageTimeout: 25000,
         removeContainer: false,
         width: widgetRef.current.offsetWidth,
         height: widgetRef.current.offsetHeight,
-        // Optimize for chart content
         ignoreElements: (element) => {
-          // Skip elements that aren't part of the main chart
           return element.classList.contains('tradingview-widget-copyright') ||
                  element.classList.contains('tv-header') ||
                  element.tagName === 'IFRAME';
@@ -157,7 +154,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
 
       console.log("✅ Canvas captured with optimized settings, size:", canvas.width, "x", canvas.height);
 
-      // Enhanced content validation with better metrics
+      // Simplified content validation - much more lenient
       const ctx = canvas.getContext('2d');
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
       
@@ -165,69 +162,51 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         throw new Error("Failed to get image data from canvas");
       }
 
-      // More sophisticated content validation
+      // Much more lenient validation - just check if there's any content
       const pixels = imageData.data;
-      let colorVariations = new Set();
       let nonBlackPixels = 0;
-      let candlestickIndicators = 0;
-      const totalPixels = pixels.length / 4;
+      let totalPixels = pixels.length / 4;
       
-      for (let i = 0; i < pixels.length; i += 40) {
+      // Sample every 100th pixel for performance
+      for (let i = 0; i < pixels.length; i += 400) {
         const r = pixels[i];
         const g = pixels[i + 1];
         const b = pixels[i + 2];
         const a = pixels[i + 3];
         
-        if (a > 0) {
-          const colorKey = `${Math.floor(r/15)}-${Math.floor(g/15)}-${Math.floor(b/15)}`;
-          colorVariations.add(colorKey);
-          
-          if (r > 20 || g > 20 || b > 20) {
-            nonBlackPixels++;
-            
-            // Look for green/red colors typical of candlesticks
-            if ((g > r + 20 && g > b + 20) || (r > g + 20 && r > b + 20)) {
-              candlestickIndicators++;
-            }
-          }
+        if (a > 0 && (r > 30 || g > 30 || b > 30)) {
+          nonBlackPixels++;
         }
       }
       
-      const contentPercentage = (nonBlackPixels / (totalPixels / 10)) * 100;
-      const colorDiversity = colorVariations.size;
-      const chartQuality = (candlestickIndicators / (totalPixels / 100)) * 100;
+      const contentPercentage = (nonBlackPixels / (totalPixels / 100)) * 100;
       
-      console.log("📊 Enhanced capture analysis:", {
+      console.log("📊 Simplified capture analysis:", {
         contentPercentage: contentPercentage.toFixed(2) + "%",
-        colorVariations: colorDiversity,
-        chartQuality: chartQuality.toFixed(2) + "%",
         canvasSize: `${canvas.width}x${canvas.height}`,
         selectedSymbol,
         cleanSymbol
       });
       
-      if (contentPercentage < 5 || colorDiversity < 10 || chartQuality < 0.1) {
-        throw new Error(`Captured image lacks sufficient chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} colors, ${chartQuality.toFixed(1)}% chart data). Please wait longer for the chart to load.`);
+      // Much more lenient validation - just need some content
+      if (contentPercentage < 1) {
+        throw new Error(`Captured image appears to be mostly empty (${contentPercentage.toFixed(1)}% content). Please wait longer for the chart to load.`);
       }
 
       // Compress the image to reduce token usage
       console.log("🗜️ Compressing image to reduce token usage...");
-      const compressedBlob = await compressImage(canvas, 0.85);
+      const compressedBlob = await compressImage(canvas, 0.8);
       
-      // Check compressed size
-      const originalSize = Math.round(canvas.width * canvas.height * 4 / 1024); // KB estimate
-      const compressedSize = Math.round(compressedBlob.size / 1024); // KB actual
+      const compressedSize = Math.round(compressedBlob.size / 1024);
       
       console.log("📈 Image compression results:", {
-        originalEstimate: originalSize + "KB",
-        compressedActual: compressedSize + "KB",
-        compressionRatio: Math.round((1 - compressedBlob.size / (canvas.width * canvas.height * 4)) * 100) + "%"
+        compressedSize: compressedSize + "KB"
       });
 
       // Create file from compressed blob
       const timestamp = Date.now();
-      const file = new File([compressedBlob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
-        type: 'image/png' 
+      const file = new File([compressedBlob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.jpg`, { 
+        type: 'image/jpeg' 
       });
       
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
@@ -238,8 +217,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         fileSize: Math.round(file.size / 1024) + "KB",
         cleanSymbol,
         timeframeLabel,
-        originalSymbol: selectedSymbol,
-        estimatedTokens: Math.round(file.size / 750) // Rough estimate: ~750 bytes per token for images
+        originalSymbol: selectedSymbol
       });
       
       // Show optimization success message
@@ -258,11 +236,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       let errorMessage = "Failed to capture the chart. ";
       
       if (error instanceof Error) {
-        if (error.message.includes("content") || error.message.includes("chart data")) {
-          errorMessage += error.message + " Try waiting longer or refreshing the chart.";
-        } else {
-          errorMessage += error.message;
-        }
+        errorMessage += error.message;
       }
       
       toast({
