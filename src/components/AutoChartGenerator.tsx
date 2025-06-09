@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -99,11 +100,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     localStorage.setItem('forexPairFavorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const toggleFavorite = (pairValue: string, event?: React.MouseEvent) => {
-    if (event) {
-      event.preventDefault();
-      event.stopPropagation();
-    }
+  const toggleFavorite = (pairValue: string, event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
     
     console.log('Toggling favorite for:', pairValue);
     setFavorites(prev => {
@@ -363,14 +362,19 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                           <SelectItem key={pair.value} value={pair.value} className="text-white hover:bg-gray-700">
                             <div className="flex items-center justify-between w-full">
                               <span>{pair.label}</span>
-                              <Star 
-                                className={`h-3 w-3 ml-2 cursor-pointer transition-colors ${
-                                  favorites.includes(pair.value) 
-                                    ? 'fill-current text-primary' 
-                                    : 'text-gray-500 hover:text-primary'
-                                }`}
+                              <button
+                                type="button"
                                 onClick={(e) => toggleFavorite(pair.value, e)}
-                              />
+                                className="ml-2 p-1 hover:bg-gray-600 rounded"
+                              >
+                                <Star 
+                                  className={`h-3 w-3 transition-colors ${
+                                    favorites.includes(pair.value) 
+                                      ? 'fill-current text-primary' 
+                                      : 'text-gray-500 hover:text-primary'
+                                  }`}
+                                />
+                              </button>
                             </div>
                           </SelectItem>
                         ))}
@@ -378,6 +382,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                     ))}
                   </SelectContent>
                 </Select>
+                
                 <Button
                   variant="outline"
                   size={isMobile ? "sm" : "default"}
@@ -405,13 +410,16 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                           <span className="text-white text-sm">{pair.label}</span>
                           <div className="flex items-center gap-1">
                             <Star className="h-3 w-3 fill-current text-primary" />
-                            <X 
-                              className="h-3 w-3 text-gray-400 hover:text-red-400 cursor-pointer"
+                            <button
+                              type="button"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 removeFavorite(pair.value);
                               }}
-                            />
+                              className="p-1 hover:bg-gray-600 rounded"
+                            >
+                              <X className="h-3 w-3 text-gray-400 hover:text-red-400" />
+                            </button>
                           </div>
                         </div>
                       ))}
