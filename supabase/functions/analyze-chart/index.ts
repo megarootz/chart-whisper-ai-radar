@@ -31,7 +31,7 @@ serve(async (req) => {
     
     // Enhanced professional trading analysis prompt
     const requestData = {
-      model: "openai/gpt-4.1",
+      model: "openai/gpt-4o-mini",
       messages: [
         {
           role: "system",
