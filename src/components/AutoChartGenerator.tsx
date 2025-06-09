@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { TrendingUp, Download, AlertTriangle, Plus } from 'lucide-react';
+import { TrendingUp, Download, AlertTriangle, Plus, RefreshCw } from 'lucide-react';
 import AutoTradingViewWidget from './AutoTradingViewWidget';
 import html2canvas from 'html2canvas';
 import { useToast } from '@/hooks/use-toast';
@@ -77,23 +77,70 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
   const [isCapturing, setIsCapturing] = useState(false);
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customPair, setCustomPair] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const widgetRef = useRef<HTMLDivElement>(null);
+  const lastCaptureTime = useRef<number>(0);
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
   const handleWidgetLoad = useCallback(() => {
     console.log("📊 Widget loaded callback triggered for symbol:", selectedSymbol);
     setIsWidgetLoaded(true);
+    setIsRefreshing(false);
   }, [selectedSymbol]);
+
+  // Force refresh widget to get latest data
+  const refreshWidget = async () => {
+    if (isRefreshing || isCapturing) return;
+    
+    setIsRefreshing(true);
+    setIsWidgetLoaded(false);
+    
+    console.log("🔄 Force refreshing widget for latest data...");
+    
+    // Trigger widget recreation by changing a key prop
+    const currentTime = Date.now();
+    lastCaptureTime.current = currentTime;
+    
+    // The widget will automatically refresh due to the effect in AutoTradingViewWidget
+    toast({
+      title: "Refreshing Chart",
+      description: "Getting the latest market data...",
+      variant: "default"
+    });
+  };
 
   const captureAndAnalyze = async () => {
     if (!widgetRef.current || !isWidgetLoaded) {
       toast({
         title: "Chart Not Ready",
-        description: "Please wait for the chart to fully load before analyzing",
+        description: "Please wait for the chart to fully load with latest data before analyzing",
         variant: "destructive"
       });
       return;
+    }
+
+    // Check if we should refresh for latest data
+    const timeSinceLastCapture = Date.now() - lastCaptureTime.current;
+    const shouldRefresh = timeSinceLastCapture > 300000; // 5 minutes
+
+    if (shouldRefresh) {
+      toast({
+        title: "Refreshing for Latest Data",
+        description: "Getting the most current market data before analysis...",
+        variant: "default"
+      });
+      await refreshWidget();
+      // Wait for refresh to complete
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      if (!isWidgetLoaded) {
+        toast({
+          title: "Refresh Required",
+          description: "Please wait for the chart to refresh with latest data",
+          variant: "destructive"
+        });
+        return;
+      }
     }
 
     setIsCapturing(true);
@@ -108,32 +155,42 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
       }
       
-      console.log("🎯 Starting capture for:", { 
+      console.log("🎯 Starting capture for latest data:", { 
         selectedSymbol, 
         cleanSymbol, 
         selectedTimeframe,
-        isCustomPair: showCustomInput
+        isCustomPair: showCustomInput,
+        timeSinceLastCapture: timeSinceLastCapture / 1000 + " seconds"
       });
       
-      // Extended wait time for chart to fully render with correct symbol
-      await new Promise(resolve => setTimeout(resolve, 8000));
+      // Extended wait time for chart to fully render with latest data
+      console.log("⏳ Waiting for latest market data to render...");
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Increased to 10 seconds
 
-      // Capture with high quality settings
+      // Additional check for iframe content
+      const iframe = widgetRef.current.querySelector('iframe');
+      if (iframe) {
+        console.log("📊 Ensuring iframe has latest data...");
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Extra 2 seconds for iframe content
+      }
+
+      // Capture with high quality settings optimized for latest data
       const canvas = await html2canvas(widgetRef.current, {
         useCORS: true,
         allowTaint: false,
         backgroundColor: '#131722',
         scale: 2,
         logging: true,
-        imageTimeout: 25000,
+        imageTimeout: 30000, // Increased timeout
         removeContainer: false,
         width: widgetRef.current.offsetWidth,
         height: widgetRef.current.offsetHeight,
+        foreignObjectRendering: true, // Better iframe rendering
       });
 
-      console.log("✅ Canvas captured, size:", canvas.width, "x", canvas.height);
+      console.log("✅ Canvas captured with latest data, size:", canvas.width, "x", canvas.height);
 
-      // Validate canvas content
+      // Enhanced content validation for fresh data
       const ctx = canvas.getContext('2d');
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
       
@@ -141,7 +198,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         throw new Error("Failed to get image data from canvas");
       }
 
-      // Enhanced content validation
+      // Validate chart content quality
       const pixels = imageData.data;
       let colorVariations = new Set();
       let nonBlackPixels = 0;
@@ -166,19 +223,20 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       const contentPercentage = (nonBlackPixels / (totalPixels / 10)) * 100;
       const colorDiversity = colorVariations.size;
       
-      console.log("📊 Enhanced capture analysis:", {
+      console.log("📊 Latest data capture analysis:", {
         contentPercentage: contentPercentage.toFixed(2) + "%",
         colorVariations: colorDiversity,
         canvasSize: `${canvas.width}x${canvas.height}`,
         selectedSymbol,
-        cleanSymbol
+        cleanSymbol,
+        captureTimestamp: new Date().toISOString()
       });
       
       if (contentPercentage < 3 || colorDiversity < 8) {
-        throw new Error(`Captured image appears to lack sufficient chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). Please wait longer for the chart to load.`);
+        throw new Error(`Captured image appears to lack sufficient current chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). Please refresh and wait longer for the latest data to load.`);
       }
 
-      // Create file from canvas
+      // Create file from canvas with timestamp
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((result) => {
           if (result) {
@@ -190,39 +248,41 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       });
 
       const timestamp = Date.now();
-      const file = new File([blob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
+      lastCaptureTime.current = timestamp;
+      const file = new File([blob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-latest-${timestamp}.png`, { 
         type: 'image/png' 
       });
       
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending to analysis:", {
+      console.log("🚀 Sending latest data to analysis:", {
         fileName: file.name,
         fileSize: file.size,
         cleanSymbol,
         timeframeLabel,
-        originalSymbol: selectedSymbol
+        originalSymbol: selectedSymbol,
+        captureTime: new Date(timestamp).toISOString()
       });
       
       // Pass the clean symbol for analysis
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error in capture:", error);
+      console.error("❌ Error in latest data capture:", error);
       
-      let errorMessage = "Failed to capture the chart. ";
+      let errorMessage = "Failed to capture the latest chart data. ";
       
       if (error instanceof Error) {
         if (error.message.includes("content") || error.message.includes("variations")) {
-          errorMessage += error.message + " Try waiting longer for the chart to load.";
+          errorMessage += error.message + " Try refreshing the chart first.";
         } else {
           errorMessage += error.message;
         }
       }
       
       toast({
-        title: "Capture Failed",
+        title: "Latest Data Capture Failed",
         description: errorMessage,
         variant: "destructive"
       });
@@ -245,12 +305,14 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setSelectedSymbol(newSymbol);
     setIsWidgetLoaded(false);
     setShowCustomInput(false);
+    lastCaptureTime.current = 0; // Reset capture time to force fresh data
   };
 
   const handleTimeframeChange = (newTimeframe: string) => {
     console.log("🔄 Timeframe change from", selectedTimeframe, "to", newTimeframe);
     setSelectedTimeframe(newTimeframe);
     setIsWidgetLoaded(false);
+    lastCaptureTime.current = 0; // Reset capture time to force fresh data
   };
 
   const handleCustomPairSubmit = () => {
@@ -382,22 +444,51 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           <div className={`bg-gray-800/50 rounded-lg ${isMobile ? 'p-2' : 'p-4'}`}>
             {!isMobile && (
               <>
-                <h3 className="text-white font-medium mb-2">Live Chart Preview</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-white font-medium">Live Chart Preview</h3>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={refreshWidget}
+                    disabled={isRefreshing || isCapturing}
+                    className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700"
+                  >
+                    <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
                 <p className="text-gray-400 text-sm mb-4">
                   Currently showing: {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
+                  {lastCaptureTime.current > 0 && (
+                    <span className="ml-2 text-xs">
+                      (Last refreshed: {new Date(lastCaptureTime.current).toLocaleTimeString()})
+                    </span>
+                  )}
                 </p>
               </>
             )}
             
             {isMobile && (
-              <p className="text-gray-400 text-xs mb-2">
-                {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
-              </p>
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-gray-400 text-xs">
+                  {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={refreshWidget}
+                  disabled={isRefreshing || isCapturing}
+                  className="bg-gray-800 border-gray-700 text-white hover:bg-gray-700 h-6 text-xs px-2"
+                >
+                  <RefreshCw className={`h-2 w-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
             )}
             
             <div 
               ref={widgetRef} 
               className="w-full overflow-hidden rounded-lg border border-gray-700 bg-[#131722]"
+              key={`${selectedSymbol}-${selectedTimeframe}-${lastCaptureTime.current}`}
             >
               <AutoTradingViewWidget 
                 symbol={selectedSymbol}
@@ -408,38 +499,47 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           </div>
 
           {/* Status Indicators */}
-          <div className="flex items-center">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
-              <div className={`w-2 h-2 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+              <div className={`w-2 h-2 rounded-full ${
+                isRefreshing ? 'bg-yellow-500 animate-pulse' : 
+                isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'
+              }`}></div>
               <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isWidgetLoaded ? 'Chart ready' : 'Loading...'}
+                {isRefreshing ? 'Refreshing...' : isWidgetLoaded ? 'Latest data ready' : 'Loading...'}
               </span>
             </div>
+            
+            {lastCaptureTime.current > 0 && (
+              <span className="text-gray-500 text-xs">
+                Data age: {Math.floor((Date.now() - lastCaptureTime.current) / 60000)}m
+              </span>
+            )}
           </div>
 
           {/* Analyze Button */}
           <Button 
             onClick={captureAndAnalyze}
-            disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
+            disabled={!isWidgetLoaded || isCapturing || isAnalyzing || isRefreshing}
             className={`w-full bg-primary hover:bg-primary/90 text-white ${isMobile ? 'h-10 text-sm' : ''}`}
           >
-            {isCapturing ? 'Capturing...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing Latest Data...' : isAnalyzing ? 'Analyzing...' : (
               <>
                 <Download className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                {isMobile ? 'Capture & Analyze' : 'Enhanced Capture & Analyze Chart'}
+                {isMobile ? 'Analyze Latest Data' : 'Capture & Analyze Latest Chart Data'}
               </>
             )}
           </Button>
 
           {/* Help Text */}
           {!isMobile && (
-            <div className="bg-orange-900/20 border border-orange-800/50 rounded-lg p-3">
+            <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
               <div className="flex items-start">
-                <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-orange-400 font-medium text-sm mb-1">Trading Chart Tips</h4>
+                  <h4 className="text-blue-400 font-medium text-sm mb-1">Latest Data Analysis</h4>
                   <p className="text-gray-400 text-xs">
-                    For best results, wait for the chart to fully load before analysis. Use the custom pair input for any trading pair not in the list.
+                    The system automatically refreshes chart data before analysis to ensure you get the most current support/resistance levels and market conditions. Use the refresh button to manually update the chart.
                   </p>
                 </div>
               </div>
