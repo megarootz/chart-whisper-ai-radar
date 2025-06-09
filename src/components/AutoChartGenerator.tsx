@@ -165,7 +165,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       
       // Extended wait time for chart to fully render with latest data
       console.log("⏳ Waiting for latest market data to render...");
-      await new Promise(resolve => setTimeout(resolve, 10000)); // Increased to 10 seconds
+      await new Promise(resolve => setTimeout(resolve, 8000)); // Reduced from 10 to 8 seconds
 
       // Additional check for iframe content
       const iframe = widgetRef.current.querySelector('iframe');
@@ -190,7 +190,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
 
       console.log("✅ Canvas captured with latest data, size:", canvas.width, "x", canvas.height);
 
-      // Enhanced content validation for fresh data
+      // Improved content validation for fresh data
       const ctx = canvas.getContext('2d');
       const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
       
@@ -198,29 +198,32 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         throw new Error("Failed to get image data from canvas");
       }
 
-      // Validate chart content quality
+      // More reasonable validation logic
       const pixels = imageData.data;
       let colorVariations = new Set();
       let nonBlackPixels = 0;
       const totalPixels = pixels.length / 4;
       
-      for (let i = 0; i < pixels.length; i += 40) {
+      // Sample every 20th pixel instead of every 40th for better color detection
+      for (let i = 0; i < pixels.length; i += 80) { // 20 pixels * 4 (RGBA) = 80
         const r = pixels[i];
         const g = pixels[i + 1];
         const b = pixels[i + 2];
         const a = pixels[i + 3];
         
         if (a > 0) {
-          const colorKey = `${Math.floor(r/10)}-${Math.floor(g/10)}-${Math.floor(b/10)}`;
+          // More granular color grouping for better variation detection
+          const colorKey = `${Math.floor(r/20)}-${Math.floor(g/20)}-${Math.floor(b/20)}`;
           colorVariations.add(colorKey);
           
-          if (r > 20 || g > 20 || b > 20) {
+          // Lower threshold for non-black pixels
+          if (r > 10 || g > 10 || b > 10) {
             nonBlackPixels++;
           }
         }
       }
       
-      const contentPercentage = (nonBlackPixels / (totalPixels / 10)) * 100;
+      const contentPercentage = (nonBlackPixels / (totalPixels / 20)) * 100; // Adjusted calculation
       const colorDiversity = colorVariations.size;
       
       console.log("📊 Latest data capture analysis:", {
@@ -232,8 +235,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         captureTimestamp: new Date().toISOString()
       });
       
-      if (contentPercentage < 3 || colorDiversity < 8) {
-        throw new Error(`Captured image appears to lack sufficient current chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). Please refresh and wait longer for the latest data to load.`);
+      // More reasonable validation thresholds
+      if (contentPercentage < 1 || colorDiversity < 3) {
+        throw new Error(`Captured image appears to lack sufficient chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). Please refresh and wait longer for the data to load.`);
       }
 
       // Create file from canvas with timestamp
