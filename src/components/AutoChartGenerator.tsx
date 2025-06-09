@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -100,10 +99,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     localStorage.setItem('forexPairFavorites', JSON.stringify(favorites));
   }, [favorites]);
 
-  const toggleFavorite = (pairValue: string, event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    
+  const toggleFavorite = useCallback((pairValue: string) => {
     console.log('Toggling favorite for:', pairValue);
     setFavorites(prev => {
       const newFavorites = prev.includes(pairValue)
@@ -112,7 +108,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       console.log('New favorites:', newFavorites);
       return newFavorites;
     });
-  };
+  }, []);
 
   const getFavoritePairs = () => {
     return FOREX_PAIRS.filter(pair => favorites.includes(pair.value));
@@ -352,7 +348,6 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                     <SelectValue placeholder="Select a trading pair" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700 max-h-[300px]">
-                    {/* Regular Categories */}
                     {Object.entries(groupedPairs).map(([category, pairs]) => (
                       <div key={category}>
                         <div className="px-2 py-1.5 text-xs font-medium text-gray-400 uppercase tracking-wider">
@@ -362,10 +357,13 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                           <SelectItem key={pair.value} value={pair.value} className="text-white hover:bg-gray-700">
                             <div className="flex items-center justify-between w-full">
                               <span>{pair.label}</span>
-                              <button
-                                type="button"
-                                onClick={(e) => toggleFavorite(pair.value, e)}
-                                className="ml-2 p-1 hover:bg-gray-600 rounded"
+                              <div 
+                                className="ml-2 p-1 hover:bg-gray-600 rounded cursor-pointer"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  toggleFavorite(pair.value);
+                                }}
                               >
                                 <Star 
                                   className={`h-3 w-3 transition-colors ${
@@ -374,7 +372,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                                       : 'text-gray-500 hover:text-primary'
                                   }`}
                                 />
-                              </button>
+                              </div>
                             </div>
                           </SelectItem>
                         ))}
