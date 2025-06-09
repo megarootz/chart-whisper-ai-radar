@@ -23,71 +23,125 @@ serve(async (req) => {
 
     const { base64Image, pairName, timeframe } = await req.json();
     
-    console.log("📊 Analysis request received:", { 
+    console.log("📊 Enhanced analysis request received:", { 
       pairName, 
       timeframe, 
       imageLength: base64Image?.length 
     });
     
-    // Prepare request for OpenRouter API with enhanced prompt for specific symbol
+    // Enhanced professional trading analysis prompt
     const requestData = {
-      model: "openai/gpt-4.1-mini",
+      model: "openai/gpt-4.1",
       messages: [
         {
           role: "system",
-          content: `You are an expert forex, commodities, metals, and cryptocurrency technical analysis specialist. 
+          content: `You are a professional institutional trader and technical analyst with 15+ years of experience in forex, commodities, and cryptocurrency markets. You specialize in precision technical analysis, market structure analysis, and creating actionable trading setups.
 
-CRITICAL INSTRUCTIONS:
-1. The user has specifically selected ${pairName} on ${timeframe} timeframe for analysis
-2. You MUST analyze the ${pairName} chart shown in the image
-3. Your analysis MUST be for ${pairName} and ${timeframe} timeframe ONLY
-4. DO NOT analyze any other trading pair or symbol
-5. If the image shows a different symbol, still provide analysis for ${pairName} but mention the discrepancy
+CRITICAL ANALYSIS REQUIREMENTS:
+1. The user has specifically selected ${pairName} on ${timeframe} timeframe
+2. Analyze ONLY the ${pairName} chart for ${timeframe} timeframe
+3. Provide institutional-grade analysis with specific price levels
+4. Focus on actionable trading insights with proper risk management
+5. Use professional trading terminology and concepts
 
-Format your response EXACTLY like this:
+FORMAT YOUR RESPONSE EXACTLY AS FOLLOWS:
 
-${pairName} Technical Analysis (${timeframe} Chart)
+${pairName} Professional Technical Analysis (${timeframe} Chart)
 
-1. Trend Direction:
-Overall trend: [Bullish/Bearish/Neutral]
+**1. Market Structure & Trend Analysis:**
+- Overall Market Structure: [Bullish/Bearish/Neutral/Transitional]
+- Primary Trend: [Strong Bullish/Bullish/Weak Bullish/Neutral/Weak Bearish/Bearish/Strong Bearish]
+- Market Phase: [Trending/Consolidating/Reversal/Breakout]
+- Key Market Structure Levels: [Specific price levels with explanations]
 
-[Describe the key price movement visible on the ${pairName} chart with specific details]
+**2. Critical Support & Resistance Levels:**
+- Primary Support: [Exact price level] - [Confluence factors: previous highs/lows, fibonacci, round numbers, etc.]
+- Secondary Support: [Exact price level] - [Confluence factors]
+- Primary Resistance: [Exact price level] - [Confluence factors] 
+- Secondary Resistance: [Exact price level] - [Confluence factors]
+- Break-Even Zone: [Price range where trend becomes neutral]
 
-2. Key Support Levels:
-[List specific price levels for ${pairName}]
+**3. Volume & Momentum Analysis:**
+- Volume Profile: [Analysis of volume patterns and accumulation/distribution]
+- Momentum Divergence: [Any bullish or bearish divergences observed]
+- Institutional Activity: [Signs of smart money accumulation or distribution]
 
-3. Key Resistance Levels:
-[List specific price levels for ${pairName}]
+**4. Chart Patterns & Formations:**
+- Primary Pattern: [Specific pattern name and completion status]
+- Pattern Target: [Measured move target with price level]
+- Pattern Invalidation: [Price level that would invalidate the pattern]
+- Secondary Formations: [Any additional patterns or structures]
 
-4. Chart Patterns:
-[Analyze patterns visible in the ${pairName} chart]
+**5. Technical Indicators Synthesis:**
+- Price Action Signals: [Key candlestick patterns and price behaviors]
+- Moving Average Analysis: [Relationship to key MAs and dynamic support/resistance]
+- Oscillator Analysis: [RSI, MACD, Stochastic conditions and signals]
+- Fibonacci Analysis: [Key retracement and extension levels]
 
-5. Technical Indicators (inferred from price action):
-[Provide analysis of indicators for ${pairName}]
+**6. Multi-Timeframe Context:**
+- Higher Timeframe Bias: [Weekly/Daily trend direction and key levels]
+- Lower Timeframe Signals: [H4/H1 entry opportunities and confirmations]
+- Confluence Analysis: [How different timeframes align or conflict]
 
-6. Trading Insights:
-Bullish Scenario for ${pairName}:
-[Detailed entry, target and stop conditions]
+**7. Detailed Trading Setups:**
 
-Bearish Scenario for ${pairName}:
-[Detailed entry, target and stop conditions]
+**BULLISH SCENARIO for ${pairName}:**
+- Entry Strategy: [Specific entry method: break above resistance, pullback to support, etc.]
+- Precise Entry Zone: [Exact price range for entries]
+- Entry Confirmation: [Required signals before entering]
+- Stop Loss: [Exact price level with reasoning]
+- Take Profit 1: [Conservative target with price level]
+- Take Profit 2: [Aggressive target with price level]
+- Risk-Reward Ratio: [Calculated R:R for this setup]
+- Position Size Recommendation: [Conservative/Moderate/Aggressive based on setup quality]
 
-Remember: This analysis is specifically for ${pairName} on ${timeframe} timeframe. All price levels, patterns, and recommendations must be relevant to ${pairName}.`
+**BEARISH SCENARIO for ${pairName}:**
+- Entry Strategy: [Specific entry method]
+- Precise Entry Zone: [Exact price range for entries]
+- Entry Confirmation: [Required signals before entering]
+- Stop Loss: [Exact price level with reasoning]
+- Take Profit 1: [Conservative target with price level]
+- Take Profit 2: [Aggressive target with price level]
+- Risk-Reward Ratio: [Calculated R:R for this setup]
+- Position Size Recommendation: [Conservative/Moderate/Aggressive based on setup quality]
+
+**8. Risk Management Framework:**
+- Maximum Risk Per Trade: [Percentage recommendation based on setup quality]
+- Position Sizing: [How to calculate proper position size]
+- Stop Loss Management: [How to manage stops as trade progresses]
+- Profit Taking Strategy: [Systematic approach to taking profits]
+
+**9. Market Outlook & Key Levels to Watch:**
+- Short-term Outlook (Next 24-48 hours): [Expected price action]
+- Medium-term Outlook (Next week): [Broader market expectations]
+- Key Events to Monitor: [Economic events or technical levels that could change the analysis]
+- Invalidation Levels: [Price levels that would change the entire analysis]
+
+**10. Trade Management & Contingencies:**
+- Best Case Scenario: [What happens if everything goes perfectly]
+- Worst Case Scenario: [How to handle if the trade goes against you]
+- Neutral Scenario: [What to do if price consolidates]
+- Exit Strategies: [Clear rules for when to exit winning and losing trades]
+
+Remember: This analysis is specifically for ${pairName} on ${timeframe} timeframe. All price levels, patterns, and recommendations must be relevant to ${pairName} and current market conditions.`
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Please analyze this ${pairName} chart on ${timeframe} timeframe. 
+              text: `Please provide a comprehensive institutional-grade technical analysis for this ${pairName} chart on ${timeframe} timeframe.
 
-IMPORTANT: 
-- This analysis is specifically for ${pairName}
-- Timeframe is ${timeframe}
-- Provide price levels and analysis relevant to ${pairName}
-- If you see any other symbol in the chart, ignore it and focus on providing analysis for ${pairName}
+ANALYSIS REQUIREMENTS:
+- Focus specifically on ${pairName} 
+- Timeframe: ${timeframe}
+- Provide exact price levels for all support/resistance
+- Include specific entry, stop loss, and take profit levels
+- Analyze market structure and institutional order flow
+- Consider multi-timeframe context
+- Provide actionable trading setups with proper risk management
 
-Your response must start with: "${pairName} Technical Analysis (${timeframe} Chart)"`
+Your response must start with: "${pairName} Professional Technical Analysis (${timeframe} Chart)"`
             },
             {
               type: "image_url",
@@ -99,18 +153,18 @@ Your response must start with: "${pairName} Technical Analysis (${timeframe} Cha
           ]
         }
       ],
-      temperature: 0.2,
-      max_tokens: 1300
+      temperature: 0.1,
+      max_tokens: 2500
     };
 
-    console.log("Sending request to OpenRouter API for:", pairName, timeframe);
+    console.log("Sending enhanced request to OpenRouter API for:", pairName, timeframe);
     
     // Create headers with proper authentication
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'Forex Chart Analyzer'
+      'X-Title': 'Professional Forex Chart Analyzer'
     };
     
     // Call OpenRouter API
@@ -124,7 +178,7 @@ Your response must start with: "${pairName} Technical Analysis (${timeframe} Cha
     
     // Get full response text
     const responseText = await response.text();
-    console.log("Response received for", pairName, "- length:", responseText.length);
+    console.log("Enhanced analysis response received for", pairName, "- length:", responseText.length);
     
     if (!response.ok) {
       throw new Error(`Failed to analyze chart: ${response.status} - ${responseText}`);
@@ -136,7 +190,7 @@ Your response must start with: "${pairName} Technical Analysis (${timeframe} Cha
     });
     
   } catch (error) {
-    console.error("Error in analyze-chart function:", error);
+    console.error("Error in enhanced analyze-chart function:", error);
     return new Response(
       JSON.stringify({ 
         error: error.message || "An unknown error occurred while analyzing the chart" 

@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { formatTradingPair } from '@/utils/tradingPairUtils';
+import { TrendingUp, Target, Shield, AlertTriangle } from 'lucide-react';
 
 export interface MarketFactor {
   name: string;
@@ -66,217 +68,295 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
   // Format the trading pair using our utility
   const formattedPairName = formatTradingPair(data.pairName);
 
-  // Helper function to render bulleted list items from text content
-  const renderBulletPoints = (text: string) => {
+  // Helper function to render structured text content
+  const renderStructuredContent = (text: string) => {
     if (!text) return null;
     
-    // Check if the content already has bullet points
-    if (text.includes('•') || text.includes('-')) {
-      return (
-        <div className="space-y-2">
-          {text.split('\n').map((line, index) => (
-            <p key={index} className={`
-              ${line.trim().startsWith('•') || line.trim().startsWith('-') ? 'ml-4' : ''}
-            `}>
-              {line}
-            </p>
-          ))}
-        </div>
-      );
-    }
+    // Split by sections and format
+    const sections = text.split('\n').filter(line => line.trim());
     
-    // Otherwise, render as regular text
     return (
-      <div className="space-y-1">
-        {text.split('\n').map((line, index) => (
-          <p key={index}>{line}</p>
-        ))}
+      <div className="space-y-2">
+        {sections.map((line, index) => {
+          const trimmedLine = line.trim();
+          
+          // Skip empty lines
+          if (!trimmedLine) return null;
+          
+          // Handle bullet points
+          if (trimmedLine.startsWith('•') || trimmedLine.startsWith('-')) {
+            return (
+              <div key={index} className="ml-4 flex items-start">
+                <span className="text-primary mr-2">•</span>
+                <span>{trimmedLine.substring(1).trim()}</span>
+              </div>
+            );
+          }
+          
+          // Handle structured data (key: value)
+          if (trimmedLine.includes(':') && !trimmedLine.startsWith('http')) {
+            const [key, ...valueParts] = trimmedLine.split(':');
+            const value = valueParts.join(':').trim();
+            
+            return (
+              <div key={index} className="flex flex-wrap">
+                <span className="font-medium text-primary mr-2">{key.trim()}:</span>
+                <span className="flex-1">{value}</span>
+              </div>
+            );
+          }
+          
+          // Regular paragraph
+          return (
+            <p key={index} className="leading-relaxed">
+              {trimmedLine}
+            </p>
+          );
+        })}
       </div>
     );
   };
 
   return (
-    <div className="space-y-4 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       <Card className="w-full bg-chart-card border-gray-700">
         <CardHeader>
           <CardTitle className="text-white flex items-center">
-            <div className="mr-2 bg-primary/20 p-1.5 rounded">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 3a1 1 0 000 2v8a2 2 0 002 2h2.586l-1.293 1.293a1 1 0 101.414 1.414L10 15.414l2.293 2.293a1 1 0 001.414-1.414L12.414 15H15a2 2 0 002-2V5a1 1 0 100-2H3zm11.707 4.707a1 1 0 00-1.414-1.414L10 9.586 8.707 8.293a1 1 0 00-1.414 0l-2 2a1 1 0 101.414 1.414L8 10.414l1.293 1.293a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
+            <div className="mr-3 bg-primary/20 p-2 rounded">
+              <TrendingUp className="h-6 w-6 text-primary" />
             </div>
-            <div>Analysis Results</div>
+            <div>
+              <div className="text-xl font-bold">Professional Technical Analysis</div>
+              <div className="text-sm text-gray-400 font-normal mt-1">
+                Institutional-Grade Market Analysis
+              </div>
+            </div>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6 text-white">
+          <div className="space-y-8 text-white">
             {/* Analysis Header - Display pair and timeframe prominently */}
-            <div className="flex items-center mb-4 border-b border-gray-700 pb-4">
-              <div className="bg-blue-900/30 p-2 rounded mr-3">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" />
-                </svg>
-              </div>
-              <div>
-                <div className="text-xl font-bold text-primary">
-                  {formattedPairName}
-                </div>
-                <div className="text-gray-400 text-sm">
-                  {data.timeframe || "Unknown Timeframe"} Chart
-                </div>
-              </div>
-            </div>
-            
-            {/* 1. Trend Direction */}
-            <div className="space-y-2">
-              <div className="text-lg font-semibold">1. Trend Direction:</div>
-              <div className="pl-4">
-                <p className="font-medium">Overall trend: {data.trendDirection.charAt(0).toUpperCase() + data.trendDirection.slice(1)}</p>
-                {renderBulletPoints(data.marketAnalysis)}
-              </div>
-            </div>
-            
-            {/* 2. Key Support Levels */}
-            <div className="space-y-2">
-              <div className="text-lg font-semibold">2. Key Support Levels:</div>
-              <div className="pl-4">
-                {getSupportLevels().length > 0 ? (
-                  <ul className="list-disc ml-6 space-y-2">
-                    {getSupportLevels().map((level, index) => (
-                      <li key={index} className="text-bullish">
-                        <span className="font-medium">{level.price}:</span> {level.name.replace('Support:', '').trim()}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No specific support levels identified.</p>
-                )}
-              </div>
-            </div>
-            
-            {/* 3. Key Resistance Levels */}
-            <div className="space-y-2">
-              <div className="text-lg font-semibold">3. Key Resistance Levels:</div>
-              <div className="pl-4">
-                {getResistanceLevels().length > 0 ? (
-                  <ul className="list-disc ml-6 space-y-2">
-                    {getResistanceLevels().map((level, index) => (
-                      <li key={index} className="text-bearish">
-                        <span className="font-medium">{level.price}:</span> {level.name.replace('Resistance:', '').trim()}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No specific resistance levels identified.</p>
-                )}
-              </div>
-            </div>
-            
-            {/* 4. Chart Patterns */}
-            <div className="space-y-2">
-              <div className="text-lg font-semibold">4. Chart Patterns:</div>
-              <div className="pl-4">
-                {data.chartPatterns.length > 0 ? (
-                  <ul className="list-disc ml-6 space-y-4">
-                    {data.chartPatterns.map((pattern, index) => (
-                      <li key={index}>
-                        <p className={`font-medium ${
-                          pattern.signal === 'bullish' ? 'text-bullish' : 
-                          pattern.signal === 'bearish' ? 'text-bearish' : 'text-neutral'
-                        }`}>
-                          {pattern.name}:
-                        </p>
-                        <ul className="list-disc ml-6 mt-1">
-                          <li>Pattern with {pattern.confidence}% confidence indicating a {pattern.signal} signal.</li>
-                          {pattern.status && <li>Status: {pattern.status}</li>}
-                        </ul>
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No significant chart patterns identified.</p>
-                )}
-              </div>
-            </div>
-            
-            {/* 5. Technical Indicators */}
-            <div className="space-y-2">
-              <div className="text-lg font-semibold">5. Technical Indicators:</div>
-              <div className="pl-4">
-                {data.marketFactors.length > 0 ? (
-                  <ul className="list-disc ml-6 space-y-2">
-                    {data.marketFactors.map((factor, index) => (
-                      <li key={index} className={
-                        factor.sentiment === 'bullish' ? 'text-bullish' : 
-                        factor.sentiment === 'bearish' ? 'text-bearish' : 'text-neutral'
-                      }>
-                        {factor.description}
-                      </li>
-                    ))}
-                  </ul>
-                ) : (
-                  <p>No technical indicator data available.</p>
-                )}
-              </div>
-            </div>
-            
-            {/* 6. Trading Insights */}
-            <div className="space-y-2">
-              <div className="text-lg font-semibold">6. Trading Insights:</div>
-              <div className="pl-4 space-y-4">
-                {/* Bullish Scenario */}
+            <div className="bg-gradient-to-r from-primary/10 to-blue-600/10 rounded-lg p-4 border border-primary/20">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-bullish font-medium">Bullish Scenario:</p>
-                  {data.tradingSetup && data.tradingSetup.type === 'long' ? (
-                    <ul className="list-disc ml-6 space-y-1 mt-1">
-                      <li>{data.tradingSetup.description}</li>
-                      {data.tradingSetup.entryPrice && <li>Entry: {data.tradingSetup.entryPrice}</li>}
-                      {data.tradingSetup.stopLoss && <li>Stop Loss: {data.tradingSetup.stopLoss}</li>}
-                      {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
-                        <li>Take Profit: {data.tradingSetup.takeProfits.join(', ')}</li>
-                      )}
-                    </ul>
-                  ) : (
-                    <p className="ml-4">No bullish scenario available.</p>
-                  )}
-                </div>
-                
-                {/* Bearish Scenario */}
-                <div>
-                  <p className="text-bearish font-medium">Bearish Scenario:</p>
-                  {data.tradingSetup && data.tradingSetup.type === 'short' ? (
-                    <ul className="list-disc ml-6 space-y-1 mt-1">
-                      <li>{data.tradingSetup.description}</li>
-                      {data.tradingSetup.entryPrice && <li>Entry: {data.tradingSetup.entryPrice}</li>}
-                      {data.tradingSetup.stopLoss && <li>Stop Loss: {data.tradingSetup.stopLoss}</li>}
-                      {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
-                        <li>Take Profit: {data.tradingSetup.takeProfits.join(', ')}</li>
-                      )}
-                    </ul>
-                  ) : (
-                    <p className="ml-4">No bearish scenario available.</p>
-                  )}
-                </div>
-                
-                {/* Neutral Scenario */}
-                <div>
-                  <p className="font-medium">Neutral / Consolidation Scenario:</p>
-                  {data.tradingSetup && data.tradingSetup.type === 'neutral' ? (
-                    <ul className="list-disc ml-6 space-y-1 mt-1">
-                      <li>{data.tradingSetup.description}</li>
-                    </ul>
-                  ) : (
-                    <p className="ml-4">No consolidation scenario available.</p>
-                  )}
-                </div>
-                
-                {data.tradingInsight && !data.tradingSetup && (
-                  <div className="mt-2">
-                    {renderBulletPoints(data.tradingInsight)}
+                  <div className="text-2xl font-bold text-primary mb-1">
+                    {formattedPairName}
                   </div>
+                  <div className="text-gray-300">
+                    {data.timeframe || "Unknown Timeframe"} Chart Analysis
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className={`text-lg font-bold ${
+                    data.overallSentiment === 'bullish' ? 'text-green-400' :
+                    data.overallSentiment === 'bearish' ? 'text-red-400' :
+                    data.overallSentiment === 'mildly bullish' ? 'text-green-300' :
+                    data.overallSentiment === 'mildly bearish' ? 'text-red-300' :
+                    'text-yellow-400'
+                  }`}>
+                    {data.overallSentiment.charAt(0).toUpperCase() + data.overallSentiment.slice(1)}
+                  </div>
+                  <div className="text-sm text-gray-400">
+                    Confidence: {data.confidenceScore}%
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* 1. Market Structure & Trend Analysis */}
+            <div className="space-y-3">
+              <div className="flex items-center text-lg font-semibold">
+                <TrendingUp className="h-5 w-5 mr-2 text-primary" />
+                1. Market Structure & Trend Analysis
+              </div>
+              <div className="pl-7 bg-gray-800/30 rounded-lg p-4">
+                {renderStructuredContent(data.marketAnalysis)}
+              </div>
+            </div>
+            
+            {/* 2. Critical Support & Resistance Levels */}
+            <div className="space-y-3">
+              <div className="flex items-center text-lg font-semibold">
+                <Target className="h-5 w-5 mr-2 text-primary" />
+                2. Critical Support & Resistance Levels
+              </div>
+              <div className="pl-7 grid md:grid-cols-2 gap-4">
+                {/* Support Levels */}
+                <div className="bg-green-900/20 border border-green-800/50 rounded-lg p-4">
+                  <h4 className="font-medium text-green-400 mb-3">Support Levels</h4>
+                  {getSupportLevels().length > 0 ? (
+                    <div className="space-y-2">
+                      {getSupportLevels().map((level, index) => (
+                        <div key={index} className="flex flex-col">
+                          <span className="font-mono text-green-300 font-bold">{level.price}</span>
+                          <span className="text-sm text-gray-300">{level.name.replace('Primary Support:', '').replace('Secondary Support:', '').trim()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 text-sm">No specific support levels identified.</p>
+                  )}
+                </div>
+                
+                {/* Resistance Levels */}
+                <div className="bg-red-900/20 border border-red-800/50 rounded-lg p-4">
+                  <h4 className="font-medium text-red-400 mb-3">Resistance Levels</h4>
+                  {getResistanceLevels().length > 0 ? (
+                    <div className="space-y-2">
+                      {getResistanceLevels().map((level, index) => (
+                        <div key={index} className="flex flex-col">
+                          <span className="font-mono text-red-300 font-bold">{level.price}</span>
+                          <span className="text-sm text-gray-300">{level.name.replace('Primary Resistance:', '').replace('Secondary Resistance:', '').trim()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-gray-400 text-sm">No specific resistance levels identified.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            {/* 3. Chart Patterns & Formations */}
+            <div className="space-y-3">
+              <div className="text-lg font-semibold">3. Chart Patterns & Formations</div>
+              <div className="pl-7">
+                {data.chartPatterns.length > 0 ? (
+                  <div className="space-y-3">
+                    {data.chartPatterns.map((pattern, index) => (
+                      <div key={index} className="bg-gray-800/30 rounded-lg p-4 border-l-4 border-primary">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className={`font-medium ${
+                            pattern.signal === 'bullish' ? 'text-green-400' : 
+                            pattern.signal === 'bearish' ? 'text-red-400' : 'text-yellow-400'
+                          }`}>
+                            {pattern.name}
+                          </h4>
+                          <span className="text-sm text-gray-400">
+                            {pattern.confidence}% confidence • {pattern.status || 'complete'}
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-300">
+                          {pattern.signal.charAt(0).toUpperCase() + pattern.signal.slice(1)} pattern formation
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-400">No significant chart patterns identified.</p>
                 )}
               </div>
             </div>
+            
+            {/* 4. Technical Indicators Synthesis */}
+            <div className="space-y-3">
+              <div className="text-lg font-semibold">4. Technical Indicators Synthesis</div>
+              <div className="pl-7">
+                {data.marketFactors.length > 0 ? (
+                  <div className="grid gap-3">
+                    {data.marketFactors.map((factor, index) => (
+                      <div key={index} className="bg-gray-800/30 rounded-lg p-3 border-l-4 border-blue-500">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-blue-400 mb-1">{factor.name}</h4>
+                            <p className="text-sm text-gray-300">{factor.description}</p>
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded ml-3 ${
+                            factor.sentiment === 'bullish' ? 'bg-green-900/50 text-green-300' : 
+                            factor.sentiment === 'bearish' ? 'bg-red-900/50 text-red-300' : 
+                            'bg-gray-700 text-gray-300'
+                          }`}>
+                            {factor.sentiment}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-gray-400">No technical indicator data available.</p>
+                )}
+              </div>
+            </div>
+            
+            {/* 5. Professional Trading Setup */}
+            {data.tradingSetup && (
+              <div className="space-y-3">
+                <div className="flex items-center text-lg font-semibold">
+                  <Shield className="h-5 w-5 mr-2 text-primary" />
+                  5. Professional Trading Setup
+                </div>
+                <div className="pl-7">
+                  <div className={`rounded-lg p-4 border-l-4 ${
+                    data.tradingSetup.type === 'long' ? 'bg-green-900/20 border-green-500' :
+                    data.tradingSetup.type === 'short' ? 'bg-red-900/20 border-red-500' :
+                    'bg-yellow-900/20 border-yellow-500'
+                  }`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className={`font-bold text-lg ${
+                        data.tradingSetup.type === 'long' ? 'text-green-400' :
+                        data.tradingSetup.type === 'short' ? 'text-red-400' :
+                        'text-yellow-400'
+                      }`}>
+                        {data.tradingSetup.type.toUpperCase()} SETUP
+                      </h4>
+                      <div className="text-right">
+                        <div className="text-sm text-gray-400">Confidence: {data.tradingSetup.confidence}%</div>
+                        <div className="text-sm text-gray-400">R:R {data.tradingSetup.riskRewardRatio || '1:2'}</div>
+                      </div>
+                    </div>
+                    
+                    {/* Trading Details */}
+                    <div className="grid md:grid-cols-2 gap-4 mb-4">
+                      {data.tradingSetup.entryPrice && (
+                        <div>
+                          <span className="text-sm text-gray-400">Entry Zone:</span>
+                          <div className="font-mono text-white font-bold">{data.tradingSetup.entryPrice}</div>
+                        </div>
+                      )}
+                      
+                      {data.tradingSetup.stopLoss && (
+                        <div>
+                          <span className="text-sm text-gray-400">Stop Loss:</span>
+                          <div className="font-mono text-red-300 font-bold">{data.tradingSetup.stopLoss}</div>
+                        </div>
+                      )}
+                      
+                      {data.tradingSetup.takeProfits && data.tradingSetup.takeProfits.length > 0 && (
+                        <div className="md:col-span-2">
+                          <span className="text-sm text-gray-400">Take Profits:</span>
+                          <div className="flex gap-2 mt-1">
+                            {data.tradingSetup.takeProfits.map((tp, index) => (
+                              <div key={index} className="font-mono text-green-300 font-bold">
+                                TP{index + 1}: {tp}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Setup Description */}
+                    <div className="bg-gray-900/50 rounded p-3">
+                      <h5 className="font-medium mb-2 text-white">Setup Analysis:</h5>
+                      {renderStructuredContent(data.tradingSetup.description)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* 6. Risk Management & Market Outlook */}
+            {data.tradingInsight && (
+              <div className="space-y-3">
+                <div className="flex items-center text-lg font-semibold">
+                  <AlertTriangle className="h-5 w-5 mr-2 text-primary" />
+                  6. Risk Management & Market Outlook
+                </div>
+                <div className="pl-7 bg-blue-900/10 border border-blue-800/30 rounded-lg p-4">
+                  {renderStructuredContent(data.tradingInsight)}
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
