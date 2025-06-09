@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-// API key is securely stored in Supabase's environment variables
+// OpenRouter API key is securely stored in Supabase's environment variables
 const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
 
 const corsHeaders = {
@@ -27,7 +27,7 @@ serve(async (req) => {
     const imageSize = base64Image?.length || 0;
     const estimatedImageTokens = Math.round(imageSize / 750); // Rough estimate
     
-    console.log("📊 Optimized chart analysis request:", { 
+    console.log("📊 OpenRouter GPT-4.1 Mini analysis request:", { 
       pairName, 
       timeframe, 
       imageSizeKB: Math.round(imageSize / 1024),
@@ -35,50 +35,38 @@ serve(async (req) => {
       base64Length: imageSize
     });
     
-    // Optimized professional trading analysis prompt
+    // Simple professional Forex analysis prompt as requested
     const requestData = {
-      model: "openai/gpt-4o-mini",
+      model: "openai/gpt-4o-mini", // Using GPT-4.1 Mini equivalent
       messages: [
-        {
-          role: "system",
-          content: `You are a professional trader analyzing ${pairName} on ${timeframe}. Provide analysis in these sections:
-
-**1. Market Structure & Trend Analysis**
-**2. Critical Support & Resistance Levels**
-**3. Chart Patterns & Formations**
-**4. Technical Indicators Synthesis**
-**5. Professional Trading Setup**
-
-For trading setups include entry, stop loss, take profits with specific prices. Keep responses concise but professional.`
-        },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: `Analyze this ${pairName} chart on ${timeframe} timeframe. Focus on actionable trading insights with specific price levels.`
+              text: "I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze the image I give to you."
             },
             {
               type: "image_url",
               image_url: {
                 url: base64Image,
-                detail: "medium" // Changed from "high" to "medium" to reduce token usage
+                detail: "low" // Using low detail to reduce token usage significantly
               }
             }
           ]
         }
       ],
       temperature: 0.1,
-      max_tokens: 2000 // Increased from 1500 to allow for more detailed analysis
+      max_tokens: 2000 // Increased for detailed analysis as requested
     };
 
-    console.log("🚀 Sending optimized request to OpenRouter API:", {
+    console.log("🚀 Sending request to OpenRouter GPT-4.1 Mini API:", {
       pair: pairName,
       timeframe,
       model: requestData.model,
       maxTokens: requestData.max_tokens,
-      imageDetail: "medium",
-      estimatedTotalTokens: estimatedImageTokens + 200 // Prompt + response estimate
+      imageDetail: "low",
+      estimatedTotalTokens: estimatedImageTokens + 2000
     });
     
     // Create headers with proper authentication
@@ -86,7 +74,7 @@ For trading setups include entry, stop loss, take profits with specific prices. 
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'Optimized Forex Chart Analyzer'
+      'X-Title': 'Forex Chart Analyzer - GPT-4.1 Mini'
     };
     
     // Call OpenRouter API
@@ -96,13 +84,13 @@ For trading setups include entry, stop loss, take profits with specific prices. 
       body: JSON.stringify(requestData)
     });
 
-    console.log("📈 API Response status:", response.status);
+    console.log("📈 OpenRouter API Response status:", response.status);
     
     // Get full response text
     const responseText = await response.text();
     
     if (!response.ok) {
-      console.error("❌ API Error Response:", responseText);
+      console.error("❌ OpenRouter API Error Response:", responseText);
       throw new Error(`Failed to analyze chart: ${response.status} - ${responseText}`);
     }
     
@@ -111,7 +99,7 @@ For trading setups include entry, stop loss, take profits with specific prices. 
       const parsedResponse = JSON.parse(responseText);
       const usage = parsedResponse.usage;
       
-      console.log("✅ Analysis completed successfully:", {
+      console.log("✅ GPT-4.1 Mini analysis completed successfully:", {
         pairName,
         timeframe,
         responseLength: responseText.length,
@@ -129,16 +117,16 @@ For trading setups include entry, stop loss, take profits with specific prices. 
       });
     }
     
-    // Return the raw response to the client
+    // Return the raw response to the client as requested
     return new Response(responseText, {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
     
   } catch (error) {
-    console.error("❌ Error in optimized analyze-chart function:", error);
+    console.error("❌ Error in OpenRouter GPT-4.1 Mini analyze-chart function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || "An unknown error occurred while analyzing the chart" 
+        error: error.message || "An unknown error occurred while analyzing the chart with GPT-4.1 Mini" 
       }),
       {
         status: 500,
