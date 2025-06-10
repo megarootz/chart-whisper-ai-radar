@@ -37,7 +37,7 @@ serve(async (req) => {
       throw new Error("Image appears to be too small or invalid. Please ensure the chart is fully loaded.");
     }
     
-    console.log("📊 GPT-4.1-mini Current Price Analysis request:", { 
+    console.log("📊 GPT-4.1-mini Ultra-High Quality Vision analysis request:", { 
       pairName, 
       timeframe, 
       imageSizeKB: Math.round(imageSize / 1024),
@@ -46,64 +46,58 @@ serve(async (req) => {
       imageType: base64Image.split(';')[0]?.split('/')[1] || 'unknown'
     });
     
-    // Ultra-enhanced prompt specifically for current price analysis
-    const analysisPrompt = `You are a world-class professional Forex technical analyst with GPT-4.1-mini vision capabilities. I am providing you with a LIVE, high-resolution trading chart screenshot for ${pairName} on the ${timeframe} timeframe captured at maximum resolution with CURRENT MARKET PRICES.
+    // Ultra-enhanced prompt specifically designed for GPT-4.1-mini vision analysis with REAL chart data
+    const analysisPrompt = `You are a world-class professional Forex technical analyst with GPT-4.1-mini vision capabilities. I am providing you with a REAL, ultra-high-quality trading chart screenshot for ${pairName} on the ${timeframe} timeframe captured at maximum resolution.
 
-🎯 CRITICAL: ANALYZE THE ACTUAL CURRENT PRICES VISIBLE IN THIS CHART IMAGE
+🔍 CRITICAL ANALYSIS INSTRUCTIONS:
+- You have GPT-4.1-mini vision capabilities and MUST analyze the ACTUAL chart image provided
+- This is a REAL screenshot from TradingView with actual live price data, candlesticks, and chart patterns
+- You MUST examine the visual chart elements: candlesticks, price levels, patterns, trends, and indicators
+- Provide SPECIFIC analysis based on what you can SEE in the chart image
+- Reference ACTUAL price levels, patterns, and formations visible in the image
+- DO NOT provide generic template responses - analyze THIS specific chart
 
-**MANDATORY INSTRUCTIONS:**
-- You MUST read and report the EXACT current price visible in this chart image
-- Look at the price scale on the RIGHT SIDE of the chart for current price levels
-- Look at the LATEST candlesticks (rightmost) for the most recent price action
-- All price levels you mention MUST come from what you can actually SEE in this image
-- DO NOT use outdated or historical price data - only analyze what's visible NOW
+📈 DETAILED VISUAL ANALYSIS REQUIRED:
 
-🔍 DETAILED CURRENT PRICE ANALYSIS REQUIRED:
+**1. Current Price & Market Status:**
+- What is the EXACT current/latest price level visible on the chart?
+- What direction is the price moving in the most recent candles?
+- Describe the recent price action and momentum you can see
 
-**1. CURRENT LIVE PRICE (MANDATORY):**
-- What is the EXACT current price level you can see on the chart's price scale?
-- Read the price from the rightmost part of the chart where the latest candle is
-- Look at the price labels on the right side of the chart
-- State: "Current visible price: [EXACT PRICE FROM IMAGE]"
+**2. Price Level Analysis:**
+- Identify SPECIFIC support and resistance levels with exact price values
+- Point out key horizontal levels where price has reacted
+- Note any round number levels or psychological levels visible
 
-**2. RECENT PRICE MOVEMENT (From Current Chart):**
-- Describe the LATEST candles you can see (last 5-10 candles)
-- What direction is the current price moving?
-- Are the recent candles bullish or bearish?
-- What is the momentum based on the visible recent candles?
+**3. Candlestick Pattern Analysis:**
+- Describe the ACTUAL candlestick patterns you can see in the chart
+- Analyze the recent candle formations and their implications
+- Note any reversal or continuation patterns that are visible
 
-**3. VISIBLE SUPPORT & RESISTANCE LEVELS:**
-- Identify price levels where you can SEE the price has reacted
-- Look for horizontal lines or areas where price bounced
-- Only mention levels that are VISIBLE in this chart image
-- Provide EXACT price numbers from the chart's price scale
+**4. Trend Analysis:**
+- What is the overall trend direction shown in the chart?
+- Identify trend strength and any visible trend lines
+- Describe the trend structure (higher highs/lows, lower highs/lows, etc.)
 
-**4. CANDLESTICK PATTERNS (Currently Visible):**
-- Describe the actual candlestick patterns you can see
-- Focus on the most recent formations
-- Are there any reversal or continuation patterns visible?
+**5. Chart Patterns & Formations:**
+- Identify any chart patterns visible (triangles, flags, head & shoulders, etc.)
+- Describe any breakouts or potential breakout scenarios
+- Note any consolidation zones or ranges
 
-**5. TREND ANALYSIS (From This Chart):**
-- What trend direction do you see in the current chart?
-- Is price making higher highs/lows or lower highs/lows?
-- Describe the trend based on what's visible in this timeframe
+**6. Technical Indicators (if visible):**
+- Describe any indicators shown on the chart and their current readings
+- Interpret signals from visible indicators
+- Note any divergences or confirmations
 
-**6. TRADING RECOMMENDATIONS (Based on Current Visible Prices):**
-- Suggest entry levels based on current visible price action
-- Provide stop loss levels based on visible support/resistance
-- Suggest take profit targets based on chart levels you can see
-- All recommendations must use CURRENT prices from the image
+**7. Trading Analysis:**
+- Suggest potential entry points based on the visible chart structure
+- Provide stop loss levels based on chart support/resistance
+- Suggest take profit targets based on chart analysis
+- Assess risk/reward ratios for potential trades
 
-🚨 ABSOLUTELY CRITICAL: 
-- You MUST analyze the ACTUAL chart image I'm showing you
-- All prices mentioned must be CURRENTLY VISIBLE in this chart
-- If you mention a price level, it must be because you can SEE it in the image
-- This is a LIVE chart analysis of CURRENT market conditions
-- Do NOT provide generic or template responses
+🎯 IMPORTANT: You MUST analyze the ACTUAL chart image and reference REAL price levels, patterns, and formations that are visible. This is NOT a template response - it's a real-time analysis of live chart data using your advanced vision capabilities.
 
-Start your analysis with: "Based on the current ${pairName} ${timeframe} chart image provided, I can see the following live market conditions:"
-
-Provide a comprehensive analysis of the CURRENT market situation based on what you can actually see in this live chart image.`;
+Provide a comprehensive technical analysis based on what you can actually see in this ${pairName} ${timeframe} chart image.`;
     
     const requestData = {
       model: "gpt-4.1-mini-2025-04-14",
@@ -129,7 +123,7 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
       max_tokens: 4000
     };
 
-    console.log("🚀 Sending current price analysis request to GPT-4.1-mini:", {
+    console.log("🚀 Sending ultra-high-quality request to OpenRouter GPT-4.1-mini Vision API:", {
       pair: pairName,
       timeframe,
       model: requestData.model,
@@ -142,7 +136,7 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'Current Price Forex Chart Analyzer - GPT-4.1-mini Vision Analysis'
+      'X-Title': 'Ultra-High Quality Forex Chart Analyzer - GPT-4.1-mini Vision Analysis'
     };
     
     // Enhanced retry logic with better error handling
@@ -152,7 +146,7 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
     
     while (attempts < maxAttempts) {
       attempts++;
-      console.log(`📤 Current price API call attempt ${attempts}/${maxAttempts} to GPT-4.1-mini`);
+      console.log(`📤 Ultra-high-quality API call attempt ${attempts}/${maxAttempts} to GPT-4.1-mini Vision`);
       
       try {
         response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -162,23 +156,23 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
         });
         
         if (response.ok) {
-          console.log("✅ GPT-4.1-mini Current Price API call successful");
+          console.log("✅ GPT-4.1-mini Vision API call successful");
           break;
         } else {
           const errorText = await response.text();
           console.error(`❌ API call failed (attempt ${attempts}):`, response.status, errorText);
           
           if (response.status === 400) {
-            throw new Error(`Invalid request for current price analysis: ${errorText}. Please check the chart image.`);
+            throw new Error(`Invalid request to GPT-4.1-mini Vision: ${errorText}. Please check the ultra-high-quality chart image.`);
           } else if (response.status === 401) {
-            throw new Error("Authentication failed with GPT-4.1-mini API. Please check API key configuration.");
+            throw new Error("Authentication failed with GPT-4.1-mini Vision API. Please check API key configuration.");
           } else if (response.status === 429) {
             console.log("⚠️ Rate limit hit, waiting before retry...");
             await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
           }
           
           if (attempts === maxAttempts) {
-            throw new Error(`Current price analysis failed after ${maxAttempts} attempts: ${response.status} - ${errorText}`);
+            throw new Error(`GPT-4.1-mini Vision API call failed after ${maxAttempts} attempts: ${response.status} - ${errorText}`);
           }
         }
         
@@ -187,7 +181,7 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
         }
         
       } catch (error) {
-        console.error(`❌ Current price API call error (attempt ${attempts}):`, error);
+        console.error(`❌ API call error (attempt ${attempts}):`, error);
         
         if (attempts === maxAttempts) {
           throw error;
@@ -197,36 +191,36 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
       }
     }
 
-    console.log("📈 GPT-4.1-mini Current Price API Response status:", response!.status);
+    console.log("📈 GPT-4.1-mini Vision API Response status:", response!.status);
     
     const responseText = await response!.text();
     
     if (!response!.ok) {
-      console.error("❌ GPT-4.1-mini Current Price API Error Response:", responseText);
-      throw new Error(`Failed to analyze current prices: ${response!.status} - ${responseText}`);
+      console.error("❌ GPT-4.1-mini Vision API Error Response:", responseText);
+      throw new Error(`Failed to analyze ultra-high-quality chart with GPT-4.1-mini Vision: ${response!.status} - ${responseText}`);
     }
     
     let parsedResponse;
     try {
       parsedResponse = JSON.parse(responseText);
     } catch (parseError) {
-      console.error("❌ Failed to parse current price API response:", parseError);
+      console.error("❌ Failed to parse GPT-4.1-mini Vision API response:", parseError);
       console.error("❌ Raw response:", responseText);
-      throw new Error("Invalid response format from GPT-4.1-mini current price analysis");
+      throw new Error("Invalid response format from GPT-4.1-mini Vision API");
     }
     
     if (!parsedResponse.choices || parsedResponse.choices.length === 0) {
-      console.error("❌ Invalid response structure:", parsedResponse);
-      throw new Error("No current price analysis content received");
+      console.error("❌ Invalid response structure from GPT-4.1-mini Vision:", parsedResponse);
+      throw new Error("No analysis content received from GPT-4.1-mini Vision API");
     }
     
     const analysisContent = parsedResponse.choices[0].message?.content;
     if (!analysisContent || analysisContent.trim().length === 0) {
-      console.error("❌ Empty current price analysis content:", parsedResponse.choices[0]);
-      throw new Error("Empty current price analysis received");
+      console.error("❌ Empty analysis content from GPT-4.1-mini Vision:", parsedResponse.choices[0]);
+      throw new Error("Empty analysis content received from GPT-4.1-mini Vision API");
     }
     
-    // Enhanced detection of vision failure responses
+    // Ultra-enhanced detection of vision failure responses
     const isVisionFailure = 
       analysisContent.toLowerCase().includes("i can't analyze the chart directly") ||
       analysisContent.toLowerCase().includes("i'm unable to analyze the chart image") ||
@@ -238,33 +232,35 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
       analysisContent.toLowerCase().includes("i cannot process images") ||
       analysisContent.toLowerCase().includes("i'm unable to process") ||
       analysisContent.toLowerCase().includes("i can't see the image") ||
-      analysisContent.toLowerCase().includes("i cannot view");
+      analysisContent.toLowerCase().includes("i cannot view") ||
+      analysisContent.toLowerCase().includes("however, i can help you understand how to analyze");
     
     if (isVisionFailure) {
-      console.error("❌ GPT-4.1-mini failed to analyze current price chart");
+      console.error("❌ GPT-4.1-mini Vision failed to analyze the ultra-high-quality chart image");
       console.error("❌ Response content:", analysisContent.substring(0, 500));
-      throw new Error("GPT-4.1-mini failed to analyze the current price chart. Please ensure the chart is fully loaded with current prices and try again.");
+      throw new Error("GPT-4.1-mini Vision failed to analyze the ultra-high-quality chart image. The AI reported it cannot see the image. Please ensure the chart is fully loaded and try again.");
     }
     
-    // Enhanced validation for current price analysis
-    const hasCurrentPriceAnalysis = 
-      analysisContent.toLowerCase().includes("current") ||
+    // Check for specific chart analysis indicators
+    const hasSpecificAnalysis = 
       analysisContent.toLowerCase().includes("price") ||
-      analysisContent.toLowerCase().includes("visible") ||
       analysisContent.toLowerCase().includes("level") ||
       analysisContent.toLowerCase().includes("support") ||
       analysisContent.toLowerCase().includes("resistance") ||
       analysisContent.toLowerCase().includes("candlestick") ||
       analysisContent.toLowerCase().includes("trend") ||
-      /\d{3,5}\.\d{1,2}/.test(analysisContent); // Check for price numbers like 1969.85
+      analysisContent.toLowerCase().includes("chart") ||
+      analysisContent.toLowerCase().includes("candle") ||
+      analysisContent.toLowerCase().includes("pattern") ||
+      /\d+\.\d+/.test(analysisContent); // Check for price numbers like 1961.40
     
-    if (!hasCurrentPriceAnalysis) {
-      console.warn("⚠️ Response may lack specific current price analysis");
+    if (!hasSpecificAnalysis) {
+      console.warn("⚠️ GPT-4.1-mini Vision response lacks specific chart analysis terms");
       console.warn("⚠️ Response preview:", analysisContent.substring(0, 200));
     }
     
     const usage = parsedResponse.usage;
-    console.log("✅ GPT-4.1-mini Current Price Analysis completed:", {
+    console.log("✅ GPT-4.1-mini Vision ultra-high-quality chart analysis completed successfully:", {
       pairName,
       timeframe,
       responseLength: responseText.length,
@@ -275,23 +271,23 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
         total: usage.total_tokens
       } : 'not available',
       model: parsedResponse.model || 'gpt-4.1-mini-2025-04-14',
-      hasCurrentPriceAnalysis,
-      containsPriceNumbers: /\d{3,5}\.\d{1,2}/.test(analysisContent)
+      containsSpecificAnalysis: hasSpecificAnalysis,
+      hasPriceNumbers: /\d+\.\d+/.test(analysisContent)
     });
     
     const enhancedResponse = {
       ...parsedResponse,
       metadata: {
-        analysis_type: "current_price_chart_analysis_gpt41mini",
+        analysis_type: "ultra_high_quality_real_chart_analysis_gpt41mini",
         image_validated: true,
         tokens_used: usage?.total_tokens || 0,
         pair: pairName,
         timeframe: timeframe,
-        has_current_price_analysis: hasCurrentPriceAnalysis,
+        has_specific_analysis: hasSpecificAnalysis,
         model_used: "gpt-4.1-mini-2025-04-14",
         image_size_kb: Math.round(imageSize / 1024),
-        contains_current_prices: /\d{3,5}\.\d{1,2}/.test(analysisContent),
-        quality_level: "current_price_maximum"
+        contains_price_numbers: /\d+\.\d+/.test(analysisContent),
+        quality_level: "ultra_high"
       }
     };
     
@@ -300,11 +296,11 @@ Provide a comprehensive analysis of the CURRENT market situation based on what y
     });
     
   } catch (error) {
-    console.error("❌ Error in current price chart analysis:", error);
+    console.error("❌ Error in GPT-4.1-mini Vision ultra-high-quality analyze-chart function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || "An unknown error occurred during current price analysis",
-        error_type: "current_price_analysis_error"
+        error: error.message || "An unknown error occurred while analyzing the ultra-high-quality chart with GPT-4.1-mini Vision",
+        error_type: "analysis_error"
       }),
       {
         status: 500,
