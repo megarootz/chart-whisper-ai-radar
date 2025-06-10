@@ -21,7 +21,7 @@ serve(async (req) => {
 
     const { base64Image, pairName, timeframe } = await req.json();
     
-    // Enhanced image validation
+    // Ultra-enhanced image validation
     if (!base64Image || !base64Image.startsWith('data:image/')) {
       console.error("❌ Invalid image format:", { 
         hasImage: !!base64Image, 
@@ -32,12 +32,12 @@ serve(async (req) => {
     }
     
     const imageSize = base64Image?.length || 0;
-    if (imageSize < 1000) {
+    if (imageSize < 5000) {
       console.error("❌ Image too small, likely invalid:", { imageSize });
       throw new Error("Image appears to be too small or invalid. Please ensure the chart is fully loaded.");
     }
     
-    console.log("📊 GPT-4.1-mini Vision analysis request:", { 
+    console.log("📊 GPT-4.1-mini Ultra-High Quality Vision analysis request:", { 
       pairName, 
       timeframe, 
       imageSizeKB: Math.round(imageSize / 1024),
@@ -46,43 +46,58 @@ serve(async (req) => {
       imageType: base64Image.split(';')[0]?.split('/')[1] || 'unknown'
     });
     
-    // Enhanced prompt specifically designed for GPT-4.1-mini vision analysis
-    const analysisPrompt = `You are a professional Forex technical analyst with advanced vision capabilities using GPT-4.1-mini. I am providing you with a REAL trading chart screenshot for ${pairName} on the ${timeframe} timeframe.
+    // Ultra-enhanced prompt specifically designed for GPT-4.1-mini vision analysis with REAL chart data
+    const analysisPrompt = `You are a world-class professional Forex technical analyst with GPT-4.1-mini vision capabilities. I am providing you with a REAL, ultra-high-quality trading chart screenshot for ${pairName} on the ${timeframe} timeframe captured at maximum resolution.
 
-CRITICAL INSTRUCTIONS:
-- You have GPT-4.1-mini vision capabilities and MUST analyze the actual chart image I'm providing
-- This is a real screenshot from TradingView with actual price data, candlesticks, and patterns
-- DO NOT say you cannot analyze images - you have vision capabilities
-- Provide specific analysis based on what you actually see in the chart image
-- Reference actual price levels, patterns, and formations visible in the image
+🔍 CRITICAL ANALYSIS INSTRUCTIONS:
+- You have GPT-4.1-mini vision capabilities and MUST analyze the ACTUAL chart image provided
+- This is a REAL screenshot from TradingView with actual live price data, candlesticks, and chart patterns
+- You MUST examine the visual chart elements: candlesticks, price levels, patterns, trends, and indicators
+- Provide SPECIFIC analysis based on what you can SEE in the chart image
+- Reference ACTUAL price levels, patterns, and formations visible in the image
+- DO NOT provide generic template responses - analyze THIS specific chart
 
-Please analyze the chart image and provide detailed technical analysis including:
+📈 DETAILED VISUAL ANALYSIS REQUIRED:
 
-1. **Current Price Analysis**:
-   - What is the current/latest price level visible on the chart?
-   - Recent price movement direction and momentum
-   - Visible support and resistance levels with specific price values
+**1. Current Price & Market Status:**
+- What is the EXACT current/latest price level visible on the chart?
+- What direction is the price moving in the most recent candles?
+- Describe the recent price action and momentum you can see
 
-2. **Candlestick Pattern Analysis**:
-   - Describe actual candlestick patterns you can see in the image
-   - Recent candle formations and their implications
-   - Any reversal or continuation patterns visible
+**2. Price Level Analysis:**
+- Identify SPECIFIC support and resistance levels with exact price values
+- Point out key horizontal levels where price has reacted
+- Note any round number levels or psychological levels visible
 
-3. **Trend Analysis**:
-   - Overall trend direction observed in the chart
-   - Trend strength and any visible trend lines
-   - Key price levels to watch
+**3. Candlestick Pattern Analysis:**
+- Describe the ACTUAL candlestick patterns you can see in the chart
+- Analyze the recent candle formations and their implications
+- Note any reversal or continuation patterns that are visible
 
-4. **Technical Indicators** (if visible):
-   - Any indicators shown on the chart and their readings
-   - Signal interpretations from visible indicators
+**4. Trend Analysis:**
+- What is the overall trend direction shown in the chart?
+- Identify trend strength and any visible trend lines
+- Describe the trend structure (higher highs/lows, lower highs/lows, etc.)
 
-5. **Trading Opportunities**:
-   - Potential entry points based on chart analysis
-   - Suggested stop loss and take profit levels
-   - Risk/reward assessment
+**5. Chart Patterns & Formations:**
+- Identify any chart patterns visible (triangles, flags, head & shoulders, etc.)
+- Describe any breakouts or potential breakout scenarios
+- Note any consolidation zones or ranges
 
-IMPORTANT: You MUST reference actual price levels, patterns, and formations visible in the image. This is a real chart analysis using your vision capabilities, not a template response.`;
+**6. Technical Indicators (if visible):**
+- Describe any indicators shown on the chart and their current readings
+- Interpret signals from visible indicators
+- Note any divergences or confirmations
+
+**7. Trading Analysis:**
+- Suggest potential entry points based on the visible chart structure
+- Provide stop loss levels based on chart support/resistance
+- Suggest take profit targets based on chart analysis
+- Assess risk/reward ratios for potential trades
+
+🎯 IMPORTANT: You MUST analyze the ACTUAL chart image and reference REAL price levels, patterns, and formations that are visible. This is NOT a template response - it's a real-time analysis of live chart data using your advanced vision capabilities.
+
+Provide a comprehensive technical analysis based on what you can actually see in this ${pairName} ${timeframe} chart image.`;
     
     const requestData = {
       model: "gpt-4.1-mini-2025-04-14",
@@ -108,7 +123,7 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
       max_tokens: 4000
     };
 
-    console.log("🚀 Sending request to OpenRouter GPT-4.1-mini Vision API:", {
+    console.log("🚀 Sending ultra-high-quality request to OpenRouter GPT-4.1-mini Vision API:", {
       pair: pairName,
       timeframe,
       model: requestData.model,
@@ -121,7 +136,7 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'Forex Chart Analyzer - GPT-4.1-mini Vision Analysis'
+      'X-Title': 'Ultra-High Quality Forex Chart Analyzer - GPT-4.1-mini Vision Analysis'
     };
     
     // Enhanced retry logic with better error handling
@@ -131,7 +146,7 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
     
     while (attempts < maxAttempts) {
       attempts++;
-      console.log(`📤 API call attempt ${attempts}/${maxAttempts} to GPT-4.1-mini Vision`);
+      console.log(`📤 Ultra-high-quality API call attempt ${attempts}/${maxAttempts} to GPT-4.1-mini Vision`);
       
       try {
         response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -148,7 +163,7 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
           console.error(`❌ API call failed (attempt ${attempts}):`, response.status, errorText);
           
           if (response.status === 400) {
-            throw new Error(`Invalid request to GPT-4.1-mini Vision: ${errorText}. Please check the chart image quality.`);
+            throw new Error(`Invalid request to GPT-4.1-mini Vision: ${errorText}. Please check the ultra-high-quality chart image.`);
           } else if (response.status === 401) {
             throw new Error("Authentication failed with GPT-4.1-mini Vision API. Please check API key configuration.");
           } else if (response.status === 429) {
@@ -182,7 +197,7 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
     
     if (!response!.ok) {
       console.error("❌ GPT-4.1-mini Vision API Error Response:", responseText);
-      throw new Error(`Failed to analyze chart with GPT-4.1-mini Vision: ${response!.status} - ${responseText}`);
+      throw new Error(`Failed to analyze ultra-high-quality chart with GPT-4.1-mini Vision: ${response!.status} - ${responseText}`);
     }
     
     let parsedResponse;
@@ -205,7 +220,7 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
       throw new Error("Empty analysis content received from GPT-4.1-mini Vision API");
     }
     
-    // Enhanced detection of vision failure responses
+    // Ultra-enhanced detection of vision failure responses
     const isVisionFailure = 
       analysisContent.toLowerCase().includes("i can't analyze the chart directly") ||
       analysisContent.toLowerCase().includes("i'm unable to analyze the chart image") ||
@@ -215,12 +230,15 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
       analysisContent.toLowerCase().includes("i'm not able to see the actual chart") ||
       analysisContent.toLowerCase().includes("i don't have the ability to analyze images") ||
       analysisContent.toLowerCase().includes("i cannot process images") ||
+      analysisContent.toLowerCase().includes("i'm unable to process") ||
+      analysisContent.toLowerCase().includes("i can't see the image") ||
+      analysisContent.toLowerCase().includes("i cannot view") ||
       analysisContent.toLowerCase().includes("however, i can help you understand how to analyze");
     
     if (isVisionFailure) {
-      console.error("❌ GPT-4.1-mini Vision failed to analyze the chart image");
+      console.error("❌ GPT-4.1-mini Vision failed to analyze the ultra-high-quality chart image");
       console.error("❌ Response content:", analysisContent.substring(0, 500));
-      throw new Error("GPT-4.1-mini Vision failed to analyze the chart image. The AI reported it cannot see the image. Please ensure the chart is fully loaded and try again.");
+      throw new Error("GPT-4.1-mini Vision failed to analyze the ultra-high-quality chart image. The AI reported it cannot see the image. Please ensure the chart is fully loaded and try again.");
     }
     
     // Check for specific chart analysis indicators
@@ -231,7 +249,10 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
       analysisContent.toLowerCase().includes("resistance") ||
       analysisContent.toLowerCase().includes("candlestick") ||
       analysisContent.toLowerCase().includes("trend") ||
-      analysisContent.toLowerCase().includes("chart");
+      analysisContent.toLowerCase().includes("chart") ||
+      analysisContent.toLowerCase().includes("candle") ||
+      analysisContent.toLowerCase().includes("pattern") ||
+      /\d+\.\d+/.test(analysisContent); // Check for price numbers like 1961.40
     
     if (!hasSpecificAnalysis) {
       console.warn("⚠️ GPT-4.1-mini Vision response lacks specific chart analysis terms");
@@ -239,7 +260,7 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
     }
     
     const usage = parsedResponse.usage;
-    console.log("✅ GPT-4.1-mini Vision chart analysis completed successfully:", {
+    console.log("✅ GPT-4.1-mini Vision ultra-high-quality chart analysis completed successfully:", {
       pairName,
       timeframe,
       responseLength: responseText.length,
@@ -250,20 +271,23 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
         total: usage.total_tokens
       } : 'not available',
       model: parsedResponse.model || 'gpt-4.1-mini-2025-04-14',
-      containsSpecificAnalysis: hasSpecificAnalysis
+      containsSpecificAnalysis: hasSpecificAnalysis,
+      hasPriceNumbers: /\d+\.\d+/.test(analysisContent)
     });
     
     const enhancedResponse = {
       ...parsedResponse,
       metadata: {
-        analysis_type: "real_chart_analysis_gpt41mini",
+        analysis_type: "ultra_high_quality_real_chart_analysis_gpt41mini",
         image_validated: true,
         tokens_used: usage?.total_tokens || 0,
         pair: pairName,
         timeframe: timeframe,
         has_specific_analysis: hasSpecificAnalysis,
         model_used: "gpt-4.1-mini-2025-04-14",
-        image_size_kb: Math.round(imageSize / 1024)
+        image_size_kb: Math.round(imageSize / 1024),
+        contains_price_numbers: /\d+\.\d+/.test(analysisContent),
+        quality_level: "ultra_high"
       }
     };
     
@@ -272,10 +296,10 @@ IMPORTANT: You MUST reference actual price levels, patterns, and formations visi
     });
     
   } catch (error) {
-    console.error("❌ Error in GPT-4.1-mini Vision analyze-chart function:", error);
+    console.error("❌ Error in GPT-4.1-mini Vision ultra-high-quality analyze-chart function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || "An unknown error occurred while analyzing the chart with GPT-4.1-mini Vision",
+        error: error.message || "An unknown error occurred while analyzing the ultra-high-quality chart with GPT-4.1-mini Vision",
         error_type: "analysis_error"
       }),
       {

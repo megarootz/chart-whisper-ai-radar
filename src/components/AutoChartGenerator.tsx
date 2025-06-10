@@ -86,54 +86,72 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsWidgetLoaded(true);
   }, [selectedSymbol]);
 
-  // Improved chart content validation - much more lenient
-  const validateChartContent = (canvas: HTMLCanvasElement): { isValid: boolean; reason: string } => {
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return { isValid: false, reason: "No canvas context" };
+  const waitForChartStabilization = async (attempts = 0, maxAttempts = 10): Promise<boolean> => {
+    if (attempts >= maxAttempts) {
+      console.log("⚠️ Chart stabilization timeout reached");
+      return false;
+    }
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const data = imageData.data;
+    console.log(`🔄 Chart stabilization check ${attempts + 1}/${maxAttempts}`);
     
-    let nonWhitePixels = 0;
-    let totalPixels = 0;
-    const colorVariations = new Set<string>();
+    if (!widgetRef.current) return false;
     
-    // Sample every 20th pixel for performance
-    for (let i = 0; i < data.length; i += 80) {
-      const r = data[i];
-      const g = data[i + 1];
-      const b = data[i + 2];
-      const a = data[i + 3];
+    const chartContainer = widgetRef.current.querySelector('.tradingview-widget-container__widget') as HTMLElement || widgetRef.current;
+    
+    // Take a test capture to check content
+    try {
+      const testCanvas = await html2canvas(chartContainer, {
+        scale: 1,
+        logging: false,
+        allowTaint: true,
+        useCORS: true,
+        width: Math.min(chartContainer.offsetWidth, 800),
+        height: Math.min(chartContainer.offsetHeight, 600),
+      });
       
-      totalPixels++;
+      // Check if canvas has meaningful content
+      const ctx = testCanvas.getContext('2d');
+      if (!ctx) return false;
       
-      // Check for non-white/transparent pixels
-      if (a > 100 && !(r > 240 && g > 240 && b > 240)) {
-        nonWhitePixels++;
-        // Group colors to detect variation
-        const colorGroup = `${Math.floor(r/50)}-${Math.floor(g/50)}-${Math.floor(b/50)}`;
-        colorVariations.add(colorGroup);
+      const imageData = ctx.getImageData(0, 0, testCanvas.width, testCanvas.height);
+      const data = imageData.data;
+      
+      let colorVariations = 0;
+      let totalSamples = 0;
+      const sampleStep = 400; // Sample every 100th pixel
+      
+      for (let i = 0; i < data.length; i += sampleStep) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+        
+        totalSamples++;
+        
+        // Look for non-background colors (assuming dark background)
+        if (a > 100 && (r > 50 || g > 50 || b > 50)) {
+          colorVariations++;
+        }
       }
+      
+      const contentRatio = colorVariations / totalSamples;
+      console.log(`📊 Chart content check: ${(contentRatio * 100).toFixed(1)}% meaningful content`);
+      
+      // If we have sufficient content, consider it stable
+      if (contentRatio > 0.15) {
+        console.log("✅ Chart appears stable with good content");
+        return true;
+      }
+      
+      // Wait and retry
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return await waitForChartStabilization(attempts + 1, maxAttempts);
+      
+    } catch (error) {
+      console.log(`⚠️ Chart stabilization check failed:`, error);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return await waitForChartStabilization(attempts + 1, maxAttempts);
     }
-    
-    const contentRatio = nonWhitePixels / totalPixels;
-    
-    console.log("📸 Chart validation (lenient):", {
-      dimensions: `${canvas.width}x${canvas.height}`,
-      contentRatio: contentRatio.toFixed(3),
-      colorVariations: colorVariations.size,
-      nonWhitePixels,
-      totalPixels
-    });
-    
-    // Very lenient validation - accept if there's any meaningful content
-    if (contentRatio > 0.02 && colorVariations.size >= 2) {
-      return { isValid: true, reason: "Chart content detected" };
-    }
-    
-    // Still proceed even if validation is questionable
-    console.log("⚠️ Chart validation uncertain but proceeding anyway");
-    return { isValid: true, reason: "Proceeding with potentially valid chart" };
   };
 
   const captureChartUsingRealScreenshot = async () => {
@@ -158,33 +176,45 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
       }
       
-      console.log("📸 Starting enhanced chart capture for:", { 
+      console.log("📸 Starting ultra-high-quality chart capture for:", { 
         selectedSymbol, 
         cleanSymbol, 
         selectedTimeframe,
         isCustomPair: showCustomInput
       });
       
-      // Extended wait time for chart data to load properly
-      console.log("⏳ Waiting for chart data to stabilize...");
-      await new Promise(resolve => setTimeout(resolve, 8000)); // Increased wait time
+      // Extended wait for initial load
+      console.log("⏳ Initial stabilization wait...");
+      await new Promise(resolve => setTimeout(resolve, 5000));
       
-      console.log("📸 Capturing chart with maximum quality settings...");
+      // Wait for chart to stabilize with content validation
+      console.log("🔄 Waiting for chart content to stabilize...");
+      const isStable = await waitForChartStabilization();
+      
+      if (!isStable) {
+        console.log("⚠️ Chart may not be fully stable, but proceeding with capture");
+      }
+      
+      // Additional wait to ensure all data is loaded
+      console.log("⏳ Final data loading wait...");
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      console.log("📸 Capturing ultra-high-quality chart image...");
       
       // Target the TradingView chart specifically
       const chartContainer = widgetRef.current.querySelector('.tradingview-widget-container__widget') as HTMLElement || widgetRef.current;
       
-      // Maximum quality capture settings
+      // Ultra-high quality capture settings
       const canvas = await html2canvas(chartContainer, {
         backgroundColor: '#131722',
-        scale: 2, // Maximum scale for highest quality
+        scale: 3, // Ultra-high scale for maximum quality
         useCORS: true,
         allowTaint: true,
         foreignObjectRendering: false,
-        width: Math.min(chartContainer.offsetWidth, 1600), // Increased width
-        height: Math.min(chartContainer.offsetHeight, 1200), // Increased height
-        logging: true, // Enable logging for debugging
-        imageTimeout: 45000, // Increased timeout
+        width: Math.min(chartContainer.offsetWidth, 2000), // Increased width
+        height: Math.min(chartContainer.offsetHeight, 1500), // Increased height
+        logging: true,
+        imageTimeout: 60000, // Increased timeout
         removeContainer: false,
         x: 0,
         y: 0,
@@ -199,72 +229,95 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         }
       });
       
-      console.log(`📸 Canvas captured successfully: ${canvas.width}x${canvas.height}`);
+      console.log(`📸 Ultra-high-quality canvas captured: ${canvas.width}x${canvas.height}`);
       
-      // Validate canvas has content
+      // Enhanced validation
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         throw new Error("Failed to get canvas context");
       }
       
-      // Check if canvas has actual content
+      // Comprehensive content validation
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
-      let hasContent = false;
+      let colorVariations = 0;
+      let totalPixels = 0;
+      let nonTransparentPixels = 0;
       
-      // Sample pixels to check for non-transparent content
-      for (let i = 0; i < data.length; i += 400) { // Sample every 100th pixel
-        const alpha = data[i + 3];
-        if (alpha > 0) {
-          hasContent = true;
-          break;
+      // Sample every 200th pixel for performance
+      for (let i = 0; i < data.length; i += 800) {
+        const r = data[i];
+        const g = data[i + 1];
+        const b = data[i + 2];
+        const a = data[i + 3];
+        
+        totalPixels++;
+        
+        if (a > 50) {
+          nonTransparentPixels++;
+          
+          // Look for varied colors (chart content)
+          if (r > 30 || g > 30 || b > 30) {
+            colorVariations++;
+          }
         }
       }
       
-      if (!hasContent) {
-        throw new Error("Chart capture appears to be empty. Please ensure the chart is fully loaded.");
+      const contentRatio = colorVariations / totalPixels;
+      const transparencyRatio = nonTransparentPixels / totalPixels;
+      
+      console.log(`📊 Ultra-detailed image validation:`, {
+        dimensions: `${canvas.width}x${canvas.height}`,
+        contentRatio: (contentRatio * 100).toFixed(2) + '%',
+        transparencyRatio: (transparencyRatio * 100).toFixed(2) + '%',
+        colorVariations,
+        totalPixels
+      });
+      
+      if (contentRatio < 0.05) {
+        throw new Error("Chart capture appears to have insufficient content. Please wait for the chart to fully load and try again.");
       }
       
-      // Convert to highest quality PNG
+      // Convert to ultra-high quality PNG
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) {
-            console.log(`📸 High-quality PNG created: ${Math.round(blob.size / 1024)}KB`);
+            console.log(`📸 Ultra-high-quality PNG created: ${Math.round(blob.size / 1024)}KB`);
             resolve(blob);
           } else {
-            reject(new Error("Failed to create high-quality image blob"));
+            reject(new Error("Failed to create ultra-high-quality image blob"));
           }
         }, 'image/png', 1.0); // Maximum quality PNG
       });
       
-      // Validate blob size
-      if (blob.size < 5000) {
-        throw new Error("Generated image is too small, likely empty. Please try again.");
+      // Final size validation
+      if (blob.size < 10000) {
+        throw new Error("Generated image is too small (less than 10KB), likely empty or corrupted. Please try again.");
       }
       
-      console.log(`📸 Final high-quality image: ${Math.round(blob.size / 1024)}KB`);
+      console.log(`📸 Final ultra-high-quality image: ${Math.round(blob.size / 1024)}KB`);
       
       // Create file with timestamp
       const timestamp = Date.now();
-      const file = new File([blob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
+      const file = new File([blob], `ultra-hq-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
         type: 'image/png'
       });
       
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending high-quality chart for analysis:", {
+      console.log("🚀 Sending ultra-high-quality chart for GPT-4.1-mini analysis:", {
         fileName: file.name,
         fileSize: Math.round(file.size / 1024) + "KB",
         cleanSymbol,
         timeframeLabel,
         dimensions: `${canvas.width}x${canvas.height}`,
-        quality: "Maximum PNG"
+        quality: "Ultra-High PNG (Scale 3x)"
       });
       
       toast({
-        title: "Chart Captured Successfully",
-        description: `High-quality ${cleanSymbol} chart captured (${Math.round(blob.size / 1024)}KB). Starting AI analysis...`,
+        title: "Ultra-High Quality Chart Captured",
+        description: `Perfect ${cleanSymbol} chart captured (${Math.round(blob.size / 1024)}KB). Sending to GPT-4.1-mini for detailed analysis...`,
         variant: "default"
       });
       
@@ -272,7 +325,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error in chart capture:", error);
+      console.error("❌ Error in ultra-high-quality chart capture:", error);
       
       toast({
         title: "Capture Failed",
@@ -382,7 +435,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
-            Automated Chart Analysis with High-Quality Screenshot
+            Ultra-High Quality Chart Analysis with GPT-4.1-mini Vision
           </CardTitle>
         </CardHeader>
       )}
@@ -508,12 +561,12 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isWidgetLoaded ? 'Chart ready - High-quality capture enabled' : 'Loading chart...'}
+                {isWidgetLoaded ? 'Chart ready - Ultra-high quality capture enabled' : 'Loading chart...'}
               </span>
             </div>
             {!isMobile && (
               <span className="text-xs text-gray-500">
-                High-Quality PNG • Real Chart Analysis • GPT-4.1-mini Vision
+                Ultra-High Quality PNG • Real Chart Analysis • GPT-4.1-mini Vision
               </span>
             )}
           </div>
@@ -524,7 +577,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className={`w-full bg-primary hover:bg-primary/90 text-white ${isMobile ? 'h-10 text-sm' : ''}`}
           >
-            {isCapturing ? 'Capturing High-Quality Chart...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing Ultra-High Quality Chart...' : isAnalyzing ? 'Analyzing with GPT-4.1-mini...' : (
               <>
                 <Camera className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
                 {isMobile ? 'Analyze Chart' : 'Capture & Analyze Chart'}
@@ -538,9 +591,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               <div className="flex items-start">
                 <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-blue-400 font-medium text-sm mb-1">High-Quality Chart Analysis</h4>
+                  <h4 className="text-blue-400 font-medium text-sm mb-1">Ultra-High Quality Chart Analysis</h4>
                   <p className="text-gray-400 text-xs">
-                    Enhanced capture system with maximum quality PNG ensures AI analyzes your actual chart data with specific price levels and patterns.
+                    Enhanced capture system with 3x scale, content validation, and chart stabilization ensures GPT-4.1-mini receives perfect image quality for precise analysis.
                   </p>
                 </div>
               </div>
@@ -553,3 +606,5 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
 };
 
 export default AutoChartGenerator;
+
+}
