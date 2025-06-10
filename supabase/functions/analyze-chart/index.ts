@@ -46,58 +46,79 @@ serve(async (req) => {
       imageType: base64Image.split(';')[0]?.split('/')[1] || 'unknown'
     });
     
-    // Ultra-enhanced prompt specifically designed for GPT-4.1-mini vision analysis with REAL chart data
-    const analysisPrompt = `You are a world-class professional Forex technical analyst with GPT-4.1-mini vision capabilities. I am providing you with a REAL, ultra-high-quality trading chart screenshot for ${pairName} on the ${timeframe} timeframe captured at maximum resolution.
+    // Enhanced prompt for complete analysis in the exact format requested
+    const analysisPrompt = `I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze the following currency pair chart image with your GPT-4.1-mini vision capabilities. 
 
-🔍 CRITICAL ANALYSIS INSTRUCTIONS:
-- You have GPT-4.1-mini vision capabilities and MUST analyze the ACTUAL chart image provided
-- This is a REAL screenshot from TradingView with actual live price data, candlesticks, and chart patterns
-- You MUST examine the visual chart elements: candlesticks, price levels, patterns, trends, and indicators
-- Provide SPECIFIC analysis based on what you can SEE in the chart image
-- Reference ACTUAL price levels, patterns, and formations visible in the image
-- DO NOT provide generic template responses - analyze THIS specific chart
+CRITICAL INSTRUCTIONS: You MUST provide a COMPLETE analysis by filling in ALL sections below with REAL data from the chart image. Replace ALL [bracketed placeholders] with actual values, prices, dates, and observations from the chart.
 
-📈 DETAILED VISUAL ANALYSIS REQUIRED:
+REQUIRED OUTPUT FORMAT - Fill in every section with real analysis:
 
-**1. Current Price & Market Status:**
-- What is the EXACT current/latest price level visible on the chart?
-- What direction is the price moving in the most recent candles?
-- Describe the recent price action and momentum you can see
+📊 Technical Chart Analysis Report (${pairName || '[Detected Pair]'} – ${timeframe || '[Detected Timeframe]'})
 
-**2. Price Level Analysis:**
-- Identify SPECIFIC support and resistance levels with exact price values
-- Point out key horizontal levels where price has reacted
-- Note any round number levels or psychological levels visible
+1. Market Snapshot
+• Current Price: [Provide the actual current/latest price visible on the chart]
+• Date Range Analyzed: [Provide the actual date range visible on the chart]
+• General Market Context: [Specify: Ranging, Uptrend, Downtrend, Correction, or High Volatility based on what you see]
 
-**3. Candlestick Pattern Analysis:**
-- Describe the ACTUAL candlestick patterns you can see in the chart
-- Analyze the recent candle formations and their implications
-- Note any reversal or continuation patterns that are visible
+2. Recent Price Action & Trend
+• Recent Movement:
+  - [Describe the actual major price swings you can see in the chart over recent periods]
+  - [Note any actual sharp rises/drops, consolidations, or trend reversals visible]
+• Market Structure:
+  - [Describe the actual pattern: Higher highs/lows, lower highs/lows, sideways movement, or specific patterns you can identify]
 
-**4. Trend Analysis:**
-- What is the overall trend direction shown in the chart?
-- Identify trend strength and any visible trend lines
-- Describe the trend structure (higher highs/lows, lower highs/lows, etc.)
+3. Key Support & Resistance Areas
+• Support Levels:
+  - [Identify actual primary support level with specific price] – Main bounce area
+  - [Identify actual secondary support level with specific price] – Next lower level
+• Resistance Levels:
+  - [Identify actual primary resistance level with specific price] – Main reversal area
+  - [Identify actual secondary resistance level with specific price] – Next higher level
 
-**5. Chart Patterns & Formations:**
-- Identify any chart patterns visible (triangles, flags, head & shoulders, etc.)
-- Describe any breakouts or potential breakout scenarios
-- Note any consolidation zones or ranges
+4. Candlestick & Pattern Analysis
+• [Describe the actual latest candlestick behaviors you can see: indecision, strong engulfing patterns, pin bars, dojis, hammers, etc.]
+• [Identify any actual chart patterns visible: double top/bottom, triangles, channels, flags, head and shoulders, etc.]
 
-**6. Technical Indicators (if visible):**
-- Describe any indicators shown on the chart and their current readings
-- Interpret signals from visible indicators
-- Note any divergences or confirmations
+5. Momentum & Trend Indicators
+• [Comment on actual momentum visible in the chart: slowing, picking up, diverging, accelerating]
+• [Note actual visible signs of trend change: higher/lower highs/lows, compression, breakouts]
+• [If no indicators (RSI, MACD, MA) are visible, mention analysis is based purely on price action]
 
-**7. Trading Analysis:**
-- Suggest potential entry points based on the visible chart structure
-- Provide stop loss levels based on chart support/resistance
-- Suggest take profit targets based on chart analysis
-- Assess risk/reward ratios for potential trades
+6. Trade Setups & Risk Management
 
-🎯 IMPORTANT: You MUST analyze the ACTUAL chart image and reference REAL price levels, patterns, and formations that are visible. This is NOT a template response - it's a real-time analysis of live chart data using your advanced vision capabilities.
+Trade Type | Entry Area | Stop Loss (SL) | Take Profit (TP1) | Take Profit (TP2)
+Buy | [Actual support area/specific price] | [Specific price few pips below support] | [Actual first resistance level] | [Actual next resistance level]
+Sell | [Actual resistance area/specific price] | [Specific price few pips above resistance] | [Actual first support level] | [Actual next support level]
 
-Provide a comprehensive technical analysis based on what you can actually see in this ${pairName} ${timeframe} chart image.`;
+Entry Notes:
+• Buy only if price confirms reversal at support (bullish candle, bounce pattern)
+• Sell only on strong rejection/reversal at resistance
+
+Caution:
+• Avoid trading in the middle of the range, as risk of false signals is higher
+• Always set a stop loss. Adjust position size so risk is under 2-3% per trade
+
+7. Breakout/Breakdown Scenarios
+• If price breaks below [specific support level]: → Expect decline towards [specific lower target level]
+• If price breaks above [specific resistance level]: → Expect rally towards [specific upper target level]
+
+8. Summary & Trade Signal Recommendation
+• Market summary: [Provide actual short summary: ranging, trending, bias, recent key price action based on the chart]
+• Best current signal:
+  - [Specify actual price level to watch and react at]
+  - [Give specific Buy/Sell recommendation ONLY IF confirmation at major levels]
+  - [Provide specific price level to watch for entry]
+
+9. Trade Plan Table Example
+
+Trade Plan | Entry | Stop Loss | Take Profit 1 | Take Profit 2 | R/R
+Buy Bounce | [Actual support level] | [Actual SL level] | [Actual TP1 level] | [Actual TP2 level] | [Calculate actual R/R ratio]
+Sell Reject | [Actual resistance level] | [Actual SL level] | [Actual TP1 level] | [Actual TP2 level] | [Calculate actual R/R ratio]
+
+⚠️ Disclaimer
+This analysis is for educational and idea-generation purposes only. Always do your own research and use proper risk management on every trade.
+
+CRITICAL: You MUST analyze the actual chart image provided and fill in ALL bracketed sections with real data, prices, and observations. Do not leave any placeholders unfilled. Provide specific price levels, actual dates, real candlestick patterns, and genuine technical analysis based on what you can see in the chart image.`;
     
     const requestData = {
       model: "gpt-4.1-mini-2025-04-14",
