@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -86,6 +87,32 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsWidgetLoaded(true);
   }, [selectedSymbol]);
 
+  const validateCapturedImage = (canvas: HTMLCanvasElement): boolean => {
+    // Check if canvas has actual content (not just a blank/loading screen)
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+    
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    
+    // Check for variety in pixel colors (real chart should have diverse colors)
+    const colorSamples = new Set();
+    for (let i = 0; i < data.length; i += 40) { // Sample every 10th pixel
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const color = `${r},${g},${b}`;
+      colorSamples.add(color);
+      
+      if (colorSamples.size > 10) { // If we have more than 10 different colors, likely a real chart
+        return true;
+      }
+    }
+    
+    console.log("📸 Image validation: Found", colorSamples.size, "unique colors");
+    return colorSamples.size > 5; // At least 5 different colors for a basic chart
+  };
+
   const captureChartImage = async () => {
     if (!widgetRef.current || !isWidgetLoaded) {
       toast({
@@ -108,39 +135,106 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
       }
       
-      console.log("📸 Capturing live chart image for:", { 
+      console.log("📸 Starting chart capture process for:", { 
         selectedSymbol, 
         cleanSymbol, 
         selectedTimeframe 
       });
       
-      // Find the TradingView chart container
-      const chartContainer = widgetRef.current.querySelector('.tradingview-widget-container__widget') as HTMLElement || widgetRef.current;
+      // Wait a moment for any final updates to render
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      console.log("📸 Chart container found:", {
+      // Find the TradingView container - try multiple selectors
+      let chartContainer: HTMLElement | null = null;
+      
+      const selectors = [
+        '.tradingview-widget-container__widget',
+        '.tradingview-widget-container iframe',
+        '.tradingview-widget-container',
+        '[data-widget-type="AdvancedChart"]'
+      ];
+      
+      for (const selector of selectors) {
+        chartContainer = widgetRef.current.querySelector(selector) as HTMLElement;
+        if (chartContainer && chartContainer.offsetWidth > 0 && chartContainer.offsetHeight > 0) {
+          console.log("📸 Found chart container with selector:", selector);
+          break;
+        }
+      }
+      
+      // Fallback to the widget ref itself
+      if (!chartContainer) {
+        chartContainer = widgetRef.current;
+        console.log("📸 Using widget ref as fallback container");
+      }
+      
+      console.log("📸 Chart container details:", {
         width: chartContainer.offsetWidth,
         height: chartContainer.offsetHeight,
-        visible: chartContainer.offsetParent !== null
+        visible: chartContainer.offsetParent !== null,
+        tagName: chartContainer.tagName,
+        className: chartContainer.className
       });
 
-      // Capture the visible chart with high quality
-      const canvas = await html2canvas(chartContainer, {
-        scale: 2, // High quality
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#131722',
-        logging: false,
-        width: chartContainer.offsetWidth,
-        height: chartContainer.offsetHeight,
-        ignoreElements: (element) => {
-          // Skip copyright and script elements
-          return element.classList.contains('tradingview-widget-copyright') ||
-                 element.classList.contains('tv-copyright') ||
-                 element.tagName.toLowerCase() === 'script';
-        }
-      });
+      // Enhanced capture with multiple attempts and validation
+      let canvas: HTMLCanvasElement | null = null;
+      let validCapture = false;
+      const maxAttempts = 3;
       
-      console.log(`📸 Canvas captured: ${canvas.width}x${canvas.height}`);
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        console.log(`📸 Capture attempt ${attempt}/${maxAttempts}`);
+        
+        try {
+          canvas = await html2canvas(chartContainer, {
+            scale: 2,
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#131722',
+            logging: false,
+            width: chartContainer.offsetWidth,
+            height: chartContainer.offsetHeight,
+            scrollX: 0,
+            scrollY: 0,
+            windowWidth: window.innerWidth,
+            windowHeight: window.innerHeight,
+            ignoreElements: (element) => {
+              // Skip copyright and non-chart elements
+              return element.classList.contains('tradingview-widget-copyright') ||
+                     element.classList.contains('tv-copyright') ||
+                     element.tagName.toLowerCase() === 'script' ||
+                     element.tagName.toLowerCase() === 'style';
+            }
+          });
+          
+          console.log(`📸 Canvas created (attempt ${attempt}):`, {
+            width: canvas.width,
+            height: canvas.height,
+            hasContext: !!canvas.getContext('2d')
+          });
+          
+          // Validate the captured image
+          if (validateCapturedImage(canvas)) {
+            console.log("✅ Captured image validation passed");
+            validCapture = true;
+            break;
+          } else {
+            console.log("❌ Captured image validation failed - appears to be empty or loading screen");
+            if (attempt < maxAttempts) {
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait before retry
+            }
+          }
+          
+        } catch (captureError) {
+          console.error(`❌ Capture attempt ${attempt} failed:`, captureError);
+          if (attempt < maxAttempts) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+      
+      if (!canvas || !validCapture) {
+        throw new Error("Failed to capture valid chart image after multiple attempts. The chart might still be loading or there could be display issues.");
+      }
       
       // Convert to PNG blob
       const blob = await new Promise<Blob>((resolve, reject) => {
@@ -154,30 +248,31 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         }, 'image/png', 1.0);
       });
       
-      // Basic validation
-      if (blob.size < 5000) {
-        throw new Error("Generated image is too small, likely empty. Please try again.");
+      // Enhanced validation
+      if (blob.size < 10000) {
+        throw new Error("Generated image is too small (less than 10KB), likely empty. Please ensure the chart is fully loaded and try again.");
       }
       
       // Create file
       const timestamp = Date.now();
-      const file = new File([blob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
+      const file = new File([blob], `live-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
         type: 'image/png'
       });
       
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending chart image for analysis:", {
+      console.log("🚀 Sending LIVE chart image for analysis:", {
         fileName: file.name,
         fileSize: Math.round(file.size / 1024) + "KB",
         cleanSymbol,
-        timeframeLabel
+        timeframeLabel,
+        validationPassed: validCapture
       });
       
       toast({
-        title: "Chart Captured",
-        description: `${cleanSymbol} chart captured (${Math.round(blob.size / 1024)}KB). Analyzing with GPT-4.1-mini...`,
+        title: "Live Chart Captured",
+        description: `${cleanSymbol} live chart captured (${Math.round(blob.size / 1024)}KB). Analyzing with GPT-4.1-mini...`,
         variant: "default"
       });
       
@@ -185,11 +280,11 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error capturing chart:", error);
+      console.error("❌ Error capturing live chart:", error);
       
       toast({
         title: "Capture Failed",
-        description: error instanceof Error ? error.message : "Failed to capture the chart. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to capture the live chart. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -378,12 +473,12 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isWidgetLoaded ? 'Chart ready - Live analysis enabled' : 'Loading chart...'}
+                {isWidgetLoaded ? 'Live chart ready - Real-time analysis enabled' : 'Loading live chart...'}
               </span>
             </div>
             {!isMobile && (
               <span className="text-xs text-gray-500">
-                Live Prices • Real-time Analysis • GPT-4.1-mini Vision
+                Live Data • Real-time Capture • GPT-4.1-mini Vision
               </span>
             )}
           </div>
@@ -394,10 +489,10 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className={`w-full bg-primary hover:bg-primary/90 text-white ${isMobile ? 'h-10 text-sm' : ''}`}
           >
-            {isCapturing ? 'Capturing Chart...' : isAnalyzing ? 'Analyzing...' : (
+            {isCapturing ? 'Capturing Live Chart...' : isAnalyzing ? 'Analyzing...' : (
               <>
                 <Camera className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                {isMobile ? 'Analyze Chart' : 'Capture & Analyze Live Chart'}
+                {isMobile ? 'Analyze Live Chart' : 'Capture & Analyze Live Chart Data'}
               </>
             )}
           </Button>
@@ -410,7 +505,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
                 <div>
                   <h4 className="text-blue-400 font-medium text-sm mb-1">Live Chart Analysis</h4>
                   <p className="text-gray-400 text-xs">
-                    Captures the current visible chart and sends it to GPT-4.1-mini Vision for analysis of live market prices.
+                    Captures the current visible live chart with real-time prices and sends it to GPT-4.1-mini Vision for accurate current market analysis.
                   </p>
                 </div>
               </div>
