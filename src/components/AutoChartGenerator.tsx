@@ -87,21 +87,21 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
     setIsWidgetLoaded(true);
   }, [selectedSymbol]);
 
-  // Enhanced chart stabilization with price data validation
-  const waitForChartWithCurrentPrices = async (attempts = 0, maxAttempts = 15): Promise<boolean> => {
+  // Enhanced chart data validation with price detection
+  const waitForChartWithRealData = async (attempts = 0, maxAttempts = 15): Promise<boolean> => {
     if (attempts >= maxAttempts) {
-      console.log("⚠️ Chart stabilization timeout reached");
+      console.log("⚠️ Chart data validation timeout reached");
       return false;
     }
 
-    console.log(`🔄 Chart price data validation ${attempts + 1}/${maxAttempts}`);
+    console.log(`🔄 Chart data validation ${attempts + 1}/${maxAttempts}`);
     
     if (!widgetRef.current) return false;
     
     const chartContainer = widgetRef.current.querySelector('.tradingview-widget-container__widget') as HTMLElement || widgetRef.current;
     
     try {
-      // Take a high-resolution test capture
+      // Take a test capture to validate chart content
       const testCanvas = await html2canvas(chartContainer, {
         scale: 2,
         logging: false,
@@ -109,6 +109,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         useCORS: true,
         width: Math.min(chartContainer.offsetWidth, 1200),
         height: Math.min(chartContainer.offsetHeight, 800),
+        backgroundColor: null, // Preserve transparency
       });
       
       const ctx = testCanvas.getContext('2d');
@@ -117,13 +118,13 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       const imageData = ctx.getImageData(0, 0, testCanvas.width, testCanvas.height);
       const data = imageData.data;
       
-      let colorVariations = 0;
-      let candlestickPixels = 0;
-      let priceTextPixels = 0;
+      let candlestickColors = 0;
+      let priceTextColors = 0;
+      let chartContentPixels = 0;
       let totalSamples = 0;
-      const sampleStep = 200;
+      const sampleStep = 100; // Sample every 25th pixel for better accuracy
       
-      // Enhanced content detection for candlesticks and price data
+      // Enhanced detection for chart elements
       for (let i = 0; i < data.length; i += sampleStep) {
         const r = data[i];
         const g = data[i + 1];
@@ -132,48 +133,49 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         
         totalSamples++;
         
-        if (a > 100) {
-          // Detect green/red candlesticks (typical colors)
-          if ((r > 100 && g < 50 && b < 50) || (g > 100 && r < 50 && b < 50)) {
-            candlestickPixels++;
+        if (a > 100) { // Non-transparent pixels
+          // Detect candlestick colors (green/red)
+          if ((r > 50 && g > 150 && b < 100) || (r > 150 && g < 100 && b < 100)) {
+            candlestickColors++;
           }
           
-          // Detect white/light text (price labels)
-          if (r > 200 && g > 200 && b > 200) {
-            priceTextPixels++;
+          // Detect price scale text (white/light colors on right side)
+          if (r > 180 && g > 180 && b > 180) {
+            priceTextColors++;
           }
           
-          // General color variation
-          if (r > 50 || g > 50 || b > 50) {
-            colorVariations++;
+          // General chart content (non-background)
+          if (r > 30 || g > 30 || b > 30) {
+            chartContentPixels++;
           }
         }
       }
       
-      const contentRatio = colorVariations / totalSamples;
-      const candlestickRatio = candlestickPixels / totalSamples;
-      const priceTextRatio = priceTextPixels / totalSamples;
+      const candlestickRatio = candlestickColors / totalSamples;
+      const priceTextRatio = priceTextColors / totalSamples;
+      const contentRatio = chartContentPixels / totalSamples;
       
       console.log(`📊 Enhanced chart validation:`, {
+        candlestickRatio: (candlestickRatio * 100).toFixed(3) + '%',
+        priceTextRatio: (priceTextRatio * 100).toFixed(3) + '%',
         contentRatio: (contentRatio * 100).toFixed(2) + '%',
-        candlestickRatio: (candlestickRatio * 100).toFixed(2) + '%',
-        priceTextRatio: (priceTextRatio * 100).toFixed(2) + '%'
+        dimensions: `${testCanvas.width}x${testCanvas.height}`
       });
       
-      // Enhanced criteria for chart readiness
-      if (contentRatio > 0.15 && candlestickRatio > 0.02 && priceTextRatio > 0.01) {
-        console.log("✅ Chart appears ready with current price data and candlesticks");
+      // Stricter validation criteria for real chart data
+      if (contentRatio > 0.20 && candlestickRatio > 0.005 && priceTextRatio > 0.005) {
+        console.log("✅ Chart appears to have real trading data with price information");
         return true;
       }
       
       // Wait longer between checks for price data to load
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return await waitForChartWithCurrentPrices(attempts + 1, maxAttempts);
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      return await waitForChartWithRealData(attempts + 1, maxAttempts);
       
     } catch (error) {
       console.log(`⚠️ Chart validation failed:`, error);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      return await waitForChartWithCurrentPrices(attempts + 1, maxAttempts);
+      await new Promise(resolve => setTimeout(resolve, 2500));
+      return await waitForChartWithRealData(attempts + 1, maxAttempts);
     }
   };
 
@@ -199,7 +201,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
       }
       
-      console.log("📸 Starting current price chart capture for:", { 
+      console.log("📸 Starting REAL chart capture with current market data for:", { 
         selectedSymbol, 
         cleanSymbol, 
         selectedTimeframe,
@@ -207,19 +209,24 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       });
       
       // Extended wait for TradingView to load current market data
-      console.log("⏳ Waiting for current market data to load...");
-      await new Promise(resolve => setTimeout(resolve, 8000)); // Increased wait time
+      console.log("⏳ Waiting for TradingView to load current market data...");
+      await new Promise(resolve => setTimeout(resolve, 10000)); // Increased to 10 seconds
       
-      // Wait for chart with current prices and candlestick data
-      console.log("🔄 Validating current price data availability...");
-      const hasCurrentData = await waitForChartWithCurrentPrices();
+      // Wait for chart with actual trading data validation
+      console.log("🔄 Validating real trading data is loaded...");
+      const hasRealData = await waitForChartWithRealData();
       
-      if (!hasCurrentData) {
-        console.log("⚠️ Current price data may not be fully loaded, but proceeding");
+      if (!hasRealData) {
+        console.log("⚠️ Real trading data may not be fully loaded, but proceeding");
+        toast({
+          title: "Warning",
+          description: "Chart data may still be loading. Results might not reflect current prices.",
+          variant: "destructive"
+        });
       }
       
       // Additional wait to ensure the most recent price tick
-      console.log("⏳ Final wait for latest price tick...");
+      console.log("⏳ Final wait for latest price data...");
       await new Promise(resolve => setTimeout(resolve, 5000));
       
       console.log("📸 Capturing chart with current market prices...");
@@ -227,17 +234,23 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       // Target the TradingView chart specifically
       const chartContainer = widgetRef.current.querySelector('.tradingview-widget-container__widget') as HTMLElement || widgetRef.current;
       
-      // Maximum quality capture for price accuracy
+      // Critical: Force refresh of chart element before capture
+      chartContainer.style.transform = 'scale(1.0001)';
+      await new Promise(resolve => setTimeout(resolve, 100));
+      chartContainer.style.transform = '';
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Maximum quality capture for current price accuracy
       const canvas = await html2canvas(chartContainer, {
-        backgroundColor: '#131722',
+        backgroundColor: null, // Don't add background
         scale: 4, // Maximum scale for price precision
         useCORS: true,
         allowTaint: true,
         foreignObjectRendering: false,
-        width: Math.min(chartContainer.offsetWidth, 2400), // Higher resolution
-        height: Math.min(chartContainer.offsetHeight, 1800),
+        width: chartContainer.offsetWidth,
+        height: chartContainer.offsetHeight,
         logging: true,
-        imageTimeout: 90000, // Longer timeout for high quality
+        imageTimeout: 120000, // 2 minutes timeout
         removeContainer: false,
         x: 0,
         y: 0,
@@ -245,6 +258,12 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         scrollY: 0,
         windowWidth: window.innerWidth,
         windowHeight: window.innerHeight,
+        onclone: (clonedDoc) => {
+          // Ensure all dynamic content is captured
+          const clonedCharts = clonedDoc.querySelectorAll('canvas, svg');
+          console.log(`📸 Cloned chart elements: ${clonedCharts.length}`);
+          return clonedDoc;
+        },
         ignoreElements: (element) => {
           return element.classList.contains('tradingview-widget-copyright') ||
                  element.classList.contains('tv-copyright') ||
@@ -252,23 +271,24 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         }
       });
       
-      console.log(`📸 Current price chart captured: ${canvas.width}x${canvas.height}`);
+      console.log(`📸 REAL chart captured: ${canvas.width}x${canvas.height}`);
       
-      // Enhanced validation for price data
+      // Enhanced validation for current price data
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         throw new Error("Failed to get canvas context");
       }
       
-      // More thorough content validation
+      // Comprehensive content validation for real data
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imageData.data;
       let colorVariations = 0;
       let totalPixels = 0;
       let priceAreaPixels = 0;
+      let candlestickPixels = 0;
       
-      // Sample every 400th pixel for performance while maintaining accuracy
-      for (let i = 0; i < data.length; i += 1600) {
+      // Sample every 200th pixel for performance while maintaining accuracy
+      for (let i = 0; i < data.length; i += 800) {
         const r = data[i];
         const g = data[i + 1];
         const b = data[i + 2];
@@ -286,64 +306,75 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           if (r > 180 && g > 180 && b > 180) {
             priceAreaPixels++;
           }
+          
+          // Look for candlestick colors
+          if ((r > 50 && g > 150 && b < 100) || (r > 150 && g < 100 && b < 100)) {
+            candlestickPixels++;
+          }
         }
       }
       
       const contentRatio = colorVariations / totalPixels;
       const priceAreaRatio = priceAreaPixels / totalPixels;
+      const candlestickRatio = candlestickPixels / totalPixels;
       
-      console.log(`📊 Current price chart validation:`, {
+      console.log(`📊 REAL chart validation:`, {
         dimensions: `${canvas.width}x${canvas.height}`,
         contentRatio: (contentRatio * 100).toFixed(2) + '%',
-        priceAreaRatio: (priceAreaRatio * 100).toFixed(2) + '%',
+        priceAreaRatio: (priceAreaRatio * 100).toFixed(3) + '%',
+        candlestickRatio: (candlestickRatio * 100).toFixed(3) + '%',
         colorVariations,
         totalPixels
       });
       
-      if (contentRatio < 0.05) {
+      if (contentRatio < 0.10) {
         throw new Error("Chart capture appears to have insufficient content. Please wait for the chart to fully load with current prices and try again.");
+      }
+      
+      if (priceAreaRatio < 0.002) {
+        console.warn("⚠️ Low price area detected - may not have current price labels");
       }
       
       // Convert to maximum quality PNG for price precision
       const blob = await new Promise<Blob>((resolve, reject) => {
         canvas.toBlob((blob) => {
           if (blob) {
-            console.log(`📸 Current price chart PNG: ${Math.round(blob.size / 1024)}KB`);
+            console.log(`📸 REAL chart PNG: ${Math.round(blob.size / 1024)}KB`);
             resolve(blob);
           } else {
-            reject(new Error("Failed to create current price chart image"));
+            reject(new Error("Failed to create real chart image"));
           }
         }, 'image/png', 1.0); // Maximum quality PNG
       });
       
       // Size validation
-      if (blob.size < 15000) {
+      if (blob.size < 20000) {
         throw new Error("Generated chart image is too small, likely missing current price data. Please try again.");
       }
       
-      console.log(`📸 Final current price chart: ${Math.round(blob.size / 1024)}KB`);
+      console.log(`📸 Final REAL chart: ${Math.round(blob.size / 1024)}KB`);
       
       // Create file with current timestamp
       const timestamp = Date.now();
-      const file = new File([blob], `current-price-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
+      const file = new File([blob], `real-chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
         type: 'image/png'
       });
       
       const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
       const timeframeLabel = timeframeObj?.label || selectedTimeframe;
       
-      console.log("🚀 Sending current price chart for analysis:", {
+      console.log("🚀 Sending REAL chart for analysis:", {
         fileName: file.name,
         fileSize: Math.round(file.size / 1024) + "KB",
         cleanSymbol,
         timeframeLabel,
         dimensions: `${canvas.width}x${canvas.height}`,
-        quality: "Maximum PNG (Scale 4x) with Current Prices"
+        quality: "Maximum PNG (Scale 4x) with REAL Data"
       });
       
       toast({
-        title: "Current Price Chart Captured",
-        description: `Live ${cleanSymbol} chart with current prices captured (${Math.round(blob.size / 1024)}KB). Analyzing real-time data...`,
+        title: "REAL Chart Captured Successfully",
+        description: `Live ${cleanSymbol} chart with current prices captured (${Math.round(blob.size / 1024)}KB). Analyzing real market data...`,
         variant: "default"
       });
       
@@ -351,7 +382,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
       onAnalyze(file, cleanSymbol, timeframeLabel);
 
     } catch (error) {
-      console.error("❌ Error capturing current price chart:", error);
+      console.error("❌ Error capturing REAL chart:", error);
       
       toast({
         title: "Capture Failed",
@@ -461,7 +492,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
         <CardHeader>
           <CardTitle className="text-white flex items-center gap-2">
             <TrendingUp className="h-6 w-6 text-primary" />
-            Current Price Chart Analysis with GPT-4.1-mini Vision
+            REAL Chart Analysis with Current Prices - GPT-4.1-mini Vision
           </CardTitle>
         </CardHeader>
       )}
@@ -556,7 +587,7 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
           <div className={`bg-gray-800/50 rounded-lg ${isMobile ? 'p-2' : 'p-4'}`}>
             {!isMobile && (
               <>
-                <h3 className="text-white font-medium mb-2">Live Chart with Current Prices</h3>
+                <h3 className="text-white font-medium mb-2">Live Chart with REAL Current Prices</h3>
                 <p className="text-gray-400 text-sm mb-4">
                   Currently showing: {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
                 </p>
@@ -587,12 +618,12 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             <div className="flex items-center space-x-2">
               <div className={`w-2 h-2 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
               <span className={`text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                {isWidgetLoaded ? 'Chart ready - Current price analysis enabled' : 'Loading current market data...'}
+                {isWidgetLoaded ? 'Chart ready - REAL price analysis enabled' : 'Loading current market data...'}
               </span>
             </div>
             {!isMobile && (
               <span className="text-xs text-gray-500">
-                Current Prices • Real-Time Analysis • GPT-4.1-mini Vision
+                REAL Current Prices • Live Analysis • GPT-4.1-mini Vision
               </span>
             )}
           </div>
@@ -603,10 +634,10 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
             disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className={`w-full bg-primary hover:bg-primary/90 text-white ${isMobile ? 'h-10 text-sm' : ''}`}
           >
-            {isCapturing ? 'Capturing Current Price Data...' : isAnalyzing ? 'Analyzing Current Prices...' : (
+            {isCapturing ? 'Capturing REAL Chart Data...' : isAnalyzing ? 'Analyzing REAL Prices...' : (
               <>
                 <Camera className={`${isMobile ? 'mr-1 h-3 w-3' : 'mr-2 h-4 w-4'}`} />
-                {isMobile ? 'Analyze Current Prices' : 'Capture & Analyze Current Prices'}
+                {isMobile ? 'Analyze REAL Prices' : 'Capture & Analyze REAL Current Prices'}
               </>
             )}
           </Button>
@@ -617,9 +648,9 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
               <div className="flex items-start">
                 <AlertTriangle className="h-4 w-4 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
                 <div>
-                  <h4 className="text-blue-400 font-medium text-sm mb-1">Current Price Analysis</h4>
+                  <h4 className="text-blue-400 font-medium text-sm mb-1">REAL Current Price Analysis</h4>
                   <p className="text-gray-400 text-xs">
-                    Enhanced capture system waits for current market data, validates price information, and uses maximum resolution to ensure GPT-4.1-mini analyzes the actual live prices visible on your chart.
+                    Enhanced system validates chart data, waits for current market prices, and uses maximum resolution capture to ensure GPT-4.1-mini analyzes the actual live prices visible on your chart.
                   </p>
                 </div>
               </div>
