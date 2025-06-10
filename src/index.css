@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -136,97 +135,73 @@
   button {
     padding: 0.5rem 1rem;
   }
-}
-
-/* TradingView widget responsive styles */
-.tradingview-widget-container {
-  width: 100% !important;
-  overflow: hidden;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(36, 38, 50, 0.8);
-  background-color: #131722;
-}
-
-.tradingview-widget-container iframe {
-  width: 100% !important;
-  height: 100% !important;
-  background-color: #131722;
-}
-
-/* Mobile TradingView optimizations */
-@media (max-width: 640px) {
-  .tradingview-widget-container {
-    min-height: 450px !important;
-    height: 450px !important;
-    margin: 0 -0.75rem;
-    width: calc(100% + 1.5rem) !important;
-    border-radius: 0;
-    border-left: none;
-    border-right: none;
-  }
   
-  .tradingview-widget-container__widget {
-    min-height: 418px !important;
-    height: calc(450px - 32px) !important;
-  }
-  
-  /* Ensure chart content is properly sized on mobile */
-  .tradingview-widget-container iframe {
-    min-height: 418px !important;
-  }
-  
-  /* Fix for mobile chart visibility */
-  .tradingview-widget-container div[data-widget-type="advanced-chart"] {
-    min-height: 418px !important;
-  }
-}
-
-/* Tablet optimizations */
-@media (min-width: 641px) and (max-width: 1024px) {
-  .tradingview-widget-container {
-    height: 500px !important;
-    min-height: 500px !important;
-  }
-  
-  .tradingview-widget-container__widget {
-    min-height: 468px !important;
-    height: calc(500px - 32px) !important;
-  }
-}
-
-/* Desktop optimizations */
-@media (min-width: 1025px) {
-  .tradingview-widget-container {
-    height: 600px !important;
-    min-height: 600px !important;
-  }
-  
-  .tradingview-widget-container__widget {
-    min-height: 568px !important;
-    height: calc(600px - 32px) !important;
-  }
-}
-
-.tradingview-widget-copyright {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: right;
-  padding-right: 10px;
-  height: 32px;
-  line-height: 32px;
-  flex-shrink: 0;
-}
-
-/* Enhanced mobile chart container */
-@media (max-width: 480px) {
+  /* TradingView chart responsive adjustments */
   .tradingview-widget-container {
     min-height: 400px !important;
-    height: 400px !important;
+    height: 450px !important;
   }
   
   .tradingview-widget-container__widget {
     min-height: 368px !important;
-    height: calc(400px - 32px) !important;
+  }
+}
+
+/* Medium screens */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .tradingview-widget-container {
+    height: 500px !important;
+    min-height: 450px !important;
+  }
+  
+  .tradingview-widget-container__widget {
+    min-height: 468px !important;
+  }
+}
+
+/* Large screens */
+@media (min-width: 1025px) {
+  .tradingview-widget-container {
+    height: 600px !important;
+    min-height: 500px !important;
+  }
+  
+  .tradingview-widget-container__widget {
+    min-height: 568px !important;
+  }
+}
+
+/* Fix for potential rendering issues on tablets */
+@media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+  .tradingview-widget-container {
+    height: 550px !important;
+  }
+  
+  .tradingview-widget-container__widget {
+    height: calc(100% - 32px) !important;
+  }
+}
+
+/* Fix for TVWidget rendering issues */
+.TVWrapperContainer-centered-placeholder,
+.TVChartContainer--with-overflown-content {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+  .tradingview-widget-container {
+    min-height: 350px !important;
+    height: 400px !important;
+    margin-left: -0.75rem;
+    margin-right: -0.75rem;
+    width: calc(100% + 1.5rem) !important;
+    border-radius: 0;
+  }
+  
+  .tradingview-widget-container__widget {
+    min-height: 368px !important;
   }
 }
 
@@ -373,4 +348,17 @@
   button {
     @apply min-h-[36px] min-w-[36px];
   }
+}
+
+/* TradingView widget specific responsive styles */
+.tradingview-widget-container {
+  width: 100% !important;
+  overflow: hidden;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tradingview-widget-container iframe {
+  width: 100% !important;
+  height: 100% !important;
 }

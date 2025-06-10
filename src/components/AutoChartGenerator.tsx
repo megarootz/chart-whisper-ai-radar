@@ -1,48 +1,334 @@
 
-import React from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { TrendingUp, ExternalLink } from 'lucide-react';
-import { useIsMobile } from '@/hooks/use-mobile';
+import { TrendingUp, Download, AlertTriangle } from 'lucide-react';
+import AutoTradingViewWidget from './AutoTradingViewWidget';
+import html2canvas from 'html2canvas';
+import { useToast } from '@/hooks/use-toast';
 
 interface AutoChartGeneratorProps {
   onAnalyze: (file: File, symbol: string, timeframe: string) => void;
   isAnalyzing: boolean;
 }
 
-const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = () => {
-  const isMobile = useIsMobile();
+// Updated symbol mappings with correct TradingView symbols
+const POPULAR_SYMBOLS = [
+  { value: "FX:EURUSD", label: "EUR/USD", cleanSymbol: "EUR/USD" },
+  { value: "FX:GBPUSD", label: "GBP/USD", cleanSymbol: "GBP/USD" },
+  { value: "FX:USDJPY", label: "USD/JPY", cleanSymbol: "USD/JPY" },
+  { value: "FX:AUDUSD", label: "AUD/USD", cleanSymbol: "AUD/USD" },
+  { value: "FX:USDCAD", label: "USD/CAD", cleanSymbol: "USD/CAD" },
+  { value: "FX:USDCHF", label: "USD/CHF", cleanSymbol: "USD/CHF" },
+  { value: "FX:NZDUSD", label: "NZD/USD", cleanSymbol: "NZD/USD" },
+  { value: "TVC:GOLD", label: "XAU/USD (Gold)", cleanSymbol: "XAU/USD" },
+  { value: "TVC:SILVER", label: "XAG/USD (Silver)", cleanSymbol: "XAG/USD" },
+  { value: "BINANCE:BTCUSDT", label: "BTC/USDT", cleanSymbol: "BTC/USDT" },
+  { value: "BINANCE:ETHUSDT", label: "ETH/USDT", cleanSymbol: "ETH/USDT" },
+  { value: "BINANCE:ADAUSDT", label: "ADA/USDT", cleanSymbol: "ADA/USDT" },
+];
 
-  const openChartPage = () => {
-    window.open('/chart', '_blank');
+const TIMEFRAMES = [
+  { value: "1", label: "1 Minute" },
+  { value: "5", label: "5 Minutes" },
+  { value: "15", label: "15 Minutes" },
+  { value: "30", label: "30 Minutes" },
+  { value: "60", label: "1 Hour" },
+  { value: "240", label: "4 Hours" },
+  { value: "D", label: "Daily" },
+  { value: "W", label: "Weekly" },
+];
+
+const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAnalyzing }) => {
+  const [selectedSymbol, setSelectedSymbol] = useState("FX:EURUSD");
+  const [selectedTimeframe, setSelectedTimeframe] = useState("D");
+  const [isWidgetLoaded, setIsWidgetLoaded] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false);
+  const [lastCapturedImage, setLastCapturedImage] = useState<string | null>(null);
+  const widgetRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
+
+  const handleWidgetLoad = useCallback(() => {
+    console.log("📊 Widget loaded callback triggered for symbol:", selectedSymbol);
+    setIsWidgetLoaded(true);
+  }, [selectedSymbol]);
+
+  const captureAndAnalyze = async () => {
+    if (!widgetRef.current || !isWidgetLoaded) {
+      toast({
+        title: "Chart Not Ready",
+        description: "Please wait for the chart to fully load before analyzing",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsCapturing(true);
+
+    try {
+      // Get clean symbol for analysis
+      const symbolObj = POPULAR_SYMBOLS.find(s => s.value === selectedSymbol);
+      const cleanSymbol = symbolObj?.cleanSymbol || selectedSymbol;
+      
+      console.log("🎯 Starting capture for:", { 
+        selectedSymbol, 
+        cleanSymbol, 
+        selectedTimeframe 
+      });
+      
+      // Extended wait time for chart to fully render with correct symbol
+      await new Promise(resolve => setTimeout(resolve, 8000));
+
+      // Capture with high quality settings
+      const canvas = await html2canvas(widgetRef.current, {
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#1a1a1a',
+        scale: 2,
+        logging: true,
+        imageTimeout: 25000,
+        removeContainer: false,
+        width: widgetRef.current.offsetWidth,
+        height: widgetRef.current.offsetHeight,
+      });
+
+      console.log("✅ Canvas captured, size:", canvas.width, "x", canvas.height);
+
+      // Validate canvas content
+      const ctx = canvas.getContext('2d');
+      const imageData = ctx?.getImageData(0, 0, canvas.width, canvas.height);
+      
+      if (!imageData) {
+        throw new Error("Failed to get image data from canvas");
+      }
+
+      // Enhanced content validation
+      const pixels = imageData.data;
+      let colorVariations = new Set();
+      let nonBlackPixels = 0;
+      const totalPixels = pixels.length / 4;
+      
+      for (let i = 0; i < pixels.length; i += 40) {
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        const a = pixels[i + 3];
+        
+        if (a > 0) {
+          const colorKey = `${Math.floor(r/10)}-${Math.floor(g/10)}-${Math.floor(b/10)}`;
+          colorVariations.add(colorKey);
+          
+          if (r > 20 || g > 20 || b > 20) {
+            nonBlackPixels++;
+          }
+        }
+      }
+      
+      const contentPercentage = (nonBlackPixels / (totalPixels / 10)) * 100;
+      const colorDiversity = colorVariations.size;
+      
+      console.log("📊 Enhanced capture analysis:", {
+        contentPercentage: contentPercentage.toFixed(2) + "%",
+        colorVariations: colorDiversity,
+        canvasSize: `${canvas.width}x${canvas.height}`,
+        selectedSymbol,
+        cleanSymbol
+      });
+      
+      if (contentPercentage < 3 || colorDiversity < 8) {
+        throw new Error(`Captured image appears to lack sufficient chart content (${contentPercentage.toFixed(1)}% content, ${colorDiversity} color variations). Please wait longer for the chart to load.`);
+      }
+
+      // Create preview and file
+      const previewUrl = canvas.toDataURL('image/png', 0.95);
+      setLastCapturedImage(previewUrl);
+
+      const blob = await new Promise<Blob>((resolve, reject) => {
+        canvas.toBlob((result) => {
+          if (result) {
+            resolve(result);
+          } else {
+            reject(new Error("Failed to convert canvas to blob"));
+          }
+        }, 'image/png', 0.95);
+      });
+
+      const timestamp = Date.now();
+      const file = new File([blob], `chart-${cleanSymbol.replace('/', '-')}-${selectedTimeframe}-${timestamp}.png`, { 
+        type: 'image/png' 
+      });
+      
+      const timeframeObj = TIMEFRAMES.find(tf => tf.value === selectedTimeframe);
+      const timeframeLabel = timeframeObj?.label || selectedTimeframe;
+      
+      console.log("🚀 Sending to analysis:", {
+        fileName: file.name,
+        fileSize: file.size,
+        cleanSymbol,
+        timeframeLabel,
+        originalSymbol: selectedSymbol
+      });
+      
+      // Pass the clean symbol for analysis
+      onAnalyze(file, cleanSymbol, timeframeLabel);
+
+    } catch (error) {
+      console.error("❌ Error in capture:", error);
+      
+      let errorMessage = "Failed to capture the chart. ";
+      
+      if (error instanceof Error) {
+        if (error.message.includes("content") || error.message.includes("variations")) {
+          errorMessage += error.message + " Try waiting longer for the chart to load.";
+        } else {
+          errorMessage += error.message;
+        }
+      }
+      
+      toast({
+        title: "Capture Failed",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsCapturing(false);
+    }
+  };
+
+  const getSelectedSymbolLabel = () => {
+    const symbol = POPULAR_SYMBOLS.find(s => s.value === selectedSymbol);
+    return symbol?.label || selectedSymbol;
+  };
+
+  // Reset widget loaded state when symbol changes
+  const handleSymbolChange = (newSymbol: string) => {
+    console.log("🔄 Symbol change from", selectedSymbol, "to", newSymbol);
+    setSelectedSymbol(newSymbol);
+    setIsWidgetLoaded(false); // Reset loaded state
+  };
+
+  const handleTimeframeChange = (newTimeframe: string) => {
+    console.log("🔄 Timeframe change from", selectedTimeframe, "to", newTimeframe);
+    setSelectedTimeframe(newTimeframe);
+    setIsWidgetLoaded(false); // Reset loaded state
   };
 
   return (
     <Card className="w-full bg-chart-card border-gray-700">
-      {!isMobile && (
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            Live Chart Analysis
-          </CardTitle>
-        </CardHeader>
-      )}
-      <CardContent className={`${isMobile ? 'pt-4 px-3 pb-3' : 'space-y-6'}`}>
-        <div className="text-center space-y-4">
-          <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-4">
-            <h3 className="text-blue-400 font-medium mb-2">Full-Screen Chart Analysis</h3>
-            <p className="text-gray-400 text-sm">
-              Open our dedicated full-screen chart page for the most accurate live analysis with TradingView's native screenshot feature.
-            </p>
+      <CardHeader>
+        <CardTitle className="text-white flex items-center gap-2">
+          <TrendingUp className="h-6 w-6 text-primary" />
+          Enhanced Automated Chart Analysis
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Symbol and Timeframe Selection */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="symbol-select" className="text-white">Trading Pair</Label>
+            <Select value={selectedSymbol} onValueChange={handleSymbolChange}>
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectValue placeholder="Select a trading pair" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                {POPULAR_SYMBOLS.map((symbol) => (
+                  <SelectItem key={symbol.value} value={symbol.value} className="text-white hover:bg-gray-700">
+                    {symbol.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-          
+
+          <div className="space-y-2">
+            <Label htmlFor="timeframe-select" className="text-white">Timeframe</Label>
+            <Select value={selectedTimeframe} onValueChange={handleTimeframeChange}>
+              <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                <SelectValue placeholder="Select timeframe" />
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                {TIMEFRAMES.map((timeframe) => (
+                  <SelectItem key={timeframe.value} value={timeframe.value} className="text-white hover:bg-gray-700">
+                    {timeframe.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* TradingView Chart */}
+        <div className="space-y-4">
+          <div className="bg-gray-800/50 rounded-lg p-4">
+            <h3 className="text-white font-medium mb-2">Live Chart Preview</h3>
+            <p className="text-gray-400 text-sm mb-4">
+              Currently showing: {getSelectedSymbolLabel()} - {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label}
+            </p>
+            
+            <div 
+              ref={widgetRef} 
+              className="w-full overflow-hidden rounded-lg border border-gray-700 bg-gray-900"
+              style={{ 
+                minHeight: "500px",
+                height: "600px"
+              }}
+            >
+              <AutoTradingViewWidget 
+                symbol={selectedSymbol}
+                interval={selectedTimeframe}
+                onLoad={handleWidgetLoad}
+              />
+            </div>
+          </div>
+
+          {/* Status Indicators */}
+          <div className="flex items-center">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${isWidgetLoaded ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+              <span className="text-sm text-gray-400">
+                {isWidgetLoaded ? 'Chart loaded and ready for capture' : 'Loading chart...'}
+              </span>
+            </div>
+          </div>
+
+          {/* Debug Info */}
+          {isWidgetLoaded && (
+            <div className="bg-blue-900/20 border border-blue-800/50 rounded-lg p-3">
+              <p className="text-blue-400 text-sm">
+                <strong>Enhanced Capture Ready:</strong> Chart loaded for {getSelectedSymbolLabel()} on {TIMEFRAMES.find(tf => tf.value === selectedTimeframe)?.label} timeframe. 
+                Symbol: {selectedSymbol}
+              </p>
+            </div>
+          )}
+
+          {/* Analyze Button */}
           <Button 
-            onClick={openChartPage}
+            onClick={captureAndAnalyze}
+            disabled={!isWidgetLoaded || isCapturing || isAnalyzing}
             className="w-full bg-primary hover:bg-primary/90 text-white"
           >
-            <ExternalLink className="mr-2 h-4 w-4" />
-            Open Full-Screen Chart
+            {isCapturing ? 'Capturing Chart...' : isAnalyzing ? 'Analyzing...' : (
+              <>
+                <Download className="mr-2 h-4 w-4" />
+                Enhanced Capture & Analyze Chart
+              </>
+            )}
           </Button>
+
+          {/* Help Text */}
+          <div className="bg-orange-900/20 border border-orange-800/50 rounded-lg p-3">
+            <div className="flex items-start">
+              <AlertTriangle className="h-4 w-4 text-orange-500 mr-2 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-orange-400 font-medium text-sm mb-1">Symbol Mapping Fixed</h4>
+                <p className="text-gray-400 text-xs">
+                  Updated symbol mappings to use correct TradingView symbols. Charts should now display the selected trading pair correctly.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>
