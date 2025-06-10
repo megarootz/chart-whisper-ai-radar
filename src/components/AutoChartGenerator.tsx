@@ -606,5 +606,3 @@ const AutoChartGenerator: React.FC<AutoChartGeneratorProps> = ({ onAnalyze, isAn
 };
 
 export default AutoChartGenerator;
-
-}
