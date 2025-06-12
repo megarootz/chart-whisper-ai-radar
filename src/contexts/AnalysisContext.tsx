@@ -10,13 +10,10 @@ interface AnalysisContextType {
   refreshHistory: () => Promise<void>;
 }
 
-export interface HistoryAnalysisItem {
+// Update the interface to extend AnalysisResultData to include all required properties
+export interface HistoryAnalysisItem extends AnalysisResultData {
   id?: string;
   created_at?: string;
-  pairName: string;
-  timeframe: string;
-  overallSentiment: string;
-  marketAnalysis?: string;
 }
 
 const AnalysisContext = createContext<AnalysisContextType | undefined>(undefined);

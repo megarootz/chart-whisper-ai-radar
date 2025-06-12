@@ -5,20 +5,13 @@ import { Button } from '@/components/ui/button';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { Link } from 'react-router-dom';
-import { AnalysisResultData } from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { useAnalysis } from '@/contexts/AnalysisContext';
+import { useAnalysis, HistoryAnalysisItem } from '@/contexts/AnalysisContext';
 import { formatTradingPair } from '@/utils/tradingPairUtils';
-
-// Update the interface for the history items to include timestamp and date
-interface HistoryAnalysisData extends AnalysisResultData {
-  id?: string;
-  created_at?: string;
-}
 
 const HistoryPage = () => {
   const [dateFilter, setDateFilter] = useState('all');
@@ -109,7 +102,7 @@ const HistoryPage = () => {
   };
 
   // Helper function to get proper pair name for display
-  const getDisplayPairName = (analysis: HistoryAnalysisData) => {
+  const getDisplayPairName = (analysis: HistoryAnalysisItem) => {
     if (analysis.pairName && analysis.pairName !== 'Unknown Pair') {
       return formatTradingPair(analysis.pairName);
     }
