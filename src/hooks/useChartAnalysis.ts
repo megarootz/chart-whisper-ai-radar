@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData, MarketFactor, ChartPattern, PriceLevel, TradingSetup } from '@/components/AnalysisResult';
@@ -60,13 +59,11 @@ export const useChartAnalysis = () => {
         console.log("✅ Analysis saved to database successfully", data);
         
         if (data) {
+          // Pass the complete analysis data with additional properties
           addToHistory({
+            ...analysisData,
             id: data.id,
-            created_at: data.created_at,
-            pairName: analysisData.pairName,
-            timeframe: analysisData.timeframe,
-            overallSentiment: analysisData.overallSentiment,
-            marketAnalysis: analysisData.marketAnalysis
+            created_at: data.created_at
           });
         }
         
