@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { formatTradingPair } from '@/utils/tradingPairUtils';
 import { TrendingUp, BarChart3, AlertTriangle, DollarSign, Clock, Target, TrendingDown } from 'lucide-react';
 
@@ -89,15 +89,163 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
     };
   };
 
-  const { pair, timeframe } = extractTradingInfo(data.marketAnalysis);
-  const formattedPair = formatTradingPair(pair);
-
-  // Extract current price from analysis
-  const extractCurrentPrice = (analysisText: string) => {
-    const priceMatch = analysisText.match(/Current Price[:\s]*([0-9,]+\.?[0-9]*)/i);
-    return priceMatch ? priceMatch[1] : null;
+  // Function to parse table data from analysis text
+  const parseTableData = (text: string, sectionNumber: string) => {
+    const lines = text.split('\n');
+    const sectionIndex = lines.findIndex(line => line.includes(`${sectionNumber}.`));
+    
+    if (sectionIndex === -1) return null;
+    
+    const tableData = [];
+    let foundTable = false;
+    
+    for (let i = sectionIndex; i < lines.length; i++) {
+      const line = lines[i].trim();
+      
+      // Stop if we hit the next section
+      if (line.match(/^\d+\./) && i > sectionIndex) break;
+      
+      // Look for table rows with | separators
+      if (line.includes('|')) {
+        const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+        if (cells.length > 1) {
+          tableData.push(cells);
+          foundTable = true;
+        }
+      }
+      
+      // Also look for structured data without | separators
+      if (!foundTable && line.includes('Buy') && line.includes('Sell')) {
+        // Handle different formats
+        if (line.includes('|')) {
+          const cells = line.split('|').map(cell => cell.trim()).filter(cell => cell);
+          tableData.push(cells);
+        }
+      }
+    }
+    
+    return tableData.length > 0 ? tableData : null;
   };
 
+  // Parse section 6 and 9 tables
+  const section6Table = parseTableData(data.marketAnalysis, '6');
+  const section9Table = parseTableData(data.marketAnalysis, '9');
+
+  // Function to render analysis text with tables replaced
+  const renderAnalysisWithTables = (text: string) => {
+    const lines = text.split('\n');
+    const result = [];
+    let i = 0;
+    
+    while (i < lines.length) {
+      const line = lines[i];
+      
+      // Check if this is section 6
+      if (line.includes('6. Trade Setups & Risk Management')) {
+        result.push(
+          <div key={`section-6-${i}`} className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <Target className="h-5 w-5 mr-2 text-primary" />
+              6. Trade Setups & Risk Management
+            </h3>
+            {section6Table && (
+              <div className="bg-gray-800/30 border border-gray-700 rounded-lg overflow-hidden mb-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-gray-700">
+                      <TableHead className="text-gray-300">Trade Type</TableHead>
+                      <TableHead className="text-gray-300">Entry Area</TableHead>
+                      <TableHead className="text-gray-300">Stop Loss (SL)</TableHead>
+                      <TableHead className="text-gray-300">Take Profit (TP1)</TableHead>
+                      <TableHead className="text-gray-300">Take Profit (TP2)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {section6Table.slice(1).map((row, idx) => (
+                      <TableRow key={idx} className="border-gray-700">
+                        {row.map((cell, cellIdx) => (
+                          <TableCell key={cellIdx} className="text-gray-100">
+                            {cell}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        );
+        
+        // Skip lines until we reach the next section or end of section 6
+        while (i < lines.length && !lines[i].match(/^7\./)) {
+          i++;
+        }
+        continue;
+      }
+      
+      // Check if this is section 9
+      if (line.includes('9. Trade Plan Table Example')) {
+        result.push(
+          <div key={`section-9-${i}`} className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2 text-primary" />
+              9. Trade Plan Table Example
+            </h3>
+            {section9Table && (
+              <div className="bg-gray-800/30 border border-gray-700 rounded-lg overflow-hidden mb-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-gray-700">
+                      <TableHead className="text-gray-300">Trade Plan</TableHead>
+                      <TableHead className="text-gray-300">Entry</TableHead>
+                      <TableHead className="text-gray-300">Stop Loss</TableHead>
+                      <TableHead className="text-gray-300">Take Profit 1</TableHead>
+                      <TableHead className="text-gray-300">Take Profit 2</TableHead>
+                      <TableHead className="text-gray-300">R/R</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {section9Table.slice(1).map((row, idx) => (
+                      <TableRow key={idx} className="border-gray-700">
+                        {row.map((cell, cellIdx) => (
+                          <TableCell key={cellIdx} className="text-gray-100">
+                            {cell}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        );
+        
+        // Skip lines until we reach the disclaimer or end
+        while (i < lines.length && !lines[i].includes('⚠️ Disclaimer')) {
+          i++;
+        }
+        continue;
+      }
+      
+      // For other lines, render as regular text
+      if (line.trim()) {
+        result.push(
+          <div key={i} className="mb-2">
+            {line}
+          </div>
+        );
+      }
+      
+      i++;
+    }
+    
+    return result;
+  };
+
+  const { pair, timeframe } = extractTradingInfo(data.marketAnalysis);
+  const formattedPair = formatTradingPair(pair);
   const currentPrice = extractCurrentPrice(data.marketAnalysis);
 
   // Get sentiment color
@@ -185,7 +333,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
         <CardContent>
           <div className="space-y-6">
             
-            {/* Main Analysis Content */}
+            {/* Main Analysis Content with Tables */}
             <div className="bg-gray-800/30 border border-gray-700 rounded-xl p-6">
               <div className="mb-4">
                 <h3 className="text-xl font-semibold text-white mb-2 flex items-center">
@@ -196,8 +344,8 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               </div>
               
               <div className="prose prose-invert max-w-none">
-                <div className="whitespace-pre-wrap text-gray-100 leading-relaxed text-sm md:text-base">
-                  {data.marketAnalysis}
+                <div className="text-gray-100 leading-relaxed text-sm md:text-base space-y-4">
+                  {renderAnalysisWithTables(data.marketAnalysis)}
                 </div>
               </div>
             </div>
@@ -216,7 +364,6 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                 </div>
               </div>
             </div>
-
           </div>
         </CardContent>
       </Card>
