@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -21,6 +20,7 @@ import { SubscriptionProvider } from "./contexts/SubscriptionContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useState } from "react";
 import { AnalysisProvider } from "./contexts/AnalysisContext";
+import TickmillLogo from "./components/TickmillLogo";
 
 const App = () => {
   // Create a new QueryClient instance that persists between renders
@@ -36,6 +36,7 @@ const App = () => {
             <SubscriptionProvider>
               <AnalysisProvider>
                 <AppRoutes />
+                <TickmillLogo />
               </AnalysisProvider>
             </SubscriptionProvider>
           </AuthProvider>
