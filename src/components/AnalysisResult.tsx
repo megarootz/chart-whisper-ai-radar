@@ -89,6 +89,23 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
     };
   };
 
+  // Extract current price from analysis text
+  const extractCurrentPrice = (analysisText: string) => {
+    // Look for patterns like "Current Price: $2,685.50" or "Price: 2685.50"
+    const priceMatch = analysisText.match(/(?:Current\s+Price|Price):\s*\$?([\d,]+\.?\d*)/i);
+    if (priceMatch) {
+      return `$${priceMatch[1]}`;
+    }
+    
+    // Look for other price patterns in the text
+    const genericPriceMatch = analysisText.match(/\$?([\d,]+\.\d{2})/);
+    if (genericPriceMatch) {
+      return `$${genericPriceMatch[1]}`;
+    }
+    
+    return null;
+  };
+
   // Function to parse table data from analysis text
   const parseTableData = (text: string, sectionNumber: string) => {
     const lines = text.split('\n');
