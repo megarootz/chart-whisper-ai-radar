@@ -12,6 +12,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { useAnalysis } from '@/contexts/AnalysisContext';
+import { formatTradingPair } from '@/utils/tradingPairUtils';
 
 // Update the interface for the history items to include timestamp and date
 interface HistoryAnalysisData extends AnalysisResultData {
@@ -26,6 +27,39 @@ const HistoryPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { analysisHistory, refreshHistory } = useAnalysis();
+  
+  // Extract trading pair and timeframe from analysis text
+  const extractTradingInfo = (analysisText: string) => {
+    // Look for patterns like "Technical Chart Analysis Report (GOLD/USD - 1 Hour)" or "Gold Spot / U.S. Dollar - 1 Hour"
+    const titleMatch = analysisText.match(/Technical Chart Analysis Report.*?\((.*?)\)/i) ||
+                      analysisText.match(/📊\s*Technical Chart Analysis Report.*?\((.*?)\)/i);
+    
+    if (titleMatch) {
+      const titleContent = titleMatch[1];
+      // Extract pair and timeframe
+      const parts = titleContent.split(/\s*[–-]\s*/);
+      if (parts.length >= 2) {
+        return {
+          pair: parts[0].trim(),
+          timeframe: parts[1].trim()
+        };
+      } else {
+        return {
+          pair: titleContent.trim(),
+          timeframe: 'Unknown Timeframe'
+        };
+      }
+    }
+
+    // Fallback: look for other patterns
+    const pairMatch = analysisText.match(/(?:Gold|XAU|EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|BTC|ETH)[\/\s]*(?:USD|EUR|JPY|GBP|CHF|CAD|AUD|NZD|USDT)/gi);
+    const timeframeMatch = analysisText.match(/(?:1|4|15|30)\s*(?:Hour|Minute|Min|H|M)|Daily|Weekly|Monthly/gi);
+    
+    return {
+      pair: pairMatch ? pairMatch[0] : 'Unknown Pair',
+      timeframe: timeframeMatch ? timeframeMatch[0] : 'Unknown Timeframe'
+    };
+  };
   
   useEffect(() => {
     if (user) {
@@ -72,6 +106,21 @@ const HistoryPage = () => {
     } catch (e) {
       return dateStr;
     }
+  };
+
+  // Helper function to get proper pair name for display
+  const getDisplayPairName = (analysis: HistoryAnalysisData) => {
+    if (analysis.pairName && analysis.pairName !== 'Unknown Pair') {
+      return formatTradingPair(analysis.pairName);
+    }
+    
+    // Try to extract from analysis text
+    if (analysis.marketAnalysis) {
+      const extractedInfo = extractTradingInfo(analysis.marketAnalysis);
+      return formatTradingPair(extractedInfo.pair);
+    }
+    
+    return "Unknown Pair";
   };
 
   return (
@@ -129,44 +178,49 @@ const HistoryPage = () => {
             </div>
           ) : (
             <div className={`space-y-${isMobile ? '3' : '4'}`}>
-              {filteredHistory.map((analysis, index) => (
-                <div key={analysis.id || index} className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
-                  <div className={`${isMobile ? 'p-3' : 'p-5'}`}>
-                    <div className={`flex justify-between items-start ${isMobile ? 'mb-3' : 'mb-4'}`}>
-                      <div>
-                        <h3 className={`text-white font-medium ${isMobile ? 'text-base mb-1' : 'text-lg mb-1'}`}>
-                          {analysis.pairName || "Unknown Pair"}
-                          {analysis.timeframe && (
-                            <span className={`text-primary ml-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                              {analysis.timeframe}
-                            </span>
-                          )}
-                        </h3>
-                        <div className={`flex flex-wrap items-center text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                          <span className="mr-2">{analysis.overallSentiment}</span>
-                          <span className="mr-2">•</span>
-                          <span>{formatDate(analysis.created_at)}</span>
+              {filteredHistory.map((analysis, index) => {
+                const displayPairName = getDisplayPairName(analysis);
+                return (
+                  <div key={analysis.id || index} className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
+                    <div className={`${isMobile ? 'p-3' : 'p-5'}`}>
+                      <div className={`flex justify-between items-start ${isMobile ? 'mb-3' : 'mb-4'}`}>
+                        <div>
+                          <h3 className={`text-white font-medium ${isMobile ? 'text-base mb-1' : 'text-lg mb-1'}`}>
+                            {displayPairName}
+                            {analysis.timeframe && (
+                              <span className={`text-primary ml-2 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                                {analysis.timeframe}
+                              </span>
+                            )}
+                          </h3>
+                          <div className={`flex flex-wrap items-center text-gray-400 ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                            <span className="mr-2">{analysis.overallSentiment}</span>
+                            <span className="mr-2">•</span>
+                            <span>{formatDate(analysis.created_at)}</span>
+                          </div>
+                        </div>
+                        <div className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          analysis.overallSentiment?.toLowerCase().includes('bullish') ? 'bg-green-900 text-green-400' : 
+                          analysis.overallSentiment?.toLowerCase().includes('bearish') ? 'bg-red-900 text-red-400' : 
+                          'bg-yellow-900 text-yellow-400'
+                        }`}>
+                          {analysis.overallSentiment}
                         </div>
                       </div>
-                      <div className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        analysis.overallSentiment?.toLowerCase().includes('bullish') ? 'bg-green-900 text-green-400' : 
-                        analysis.overallSentiment?.toLowerCase().includes('bearish') ? 'bg-red-900 text-red-400' : 
-                        'bg-yellow-900 text-yellow-400'
-                      }`}>
-                        {analysis.overallSentiment}
+                      
+                      <p className={`text-gray-400 ${isMobile ? 'text-xs mb-3' : 'text-sm mb-4'} line-clamp-2`}>
+                        {analysis.marketAnalysis?.substring(0, 150)}...
+                      </p>
+                      
+                      <div className="flex justify-start items-center">
+                        <Link to={`/analysis/${analysis.id}`} className={`text-primary hover:underline ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                          View Details
+                        </Link>
                       </div>
                     </div>
-                    
-                    <p className={`text-gray-400 ${isMobile ? 'text-xs mb-3' : 'text-sm mb-4'}`}>{analysis.marketAnalysis}</p>
-                    
-                    <div className="flex justify-start items-center">
-                      <Link to={`/analysis/${analysis.id}`} className={`text-primary hover:underline ${isMobile ? 'text-xs' : 'text-sm'}`}>
-                        View Details
-                      </Link>
-                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

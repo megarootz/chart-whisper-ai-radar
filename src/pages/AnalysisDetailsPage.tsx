@@ -20,6 +20,39 @@ const AnalysisDetailsPage = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   
+  // Extract trading pair and timeframe from analysis text
+  const extractTradingInfo = (analysisText: string) => {
+    // Look for patterns like "Technical Chart Analysis Report (GOLD/USD - 1 Hour)" or "Gold Spot / U.S. Dollar - 1 Hour"
+    const titleMatch = analysisText.match(/Technical Chart Analysis Report.*?\((.*?)\)/i) ||
+                      analysisText.match(/📊\s*Technical Chart Analysis Report.*?\((.*?)\)/i);
+    
+    if (titleMatch) {
+      const titleContent = titleMatch[1];
+      // Extract pair and timeframe
+      const parts = titleContent.split(/\s*[–-]\s*/);
+      if (parts.length >= 2) {
+        return {
+          pair: parts[0].trim(),
+          timeframe: parts[1].trim()
+        };
+      } else {
+        return {
+          pair: titleContent.trim(),
+          timeframe: 'Unknown Timeframe'
+        };
+      }
+    }
+
+    // Fallback: look for other patterns
+    const pairMatch = analysisText.match(/(?:Gold|XAU|EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|BTC|ETH)[\/\s]*(?:USD|EUR|JPY|GBP|CHF|CAD|AUD|NZD|USDT)/gi);
+    const timeframeMatch = analysisText.match(/(?:1|4|15|30)\s*(?:Hour|Minute|Min|H|M)|Daily|Weekly|Monthly/gi);
+    
+    return {
+      pair: pairMatch ? pairMatch[0] : 'Unknown Pair',
+      timeframe: timeframeMatch ? timeframeMatch[0] : 'Unknown Timeframe'
+    };
+  };
+  
   useEffect(() => {
     if (user && id) {
       fetchAnalysisDetails(id);
@@ -52,8 +85,15 @@ const AnalysisDetailsPage = () => {
         // Properly cast the JSON data to AnalysisResultData
         const analysisData = data.analysis_data as unknown as AnalysisResultData;
         
-        // Format the pair name using the utility function
-        if (analysisData.pairName) {
+        // Extract trading pair info from the analysis text if not already present
+        if (!analysisData.pairName || analysisData.pairName === 'Unknown Pair') {
+          const extractedInfo = extractTradingInfo(analysisData.marketAnalysis || '');
+          analysisData.pairName = formatTradingPair(extractedInfo.pair);
+          if (!analysisData.timeframe) {
+            analysisData.timeframe = extractedInfo.timeframe;
+          }
+        } else {
+          // Format the existing pair name
           analysisData.pairName = formatTradingPair(analysisData.pairName);
         }
         
