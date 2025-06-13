@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -160,7 +161,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
       // Check if this is section 6
       if (line.includes('6. Trade Setups & Risk Management')) {
         result.push(
-          <div key={`section-6-${i}`} className="mb-6">
+          <div key={`section-6-${i}`} className="mb-8">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
               <Target className="h-5 w-5 mr-2 text-primary" />
               6. Trade Setups & Risk Management
@@ -204,7 +205,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
       // Check if this is section 9
       if (line.includes('9. Trade Plan Table Example')) {
         result.push(
-          <div key={`section-9-${i}`} className="mb-6">
+          <div key={`section-9-${i}`} className="mb-8">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
               <BarChart3 className="h-5 w-5 mr-2 text-primary" />
               9. Trade Plan Table Example
@@ -246,11 +247,45 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
         continue;
       }
       
-      // For other lines, render as regular text
-      if (line.trim()) {
+      // Handle numbered sections (1., 2., 3., etc.)
+      if (line.match(/^\d+\./)) {
         result.push(
-          <div key={i} className="mb-2">
-            {line}
+          <div key={`section-${i}`} className="mb-6">
+            <h3 className="text-lg font-semibold text-white mb-3">
+              {line.trim()}
+            </h3>
+          </div>
+        );
+      }
+      // Handle bullet points
+      else if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
+        const bulletContent = line.trim().replace(/^[•-]\s*/, '');
+        result.push(
+          <div key={`bullet-${i}`} className="mb-3 ml-4">
+            <div className="flex items-start">
+              <span className="text-primary mr-3 mt-1">•</span>
+              <span className="text-gray-100 leading-relaxed">{bulletContent}</span>
+            </div>
+          </div>
+        );
+      }
+      // Handle sub-bullets (lines starting with spaces and then bullet)
+      else if (line.trim().startsWith('- ') && line.startsWith('  ')) {
+        const subBulletContent = line.trim().replace(/^-\s*/, '');
+        result.push(
+          <div key={`sub-bullet-${i}`} className="mb-2 ml-8">
+            <div className="flex items-start">
+              <span className="text-gray-400 mr-3 mt-1">-</span>
+              <span className="text-gray-200 leading-relaxed text-sm">{subBulletContent}</span>
+            </div>
+          </div>
+        );
+      }
+      // Regular text content
+      else if (line.trim()) {
+        result.push(
+          <div key={`text-${i}`} className="mb-3">
+            <span className="text-gray-100 leading-relaxed">{line.trim()}</span>
           </div>
         );
       }
@@ -324,7 +359,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               </div>
               
               <div className="prose prose-invert max-w-none">
-                <div className="text-gray-100 leading-relaxed text-sm md:text-base space-y-4">
+                <div className="text-gray-100 leading-relaxed text-sm md:text-base">
                   {renderAnalysisWithTables(data.marketAnalysis)}
                 </div>
               </div>
