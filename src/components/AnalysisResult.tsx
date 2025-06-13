@@ -308,43 +308,6 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
               )}
             </div>
           </CardTitle>
-          
-          {/* Quick Stats Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Market Sentiment</p>
-                  <p className={`font-semibold ${getSentimentColor(data.overallSentiment || 'neutral')}`}>
-                    {data.overallSentiment || 'Neutral'}
-                  </p>
-                </div>
-                <div className={getSentimentColor(data.overallSentiment || 'neutral')}>
-                  {getSentimentIcon(data.overallSentiment || 'neutral')}
-                </div>
-              </div>
-            </div>
-            
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Confidence Score</p>
-                  <p className="text-white font-semibold">{data.confidenceScore || 75}%</p>
-                </div>
-                <Target className="h-4 w-4 text-blue-400" />
-              </div>
-            </div>
-            
-            <div className="bg-gray-800/50 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-400 text-sm">Analysis Type</p>
-                  <p className="text-white font-semibold">Technical Analysis</p>
-                </div>
-                <BarChart3 className="h-4 w-4 text-purple-400" />
-              </div>
-            </div>
-          </div>
         </CardHeader>
         
         <CardContent>
