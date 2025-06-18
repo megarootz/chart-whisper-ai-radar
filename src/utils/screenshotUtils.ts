@@ -10,7 +10,6 @@ export interface ScreenshotResult {
 export const captureWidgetScreenshot = async (
   widgetContainer: HTMLElement,
   options?: {
-    quality?: number;
     scale?: number;
     useCORS?: boolean;
   }
@@ -22,7 +21,6 @@ export const captureWidgetScreenshot = async (
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     const canvas = await html2canvas(widgetContainer, {
-      quality: options?.quality || 1,
       scale: options?.scale || 1,
       useCORS: options?.useCORS || true,
       allowTaint: true,
