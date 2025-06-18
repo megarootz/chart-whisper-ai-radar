@@ -12,6 +12,7 @@ import PricingPage from "./pages/PricingPage";
 import AuthPage from "./pages/AuthPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
+import ChartPage from "./pages/ChartPage";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import { useIsMobile } from "./hooks/use-mobile";
@@ -56,6 +57,7 @@ const AppRoutes = () => {
         <Route path="/" element={<HomePage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/chart" element={<ChartPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/terms" element={<TermsPage />} />
         <Route 
