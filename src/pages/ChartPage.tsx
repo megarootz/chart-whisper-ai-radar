@@ -9,7 +9,7 @@ const ChartPage = () => {
   const isMobile = useIsMobile();
 
   return (
-    <div className="flex flex-col h-screen bg-chart-bg">
+    <div className="flex flex-col h-screen bg-chart-bg overflow-hidden">
       <SEOHead
         title="TradingView Chart - ForexRadar7"
         description="Professional TradingView charts for forex analysis. View real-time forex pairs with advanced charting tools and technical indicators."
