@@ -1,3 +1,4 @@
+
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Home, Upload, History, User, DollarSign, TrendingUp } from "lucide-react";
@@ -21,7 +22,7 @@ const BottomNav = () => {
       label: "Chart",
       href: "/chart",
       icon: TrendingUp,
-      isActive: location.pathname === "/chart"
+      isActive: location.pathname === "/chart" || (location.pathname === "/chart" && location.search.includes('autoCapture'))
     },
     {
       label: "Analyze",
