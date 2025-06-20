@@ -2,7 +2,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 
-const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
+const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,8 +15,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!OPENROUTER_API_KEY) {
-      throw new Error("OPENROUTER_API_KEY environment variable is not set");
+    if (!DEEPSEEK_API_KEY) {
+      throw new Error("DEEPSEEK_API_KEY environment variable is not set");
     }
 
     const { base64Image, pairName, timeframe } = await req.json();
@@ -76,7 +76,7 @@ Focus on:
 Format your response as a professional trading analysis report.`;
     
     const requestData = {
-      model: "gpt-4o", // Using gpt-4o which supports vision
+      model: "deepseek-chat",
       messages: [
         {
           role: "user",
@@ -88,8 +88,7 @@ Format your response as a professional trading analysis report.`;
             {
               type: "image_url",
               image_url: {
-                url: base64Image,
-                detail: "high"
+                url: base64Image
               }
             }
           ]
@@ -99,18 +98,15 @@ Format your response as a professional trading analysis report.`;
       max_tokens: 4000
     };
 
-    console.log("🚀 Sending request to OpenRouter API:", {
+    console.log("🚀 Sending request to DeepSeek API:", {
       model: requestData.model,
       maxTokens: requestData.max_tokens,
-      imageDetail: "high",
       imageSizeKB: Math.round(imageSize / 1024)
     });
     
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'ForexRadar7 Chart Analysis'
+      'Authorization': `Bearer ${DEEPSEEK_API_KEY}`,
     };
     
     // Enhanced retry logic
@@ -123,7 +119,7 @@ Format your response as a professional trading analysis report.`;
       console.log(`📤 API call attempt ${attempts}/${maxAttempts}`);
       
       try {
-        response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        response = await fetch("https://api.deepseek.com/chat/completions", {
           method: 'POST',
           headers,
           body: JSON.stringify(requestData)
