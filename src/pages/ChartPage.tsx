@@ -26,10 +26,13 @@ const ChartPage = () => {
   const returnTo = searchParams.get('returnTo');
 
   useEffect(() => {
-    // If autoCapture is true and chart is loaded, automatically capture screenshot
+    // Auto-capture with minimal delay when chart is ready
     if (autoCapture && chartLoaded && !isCapturing && captureStatus === 'ready') {
       console.log('🚀 Auto-capture triggered');
-      handleScreenshotCapture();
+      // Immediate capture without additional delay
+      setTimeout(() => {
+        handleScreenshotCapture();
+      }, 1000); // Just 1 second delay
     }
   }, [autoCapture, chartLoaded, isCapturing, captureStatus]);
 
@@ -40,8 +43,8 @@ const ChartPage = () => {
     
     if (autoCapture) {
       toast({
-        title: "Chart Loaded",
-        description: "Chart data loaded successfully. Starting automatic capture...",
+        title: "Chart Ready",
+        description: "Chart loaded. Starting quick capture...",
         variant: "default",
       });
     }
@@ -52,7 +55,7 @@ const ChartPage = () => {
 
     setIsCapturing(true);
     setCaptureStatus('capturing');
-    console.log('📸 Starting screenshot capture...');
+    console.log('📸 Starting quick screenshot capture...');
 
     try {
       const result = await widgetRef.current.captureScreenshot();
@@ -76,10 +79,10 @@ const ChartPage = () => {
           
           console.log('📤 Screenshot data stored, navigating back to analyze page');
           
-          // Small delay to show success message
+          // Quick navigation back
           setTimeout(() => {
             navigate(returnTo);
-          }, 1000);
+          }, 500); // Reduced delay
         }
       } else {
         console.error('❌ Screenshot capture failed:', result.error);
@@ -129,15 +132,15 @@ const ChartPage = () => {
   const getStatusText = () => {
     switch (captureStatus) {
       case 'waiting':
-        return 'Loading chart data...';
+        return 'Loading chart...';
       case 'ready':
         return 'Ready to capture';
       case 'capturing':
         return 'Capturing screenshot...';
       case 'success':
-        return 'Screenshot captured successfully!';
+        return 'Screenshot captured!';
       case 'error':
-        return 'Failed to capture screenshot';
+        return 'Capture failed';
       default:
         return 'Unknown status';
     }
@@ -183,7 +186,7 @@ const ChartPage = () => {
               className="border-gray-600 text-white hover:bg-gray-700"
             >
               <Camera className="h-4 w-4 mr-1" />
-              {isCapturing ? 'Capturing...' : 'Capture Screenshot'}
+              {isCapturing ? 'Capturing...' : 'Quick Capture'}
             </Button>
           )}
         </div>

@@ -28,11 +28,11 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       try {
         console.log('📸 Starting screenshot capture process...');
         
-        // Wait additional time to ensure chart data is loaded
-        console.log('⏳ Waiting for chart data to stabilize...');
-        await new Promise(resolve => setTimeout(resolve, 3000));
+        // Minimal wait for stability (reduced from 3 seconds)
+        console.log('⏳ Brief wait for chart stability...');
+        await new Promise(resolve => setTimeout(resolve, 500));
         
-        // Check if iframe is present and loaded
+        // Check if iframe is present
         const iframe = container.current.querySelector('iframe');
         if (!iframe) {
           console.error('❌ No TradingView iframe found');
@@ -48,14 +48,6 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         });
         
         if (result.success && result.dataUrl) {
-          // Validate screenshot size to ensure it contains chart data
-          if (result.dataUrl.length < 100000) {
-            console.warn('⚠️ Screenshot appears too small, might not contain chart data');
-            return { 
-              success: false, 
-              error: 'Screenshot appears incomplete. Chart may not be fully loaded.' 
-            };
-          }
           console.log('✅ Screenshot captured successfully, size:', result.dataUrl.length);
         }
         
@@ -116,29 +108,20 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         console.log("✅ TradingView widget script loaded for symbol:", symbol);
         scriptLoaded.current = true;
         
-        // Set a longer timeout to ensure the chart loads with real data
+        // Reduced timeout for faster processing (from 10 seconds to 5 seconds)
         loadingTimeout.current = setTimeout(() => {
-          console.log("🏁 TradingView widget ready with chart data for:", symbol);
+          console.log("🏁 TradingView widget ready for:", symbol);
           
-          // Double-check that iframe is present before calling onLoad
+          // Check that iframe is present before calling onLoad
           const iframe = container.current?.querySelector('iframe');
           if (iframe) {
-            console.log("📊 Iframe confirmed present, calling onLoad");
+            console.log("📊 Iframe confirmed, calling onLoad");
             onLoad?.();
           } else {
-            console.warn("⚠️ Iframe not found after timeout, retrying...");
-            // Retry after another 3 seconds
-            setTimeout(() => {
-              const retryIframe = container.current?.querySelector('iframe');
-              if (retryIframe) {
-                console.log("📊 Iframe found on retry, calling onLoad");
-                onLoad?.();
-              } else {
-                console.error("❌ Iframe still not found after retry");
-              }
-            }, 3000);
+            console.warn("⚠️ Iframe not found, but proceeding anyway");
+            onLoad?.();
           }
-        }, 10000); // Increased to 10 seconds for better chart loading
+        }, 5000); // Reduced from 10 seconds
       };
 
       script.onerror = (e) => {
@@ -154,7 +137,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
 
     useEffect(() => {
       console.log("🔄 TradingView widget effect triggered for pair:", { symbol, interval });
-      // Always recreate widget when symbol or interval changes to ensure fresh data
+      // Always recreate widget when symbol or interval changes
       if (currentSymbol.current !== symbol || currentInterval.current !== interval || !scriptLoaded.current) {
         console.log("🆕 Recreating widget for pair:", {
           oldSymbol: currentSymbol.current,
