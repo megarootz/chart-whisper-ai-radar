@@ -1,7 +1,7 @@
 
 import React from 'react';
 import Header from '@/components/Header';
-import ChartUploader from '@/components/ChartUploader';
+import ChartUploaderForm from '@/components/ChartUploader/ChartUploaderForm';
 import AnalysisResult from '@/components/AnalysisResult';
 import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
@@ -30,7 +30,7 @@ const Index = () => {
             </p>
           </div>
           
-          <ChartUploader onUpload={handleChartUpload} />
+          <ChartUploaderForm onUpload={handleChartUpload} />
           
           {isAnalyzing && (
             <div className="text-center py-6">

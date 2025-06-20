@@ -8,7 +8,7 @@ import AnalysisResult from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
 import RadarAnimation from '@/components/RadarAnimation';
-import ChartUploader from '@/components/ChartUploader';
+import ChartUploaderForm from '@/components/ChartUploader/ChartUploaderForm';
 
 const AnalyzePage = () => {
   const {
@@ -63,7 +63,7 @@ const AnalyzePage = () => {
           
           {/* Chart Upload Section */}
           <div className="mb-6">
-            <ChartUploader onUpload={handleChartUpload} />
+            <ChartUploaderForm onUpload={handleChartUpload} />
           </div>
           
           {/* Radar Animation Modal when analyzing */}
