@@ -1,4 +1,3 @@
-
 import React, { useEffect, useRef, memo, useCallback, forwardRef, useImperativeHandle } from 'react';
 
 interface AutoTradingViewWidgetProps {
@@ -43,8 +42,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         console.log('📊 TradingView iframe found:', {
           src: iframe.src,
           width: iframe.offsetWidth,
-          height: iframe.offsetHeight,
-          readyState: iframe.readyState || 'unknown'
+          height: iframe.offsetHeight
         });
         
         // Additional wait to ensure chart rendering is complete
