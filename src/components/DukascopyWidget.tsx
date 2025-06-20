@@ -6,14 +6,11 @@ const DukascopyWidget = () => {
   const scriptLoadedRef = useRef(false);
 
   useEffect(() => {
-    if (!containerRef.current || scriptLoadedRef.current) return;
+    if (scriptLoadedRef.current) return;
 
     console.log('Initializing Dukascopy widget...');
 
-    // Clear any existing content
-    containerRef.current.innerHTML = '';
-
-    // Set up the Dukascopy configuration
+    // Set up the Dukascopy configuration on window object
     (window as any).DukascopyApplet = {
       "type": "historical_data_feed",
       "params": {
@@ -34,30 +31,14 @@ const DukascopyWidget = () => {
     script.onload = () => {
       console.log('Dukascopy script loaded successfully');
       scriptLoadedRef.current = true;
-      
-      // Try to initialize the widget after a short delay
-      setTimeout(() => {
-        if ((window as any).dukascopy && (window as any).dukascopy.embed) {
-          console.log('Attempting to embed Dukascopy widget...');
-          try {
-            (window as any).dukascopy.embed(containerRef.current);
-          } catch (error) {
-            console.error('Error embedding Dukascopy widget:', error);
-          }
-        } else {
-          console.log('Dukascopy embed function not found, widget should auto-initialize');
-        }
-      }, 1000);
     };
 
     script.onerror = (error) => {
       console.error('Failed to load Dukascopy script:', error);
     };
 
-    // Append the script to the container instead of head
-    if (containerRef.current) {
-      containerRef.current.appendChild(script);
-    }
+    // Append script to document head for proper loading
+    document.head.appendChild(script);
 
     // Cleanup function
     return () => {
@@ -80,7 +61,7 @@ const DukascopyWidget = () => {
         className="w-full rounded-lg overflow-hidden border border-gray-700 bg-gray-900"
         style={{ minHeight: '550px' }}
       >
-        {/* Loading placeholder */}
+        {/* The Dukascopy widget will automatically render here based on the configuration */}
         <div className="flex items-center justify-center h-full min-h-[550px] text-gray-400">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
