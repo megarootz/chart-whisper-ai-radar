@@ -27,23 +27,35 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
 
       try {
         console.log('📸 Starting screenshot capture process...');
+        console.log('📦 Container details:', {
+          width: container.current.offsetWidth,
+          height: container.current.offsetHeight,
+          children: container.current.children.length
+        });
         
         // Check if iframe is present and loaded
         const iframe = container.current.querySelector('iframe');
         if (!iframe) {
           console.error('❌ No TradingView iframe found');
-          return { success: false, error: 'TradingView chart not loaded' };
+          return { success: false, error: 'TradingView chart not loaded - iframe missing' };
         }
         
-        console.log('📊 TradingView iframe found, ensuring chart is ready...');
+        console.log('📊 TradingView iframe found:', {
+          src: iframe.src,
+          width: iframe.offsetWidth,
+          height: iframe.offsetHeight,
+          readyState: iframe.readyState || 'unknown'
+        });
         
-        // Additional wait to ensure chart has latest data
-        console.log('⏳ Final wait for chart synchronization...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Additional wait to ensure chart rendering is complete
+        console.log('⏳ Final wait for chart rendering...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         const { captureWidgetScreenshot } = await import('@/utils/screenshotUtils');
+        console.log('📸 Calling captureWidgetScreenshot...');
+        
         const result = await captureWidgetScreenshot(container.current, {
-          scale: 1.5,
+          scale: 1,
           useCORS: true
         });
         
@@ -55,7 +67,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         
         return result;
       } catch (error) {
-        console.error('Screenshot capture failed:', error);
+        console.error('❌ Screenshot capture error:', error);
         return { 
           success: false, 
           error: error instanceof Error ? error.message : 'Screenshot failed' 
@@ -111,20 +123,20 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         console.log("✅ TradingView widget script loaded for symbol:", symbol);
         scriptLoaded.current = true;
         
-        // Longer timeout to ensure chart loads with live data
+        // Wait for widget to initialize and render
         loadingTimeout.current = setTimeout(() => {
-          console.log("🏁 TradingView widget ready for:", symbol);
+          console.log("🏁 TradingView widget should be ready for:", symbol);
           
           // Check that iframe is present
           const iframe = container.current?.querySelector('iframe');
           if (iframe) {
-            console.log("📊 Iframe confirmed, chart should be ready");
+            console.log("📊 Iframe confirmed, chart ready");
             onLoad?.();
           } else {
-            console.warn("⚠️ Iframe not found, but proceeding anyway");
+            console.warn("⚠️ Iframe not found, but calling onLoad anyway");
             onLoad?.();
           }
-        }, 7000); // Increased to 7 seconds for better chart loading
+        }, 5000); // 5 seconds should be enough for initial load
       };
 
       script.onerror = (e) => {

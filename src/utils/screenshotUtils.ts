@@ -24,7 +24,7 @@ export const captureWidgetScreenshot = async (
     
     // Wait for widget container to be properly sized
     console.log('⏳ Waiting for widget to stabilize...');
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Check for iframe
     const iframe = widgetContainer.querySelector('iframe');
@@ -43,77 +43,84 @@ export const captureWidgetScreenshot = async (
       height: iframe.offsetHeight
     });
     
-    // Extended wait for chart data to load completely
+    // Wait for chart data to load
     console.log('📈 Waiting for chart data to load...');
-    await new Promise(resolve => setTimeout(resolve, 5000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    console.log('📷 Capturing screenshot...');
+    console.log('📷 Capturing screenshot with html2canvas...');
+    
+    // Use more permissive html2canvas settings
     const canvas = await html2canvas(widgetContainer, {
-      scale: options?.scale || 1.5,
-      useCORS: options?.useCORS || true,
+      scale: options?.scale || 1,
+      useCORS: options?.useCORS !== false,
       allowTaint: true,
-      foreignObjectRendering: true,
-      logging: false,
+      foreignObjectRendering: false, // Disable for better iframe compatibility
+      logging: true, // Enable logging to see what's happening
       width: widgetContainer.offsetWidth,
       height: widgetContainer.offsetHeight,
-      backgroundColor: '#131722',
-      ignoreElements: (element) => {
-        return element.tagName === 'SCRIPT' || 
-               element.classList.contains('tv-dialog') ||
-               element.classList.contains('tv-toast') ||
-               element.classList.contains('tv-popup');
+      backgroundColor: null, // Let the natural background show
+      removeContainer: false,
+      imageTimeout: 15000, // 15 second timeout for images
+      onclone: (clonedDoc, element) => {
+        console.log('🔄 html2canvas cloning document...');
+        // Try to preserve iframe content in the clone
+        const iframes = element.querySelectorAll('iframe');
+        console.log('📊 Found iframes in clone:', iframes.length);
       }
     });
     
+    console.log('✅ html2canvas completed');
+    console.log('📊 Canvas details:', {
+      width: canvas.width,
+      height: canvas.height,
+      hasContext: !!canvas.getContext('2d')
+    });
+    
+    // Convert to data URL
     const dataUrl = canvas.toDataURL('image/png', 0.9);
     
-    console.log('✅ Screenshot captured:', {
+    console.log('✅ Screenshot data URL created:', {
       canvasWidth: canvas.width,
       canvasHeight: canvas.height,
       dataUrlLength: dataUrl.length,
       sizeKB: Math.round(dataUrl.length / 1024)
     });
     
-    // Very basic validation - just check if we have a data URL
-    if (!dataUrl || dataUrl.length < 1000) {
-      console.warn('⚠️ Screenshot appears very small:', dataUrl.length);
+    // Basic validation - check if we have a meaningful data URL
+    if (!dataUrl || dataUrl.length < 500) {
+      console.warn('⚠️ Screenshot appears invalid:', dataUrl.length);
       return {
         success: false,
-        error: 'Screenshot capture failed - image too small'
+        error: `Screenshot capture failed - invalid result (${dataUrl.length} chars)`
       };
     }
     
-    // Much more lenient validation
+    // Check if the canvas has any content
     const imageData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height);
     if (imageData) {
       const pixels = imageData.data;
-      let nonBlackPixels = 0;
+      let hasContent = false;
       
-      // Sample every 10000th pixel to check for content
-      for (let i = 0; i < pixels.length; i += 40000) {
-        const r = pixels[i];
-        const g = pixels[i + 1];
-        const b = pixels[i + 2];
-        
-        // Count pixels that aren't pure black or very dark
-        if (r > 30 || g > 30 || b > 30) {
-          nonBlackPixels++;
+      // Check if canvas has any non-transparent pixels
+      for (let i = 3; i < pixels.length; i += 4) {
+        if (pixels[i] > 0) { // Alpha channel > 0
+          hasContent = true;
+          break;
         }
-        
-        if (nonBlackPixels > 3) break; // Found enough content
       }
       
       console.log('🔍 Content validation:', { 
-        nonBlackPixels,
-        totalSampled: Math.floor(pixels.length / 40000),
+        hasContent,
+        canvasSize: `${canvas.width}x${canvas.height}`,
         sizeKB: Math.round(dataUrl.length / 1024)
       });
       
-      // Very lenient threshold - just need some non-black content
-      if (nonBlackPixels === 0) {
-        console.warn('⚠️ Screenshot appears completely black');
-        // Still return success but with a warning
-        console.log('📤 Proceeding anyway - chart might use dark theme');
+      if (!hasContent) {
+        console.warn('⚠️ Canvas appears to be empty/transparent');
+        return {
+          success: false,
+          error: 'Screenshot appears to be empty. The chart may not have loaded properly.'
+        };
       }
     }
     

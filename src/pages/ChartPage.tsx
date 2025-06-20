@@ -1,4 +1,3 @@
-
 import React, { useRef, useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -72,7 +71,15 @@ const ChartPage = () => {
         variant: "default",
       });
 
+      console.log('📸 Calling widgetRef.current.captureScreenshot()...');
       const result = await widgetRef.current.captureScreenshot();
+      
+      console.log('📸 Screenshot result:', {
+        success: result.success,
+        hasDataUrl: !!result.dataUrl,
+        dataUrlLength: result.dataUrl?.length || 0,
+        error: result.error
+      });
       
       if (result.success && result.dataUrl) {
         console.log('✅ Screenshot captured successfully');
