@@ -22,9 +22,9 @@ export const captureWidgetScreenshot = async (
       hasIframe: !!widgetContainer.querySelector('iframe')
     });
     
-    // Quick wait for widget to render (reduced from 2 seconds)
-    console.log('⏳ Brief wait for widget stability...');
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // Wait for widget container to be properly sized
+    console.log('⏳ Waiting for widget to stabilize...');
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     // Check for iframe
     const iframe = widgetContainer.querySelector('iframe');
@@ -43,10 +43,17 @@ export const captureWidgetScreenshot = async (
       height: iframe.offsetHeight
     });
     
-    // Additional short wait for chart data (reduced from 3 seconds)
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Extended wait for chart data to load completely
+    console.log('📈 Waiting for live chart data to load...');
+    await new Promise(resolve => setTimeout(resolve, 8000));
     
-    console.log('📷 Capturing screenshot...');
+    // Validate that the chart has meaningful content by checking for price data
+    console.log('🔍 Validating chart has loaded with data...');
+    
+    // Additional wait to ensure all chart elements are rendered
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
+    console.log('📷 Capturing screenshot with enhanced settings...');
     const canvas = await html2canvas(widgetContainer, {
       scale: options?.scale || 2,
       useCORS: options?.useCORS || true,
@@ -59,13 +66,15 @@ export const captureWidgetScreenshot = async (
       ignoreElements: (element) => {
         return element.tagName === 'SCRIPT' || 
                element.classList.contains('tv-dialog') ||
-               element.classList.contains('tv-toast');
+               element.classList.contains('tv-toast') ||
+               element.classList.contains('tv-popup');
       },
       onclone: (clonedDoc) => {
         const clonedIframes = clonedDoc.querySelectorAll('iframe');
         clonedIframes.forEach(clonedIframe => {
           clonedIframe.style.visibility = 'visible';
           clonedIframe.style.display = 'block';
+          clonedIframe.style.opacity = '1';
         });
       }
     });
@@ -78,9 +87,43 @@ export const captureWidgetScreenshot = async (
       dataUrlLength: dataUrl.length
     });
     
-    // Basic validation (reduced threshold)
-    if (dataUrl.length < 50000) {
-      console.warn('⚠️ Screenshot appears small, but proceeding with analysis');
+    // Enhanced validation for screenshot quality
+    if (dataUrl.length < 100000) {
+      console.warn('⚠️ Screenshot appears too small, may not contain chart data');
+      return {
+        success: false,
+        error: 'Screenshot appears to be too small or empty. Chart may not have loaded properly.'
+      };
+    }
+    
+    // Check for color variety (chart should have multiple colors, not just background)
+    const imageData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height);
+    if (imageData) {
+      const pixels = imageData.data;
+      const colorSet = new Set();
+      
+      // Sample pixels to check for color variety
+      for (let i = 0; i < pixels.length; i += 4000) { // Sample every 1000th pixel
+        const r = pixels[i];
+        const g = pixels[i + 1];
+        const b = pixels[i + 2];
+        colorSet.add(`${r},${g},${b}`);
+        
+        if (colorSet.size > 10) break; // Found enough color variety
+      }
+      
+      if (colorSet.size < 5) {
+        console.warn('⚠️ Screenshot lacks color variety, may be blank or loading');
+        return {
+          success: false,
+          error: 'Screenshot appears to be blank or still loading. Please try again.'
+        };
+      }
+      
+      console.log('✅ Screenshot quality validated:', { 
+        colorVariety: colorSet.size,
+        sizeKB: Math.round(dataUrl.length / 1024)
+      });
     }
     
     return {

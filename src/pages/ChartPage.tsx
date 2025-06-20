@@ -26,25 +26,33 @@ const ChartPage = () => {
   const returnTo = searchParams.get('returnTo');
 
   useEffect(() => {
-    // Auto-capture with minimal delay when chart is ready
+    // Auto-capture when chart is ready
     if (autoCapture && chartLoaded && !isCapturing && captureStatus === 'ready') {
-      console.log('🚀 Auto-capture triggered');
-      // Immediate capture without additional delay
+      console.log('🚀 Auto-capture triggered - waiting for chart stabilization');
+      
+      toast({
+        title: "Chart Ready",
+        description: "Chart loaded. Ensuring live data is synchronized...",
+        variant: "default",
+      });
+      
+      // Wait additional time to ensure live data is loaded
       setTimeout(() => {
+        console.log('📊 Starting capture after data synchronization wait');
         handleScreenshotCapture();
-      }, 1000); // Just 1 second delay
+      }, 3000); // Additional 3 seconds for data sync
     }
   }, [autoCapture, chartLoaded, isCapturing, captureStatus]);
 
   const handleChartLoad = () => {
-    console.log('📊 Chart loaded successfully');
+    console.log('📊 Chart loaded successfully - preparing for capture');
     setChartLoaded(true);
     setCaptureStatus('ready');
     
     if (autoCapture) {
       toast({
-        title: "Chart Ready",
-        description: "Chart loaded. Starting quick capture...",
+        title: "Chart Loading",
+        description: "Chart widget ready. Waiting for live data synchronization...",
         variant: "default",
       });
     }
@@ -55,18 +63,24 @@ const ChartPage = () => {
 
     setIsCapturing(true);
     setCaptureStatus('capturing');
-    console.log('📸 Starting quick screenshot capture...');
+    console.log('📸 Starting enhanced screenshot capture process...');
 
     try {
+      toast({
+        title: "Capturing Screenshot",
+        description: "Taking high-quality screenshot of live chart data...",
+        variant: "default",
+      });
+
       const result = await widgetRef.current.captureScreenshot();
       
       if (result.success && result.dataUrl) {
-        console.log('✅ Screenshot captured successfully');
+        console.log('✅ Screenshot captured successfully with live data');
         setCaptureStatus('success');
         
         toast({
           title: "Screenshot Captured",
-          description: "Chart screenshot captured successfully!",
+          description: "High-quality chart screenshot captured with live data!",
           variant: "default",
         });
         
@@ -79,10 +93,16 @@ const ChartPage = () => {
           
           console.log('📤 Screenshot data stored, navigating back to analyze page');
           
+          toast({
+            title: "Analyzing Chart",
+            description: "Sending live chart data to AI for analysis...",
+            variant: "default",
+          });
+          
           // Quick navigation back
           setTimeout(() => {
             navigate(returnTo);
-          }, 500); // Reduced delay
+          }, 1000);
         }
       } else {
         console.error('❌ Screenshot capture failed:', result.error);
@@ -90,7 +110,7 @@ const ChartPage = () => {
         
         toast({
           title: "Screenshot Failed",
-          description: result.error || "Failed to capture chart screenshot",
+          description: result.error || "Failed to capture chart screenshot with live data",
           variant: "destructive",
         });
       }
@@ -132,13 +152,13 @@ const ChartPage = () => {
   const getStatusText = () => {
     switch (captureStatus) {
       case 'waiting':
-        return 'Loading chart...';
+        return 'Loading chart with live data...';
       case 'ready':
-        return 'Ready to capture';
+        return 'Ready to capture live chart';
       case 'capturing':
-        return 'Capturing screenshot...';
+        return 'Capturing live screenshot...';
       case 'success':
-        return 'Screenshot captured!';
+        return 'Live data captured successfully!';
       case 'error':
         return 'Capture failed';
       default:
@@ -186,7 +206,7 @@ const ChartPage = () => {
               className="border-gray-600 text-white hover:bg-gray-700"
             >
               <Camera className="h-4 w-4 mr-1" />
-              {isCapturing ? 'Capturing...' : 'Quick Capture'}
+              {isCapturing ? 'Capturing Live Data...' : 'Capture Live Chart'}
             </Button>
           )}
         </div>

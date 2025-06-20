@@ -28,18 +28,18 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       try {
         console.log('📸 Starting screenshot capture process...');
         
-        // Minimal wait for stability (reduced from 3 seconds)
-        console.log('⏳ Brief wait for chart stability...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Check if iframe is present
+        // Check if iframe is present and loaded
         const iframe = container.current.querySelector('iframe');
         if (!iframe) {
           console.error('❌ No TradingView iframe found');
           return { success: false, error: 'TradingView chart not loaded' };
         }
         
-        console.log('📊 TradingView iframe found, proceeding with capture');
+        console.log('📊 TradingView iframe found, ensuring chart is fully loaded...');
+        
+        // Wait a bit more to ensure the chart has current data
+        console.log('⏳ Additional wait for live data synchronization...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         const { captureWidgetScreenshot } = await import('@/utils/screenshotUtils');
         const result = await captureWidgetScreenshot(container.current, {
@@ -49,6 +49,8 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         
         if (result.success && result.dataUrl) {
           console.log('✅ Screenshot captured successfully, size:', result.dataUrl.length);
+        } else {
+          console.error('❌ Screenshot capture failed:', result.error);
         }
         
         return result;
@@ -101,27 +103,33 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
           "studies": [],
           "show_popup_button": false,
           "popup_width": "1000",
-          "popup_height": "650"
+          "popup_height": "650",
+          "save_image": false
         }`;
       
       script.onload = () => {
         console.log("✅ TradingView widget script loaded for symbol:", symbol);
         scriptLoaded.current = true;
         
-        // Reduced timeout for faster processing (from 10 seconds to 5 seconds)
+        // Extended timeout to ensure chart loads with live data
         loadingTimeout.current = setTimeout(() => {
           console.log("🏁 TradingView widget ready for:", symbol);
           
-          // Check that iframe is present before calling onLoad
+          // Additional validation - check that iframe is present and has content
           const iframe = container.current?.querySelector('iframe');
           if (iframe) {
-            console.log("📊 Iframe confirmed, calling onLoad");
-            onLoad?.();
+            console.log("📊 Iframe confirmed, waiting for chart data...");
+            
+            // Additional wait to ensure chart has live data
+            setTimeout(() => {
+              console.log("✅ Chart should now have live data, calling onLoad");
+              onLoad?.();
+            }, 5000); // Extra 5 seconds for data loading
           } else {
             console.warn("⚠️ Iframe not found, but proceeding anyway");
             onLoad?.();
           }
-        }, 5000); // Reduced from 10 seconds
+        }, 8000); // Increased from 5 to 8 seconds
       };
 
       script.onerror = (e) => {
