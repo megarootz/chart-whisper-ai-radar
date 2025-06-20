@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -56,6 +57,39 @@ export interface AnalysisResultData {
 }
 
 const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
+  // Extract trading pair and timeframe from the AI analysis text
+  const extractTradingInfo = (analysisText: string) => {
+    // Look for patterns like "Technical Chart Analysis Report (GOLD/USD - 1 Hour)" or "Gold Spot / U.S. Dollar - 1 Hour"
+    const titleMatch = analysisText.match(/Technical Chart Analysis Report.*?\((.*?)\)/i) ||
+                      analysisText.match(/📊\s*Technical Chart Analysis Report.*?\((.*?)\)/i);
+    
+    if (titleMatch) {
+      const titleContent = titleMatch[1];
+      // Extract pair and timeframe
+      const parts = titleContent.split(/\s*[–-]\s*/);
+      if (parts.length >= 2) {
+        return {
+          pair: parts[0].trim(),
+          timeframe: parts[1].trim()
+        };
+      } else {
+        return {
+          pair: titleContent.trim(),
+          timeframe: 'Unknown Timeframe'
+        };
+      }
+    }
+
+    // Fallback: look for other patterns
+    const pairMatch = analysisText.match(/(?:Gold|XAU|EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|BTC|ETH)[\/\s]*(?:USD|EUR|JPY|GBP|CHF|CAD|AUD|NZD|USDT)/gi);
+    const timeframeMatch = analysisText.match(/(?:1|4|15|30)\s*(?:Hour|Minute|Min|H|M)|Daily|Weekly|Monthly/gi);
+    
+    return {
+      pair: pairMatch ? pairMatch[0] : 'Unknown Pair',
+      timeframe: timeframeMatch ? timeframeMatch[0] : 'Unknown Timeframe'
+    };
+  };
+
   // Extract current price from analysis text
   const extractCurrentPrice = (analysisText: string) => {
     // Look for patterns like "Current Price: $2,685.50" or "Price: 2685.50"
@@ -125,12 +159,12 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
       const line = lines[i];
       
       // Check if this is section 6
-      if (line.includes('6. Trade Opportunity & Setup Suggestion') || line.includes('### 6. Trade Opportunity & Setup Suggestion')) {
+      if (line.includes('6. Trade Setups & Risk Management')) {
         result.push(
           <div key={`section-6-${i}`} className="mb-8">
             <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
               <Target className="h-5 w-5 mr-2 text-primary" />
-              6. Trade Opportunity & Setup Suggestion
+              6. Trade Setups & Risk Management
             </h3>
             {section6Table && (
               <div className="bg-gray-800/30 border border-gray-700 rounded-lg overflow-hidden mb-4">
@@ -162,18 +196,63 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
         );
         
         // Skip lines until we reach the next section or end of section 6
-        while (i < lines.length && !lines[i].match(/^(7\.|### 7\.)/)) {
+        while (i < lines.length && !lines[i].match(/^7\./)) {
           i++;
         }
         continue;
       }
       
-      // Handle numbered sections (1., 2., 3., etc.) or markdown headers (### 1., ### 2., etc.)
-      if (line.match(/^(\d+\.|### \d+\.)/)) {
+      // Check if this is section 9
+      if (line.includes('9. Trade Plan Table Example')) {
+        result.push(
+          <div key={`section-9-${i}`} className="mb-8">
+            <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2 text-primary" />
+              9. Trade Plan Table Example
+            </h3>
+            {section9Table && (
+              <div className="bg-gray-800/30 border border-gray-700 rounded-lg overflow-hidden mb-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-gray-700">
+                      <TableHead className="text-gray-300">Trade Plan</TableHead>
+                      <TableHead className="text-gray-300">Entry</TableHead>
+                      <TableHead className="text-gray-300">Stop Loss</TableHead>
+                      <TableHead className="text-gray-300">Take Profit 1</TableHead>
+                      <TableHead className="text-gray-300">Take Profit 2</TableHead>
+                      <TableHead className="text-gray-300">R/R</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {section9Table.slice(1).map((row, idx) => (
+                      <TableRow key={idx} className="border-gray-700">
+                        {row.map((cell, cellIdx) => (
+                          <TableCell key={cellIdx} className="text-gray-100">
+                            {cell}
+                          </TableCell>
+                        ))}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        );
+        
+        // Skip lines until we reach the disclaimer or end
+        while (i < lines.length && !lines[i].includes('⚠️ Disclaimer')) {
+          i++;
+        }
+        continue;
+      }
+      
+      // Handle numbered sections (1., 2., 3., etc.)
+      if (line.match(/^\d+\./)) {
         result.push(
           <div key={`section-${i}`} className="mb-6">
             <h3 className="text-lg font-semibold text-white mb-3">
-              {line.replace(/^### /, '').trim()}
+              {line.trim()}
             </h3>
           </div>
         );
@@ -217,9 +296,8 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
     return result;
   };
 
-  // Use the provided pair name and timeframe directly from the data
-  const formattedPair = formatTradingPair(data.pairName || 'Unknown Pair');
-  const displayTimeframe = data.timeframe || 'Unknown Timeframe';
+  const { pair, timeframe } = extractTradingInfo(data.marketAnalysis);
+  const formattedPair = formatTradingPair(pair);
   const currentPrice = extractCurrentPrice(data.marketAnalysis);
 
   // Get sentiment color
@@ -248,7 +326,7 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
                 <div>
                   <div className="text-2xl font-bold mb-1">Analysis Complete</div>
                   <div className="text-lg text-gray-300">Professional Chart Analysis for {formattedPair}</div>
-                  <div className="text-sm text-gray-400 mt-1">{displayTimeframe}</div>
+                  <div className="text-sm text-gray-400 mt-1">{timeframe}</div>
                 </div>
               </div>
               {currentPrice && (

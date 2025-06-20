@@ -8,7 +8,7 @@ import AnalysisResult from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
 import RadarAnimation from '@/components/RadarAnimation';
-import ChartUploaderForm from '@/components/ChartUploader/ChartUploaderForm';
+import ChartUploader from '@/components/ChartUploader';
 
 const AnalyzePage = () => {
   const {
@@ -39,9 +39,9 @@ const AnalyzePage = () => {
     }
   }, [analysisResult]);
   
-  const handleChartUpload = (file: File, pairName: string, timeframe: string) => {
-    // Pass the user-provided pair name and timeframe to the analysis
-    analyzeChart(file, pairName, timeframe);
+  const handleChartUpload = (file: File) => {
+    // Use empty strings for pair name and timeframe to allow AI detection
+    analyzeChart(file, '', '');
   };
   
   return (
@@ -63,7 +63,7 @@ const AnalyzePage = () => {
           
           {/* Chart Upload Section */}
           <div className="mb-6">
-            <ChartUploaderForm onUpload={handleChartUpload} />
+            <ChartUploader onUpload={handleChartUpload} />
           </div>
           
           {/* Radar Animation Modal when analyzing */}

@@ -1,7 +1,7 @@
 
 import React from 'react';
 import Header from '@/components/Header';
-import ChartUploaderForm from '@/components/ChartUploader/ChartUploaderForm';
+import ChartUploader from '@/components/ChartUploader';
 import AnalysisResult from '@/components/AnalysisResult';
 import Footer from '@/components/Footer';
 import { useChartAnalysis } from '@/hooks/useChartAnalysis';
@@ -11,9 +11,9 @@ const Index = () => {
   const { isAnalyzing, analysisResult, analyzeChart } = useChartAnalysis();
   const isMobile = useIsMobile();
   
-  const handleChartUpload = (file: File, pairName: string, timeframe: string) => {
-    // Pass the user-provided pair name and timeframe to the analysis
-    analyzeChart(file, pairName, timeframe);
+  const handleChartUpload = (file: File) => {
+    // Use empty strings for pair name and timeframe to allow AI detection
+    analyzeChart(file, '', '');
   };
 
   return (
@@ -30,7 +30,7 @@ const Index = () => {
             </p>
           </div>
           
-          <ChartUploaderForm onUpload={handleChartUpload} />
+          <ChartUploader onUpload={handleChartUpload} />
           
           {isAnalyzing && (
             <div className="text-center py-6">

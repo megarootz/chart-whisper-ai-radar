@@ -4,22 +4,8 @@ export const buildAnalysisPrompt = (pairName: string, timeframe: string): string
   const currentTime = new Date();
   const utcTimeString = currentTime.toISOString();
   
-  // Check if we need to auto-detect pair and timeframe
-  const shouldDetectPair = pairName === "AUTO_DETECT" || !pairName;
-  const shouldDetectTimeframe = timeframe === "AUTO_DETECT" || !timeframe;
-  
-  const pairInstruction = shouldDetectPair 
-    ? "First, identify the trading pair from the chart (look for pair name in the chart title, top left, or anywhere visible)"
-    : `Analyze this ${pairName} chart`;
-    
-  const timeframeInstruction = shouldDetectTimeframe
-    ? "Also identify the timeframe from the chart (look for timeframe indicators like 1H, 4H, 1D, etc.)"
-    : `on the ${timeframe} timeframe`;
-  
   return `You are a professional forex analyst and multi-year full-time trader. 
 Analyze the attached chart image as a real TradingView forex candlestick chart that was captured at ${utcTimeString}.
-
-${pairInstruction} ${timeframeInstruction}.
 
 Provide a comprehensive, step-by-step technical analysis and specific trade setup. 
 The goal is to deliver actionable, realistic analysis and trade recommendations that a real trader can use.
@@ -27,10 +13,6 @@ The goal is to deliver actionable, realistic analysis and trade recommendations 
 **Please answer in this structured format:**
 
 ---
-
-**CHART IDENTIFICATION:**
-${shouldDetectPair ? "- Trading Pair: [Identify from chart]" : `- Trading Pair: ${pairName}`}
-${shouldDetectTimeframe ? "- Timeframe: [Identify from chart]" : `- Timeframe: ${timeframe}`}
 
 **1. Market Context & Trend Detection:**
 - What is the overall market context, recent trend (bullish/bearish/sideways), and higher/lower time-frame perspective (if visible from chart)? 
@@ -69,7 +51,37 @@ ${shouldDetectTimeframe ? "- Timeframe: [Identify from chart]" : `- Timeframe: $
 - Don't make up data if you can't see it clearly in the image. If unknown, just write "Not visible".
 - Write at least 5-8 sentences for the overall analysis.
 - Use markdown for clarity.
-- If you cannot detect the trading pair or timeframe from the chart, clearly state "Unable to detect from chart image" in the identification section.
+- Focus on the ${pairName || '[Currency Pair]'} chart on the ${timeframe || '[Timeframe]'} timeframe if specified.
+
+---
+
+**SAMPLE ANSWER STRUCTURE:**
+
+### 1. Market Context & Trend Detection
+The chart shows a well-established bullish trend over the last several sessions, with higher highs and higher lows. Recent price action indicates strengthened momentum following a possible breakout above the previous resistance. There is increased volatility, likely due to the recent London session open.
+
+### 2. Key Price Levels
+- Support: 1.2760 (zone of prior demand and multiple bounce points).
+- Resistance: 1.2840 (recent swing high).
+- Breakout zone: Above 1.2845 (could lead to another upward impulse).
+
+### 3. Notable Chart/Candlestick Patterns
+- Bullish engulfing pattern occurred two candles before current price, near support zone.
+- No major chart pattern like head & shoulders or double bottom is visible.
+
+### 4. Price Action & Momentum Analysis
+Price made a clean bullish impulsive move after a consolidation zone, followed by minor pullback. Recent candles show long lower wicks, suggesting buying pressure. No large volume spikes are visible.
+
+### 5. Indicator Insights (If Visible)
+The moving average (possibly 21-period EMA) is rising steeply and price stays above it, supporting bullish momentum. No other indicators are visible.
+
+### 6. Trade Opportunity & Setup Suggestion
+Potential long trade if price retests the 1.2760-1.2780 support zone and forms a bullish reversal candle. Enter on bullish confirmation, stop loss below 1.2735 (recent swing low), take profit at 1.2840 and extended target at 1.2880 if new highs break. Risk/reward around 1:2. Invalidation if price closes below 1.2730.
+
+### 7. Trader's Commentary
+- Pay attention to upcoming US news releases which could increase volatility.
+- Manage trade size using proper risk per trade (e.g. 1%). Avoid chasing the breakout if entry is missed.
+- **Risk Warning:** Forex trading involves significant risk. Never risk more than you can afford to lose. Use leverage cautiously!
 
 ---`;
 };
