@@ -4,8 +4,6 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/componen
 import { ChartCandlestick } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import TradingPairInput from './TradingPairInput';
-import TimeframeSelect from './TimeframeSelect';
 import ImageUpload from './ImageUpload';
 import UploadButton from './UploadButton';
 import PlanBadge from './PlanBadge';
@@ -20,8 +18,6 @@ const ChartUploaderForm = ({ onUpload }: ChartUploaderFormProps) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [pairName, setPairName] = useState('');
-  const [timeframe, setTimeframe] = useState('');
 
   const handleFileChange = (selectedFile: File, preview: string) => {
     setFile(selectedFile);
@@ -79,11 +75,8 @@ const ChartUploaderForm = ({ onUpload }: ChartUploaderFormProps) => {
 
     setIsUploading(true);
     
-    // Use "AUTO_DETECT" as placeholder values when not provided
-    const finalPairName = pairName.trim() || "AUTO_DETECT";
-    const finalTimeframe = timeframe || "AUTO_DETECT";
-    
-    onUpload(file, finalPairName, finalTimeframe);
+    // AI will auto-detect both pair and timeframe
+    onUpload(file, "AUTO_DETECT", "AUTO_DETECT");
   };
 
   // Determine button text and disabled state
@@ -137,28 +130,15 @@ const ChartUploaderForm = ({ onUpload }: ChartUploaderFormProps) => {
             onFileChange={handleFileChange}
           />
 
-          {/* Optional Manual Override Section */}
-          <div className="border-t border-gray-700 pt-4">
-            <h3 className="text-sm font-medium text-gray-300 mb-3">
-              Optional: Manual Override
+          {/* AI Detection Info */}
+          <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+            <h3 className="text-sm font-medium text-gray-300 mb-2">
+              🤖 AI Auto-Detection
             </h3>
-            <p className="text-xs text-gray-400 mb-4">
-              AI will automatically detect the trading pair and timeframe from your chart. 
-              Only fill these if you want to override the AI detection.
+            <p className="text-xs text-gray-400">
+              Our AI will automatically detect the trading pair and timeframe from your chart image. 
+              Just upload your chart and let the AI do the rest!
             </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <TradingPairInput
-                value={pairName}
-                onChange={setPairName}
-                placeholder="AI will auto-detect"
-              />
-              <TimeframeSelect
-                value={timeframe}
-                onChange={setTimeframe}
-                placeholder="AI will auto-detect"
-              />
-            </div>
           </div>
         </form>
       </CardContent>
