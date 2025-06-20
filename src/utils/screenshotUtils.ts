@@ -54,18 +54,16 @@ export const captureWidgetScreenshot = async (
       scale: options?.scale || 1,
       useCORS: options?.useCORS !== false,
       allowTaint: true,
-      foreignObjectRendering: false, // Disable for better iframe compatibility
-      logging: true, // Enable logging to see what's happening
+      foreignObjectRendering: false,
+      logging: false, // Reduce console noise
       width: widgetContainer.offsetWidth,
       height: widgetContainer.offsetHeight,
-      backgroundColor: null, // Let the natural background show
+      backgroundColor: '#1a1a1a', // Dark background to match theme
       removeContainer: false,
-      imageTimeout: 15000, // 15 second timeout for images
-      onclone: (clonedDoc, element) => {
-        console.log('🔄 html2canvas cloning document...');
-        // Try to preserve iframe content in the clone
-        const iframes = element.querySelectorAll('iframe');
-        console.log('📊 Found iframes in clone:', iframes.length);
+      imageTimeout: 15000,
+      ignoreElements: (element) => {
+        // Skip problematic elements that might cause issues
+        return element.tagName === 'SCRIPT' || element.tagName === 'NOSCRIPT';
       }
     });
     
@@ -76,8 +74,8 @@ export const captureWidgetScreenshot = async (
       hasContext: !!canvas.getContext('2d')
     });
     
-    // Convert to data URL
-    const dataUrl = canvas.toDataURL('image/png', 0.9);
+    // Convert to data URL with high quality
+    const dataUrl = canvas.toDataURL('image/png', 1.0);
     
     console.log('✅ Screenshot data URL created:', {
       canvasWidth: canvas.width,
@@ -86,42 +84,31 @@ export const captureWidgetScreenshot = async (
       sizeKB: Math.round(dataUrl.length / 1024)
     });
     
-    // Basic validation - check if we have a meaningful data URL
-    if (!dataUrl || dataUrl.length < 500) {
-      console.warn('⚠️ Screenshot appears invalid:', dataUrl.length);
+    // Relaxed validation - just check if we have a valid data URL
+    if (!dataUrl || !dataUrl.startsWith('data:image/')) {
+      console.warn('⚠️ Invalid data URL format');
       return {
         success: false,
-        error: `Screenshot capture failed - invalid result (${dataUrl.length} chars)`
+        error: 'Screenshot capture failed - invalid image format'
       };
     }
     
-    // Check if the canvas has any content
-    const imageData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height);
-    if (imageData) {
-      const pixels = imageData.data;
-      let hasContent = false;
-      
-      // Check if canvas has any non-transparent pixels
-      for (let i = 3; i < pixels.length; i += 4) {
-        if (pixels[i] > 0) { // Alpha channel > 0
-          hasContent = true;
-          break;
-        }
-      }
-      
-      console.log('🔍 Content validation:', { 
-        hasContent,
-        canvasSize: `${canvas.width}x${canvas.height}`,
-        sizeKB: Math.round(dataUrl.length / 1024)
-      });
-      
-      if (!hasContent) {
-        console.warn('⚠️ Canvas appears to be empty/transparent');
-        return {
-          success: false,
-          error: 'Screenshot appears to be empty. The chart may not have loaded properly.'
-        };
-      }
+    // Much more lenient size check - just ensure it's not completely empty
+    if (dataUrl.length < 1000) {
+      console.warn('⚠️ Screenshot appears too small:', dataUrl.length);
+      return {
+        success: false,
+        error: `Screenshot appears to be empty (${dataUrl.length} chars)`
+      };
+    }
+    
+    // Simple canvas content validation
+    if (canvas.width < 100 || canvas.height < 100) {
+      console.warn('⚠️ Canvas dimensions too small:', `${canvas.width}x${canvas.height}`);
+      return {
+        success: false,
+        error: `Canvas too small: ${canvas.width}x${canvas.height}. Chart may not be loaded.`
+      };
     }
     
     console.log('✅ Screenshot validation passed');

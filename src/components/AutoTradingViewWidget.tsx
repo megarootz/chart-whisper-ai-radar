@@ -1,3 +1,4 @@
+
 import React, { useEffect, useRef, memo, useCallback, forwardRef, useImperativeHandle } from 'react';
 
 interface AutoTradingViewWidgetProps {
@@ -45,9 +46,9 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
           height: iframe.offsetHeight
         });
         
-        // Additional wait to ensure chart rendering is complete
+        // Wait a bit more for chart rendering to be complete
         console.log('⏳ Final wait for chart rendering...');
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         
         const { captureWidgetScreenshot } = await import('@/utils/screenshotUtils');
         console.log('📸 Calling captureWidgetScreenshot...');
@@ -121,7 +122,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         console.log("✅ TradingView widget script loaded for symbol:", symbol);
         scriptLoaded.current = true;
         
-        // Wait for widget to initialize and render
+        // Wait longer for widget to initialize and render properly
         loadingTimeout.current = setTimeout(() => {
           console.log("🏁 TradingView widget should be ready for:", symbol);
           
@@ -134,7 +135,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
             console.warn("⚠️ Iframe not found, but calling onLoad anyway");
             onLoad?.();
           }
-        }, 5000); // 5 seconds should be enough for initial load
+        }, 6000); // Increased to 6 seconds for better loading
       };
 
       script.onerror = (e) => {
@@ -176,7 +177,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       <div 
         className="tradingview-widget-container" 
         ref={container} 
-        style={{ height: "100%", width: "100%" }}
+        style={{ height: "100%", width: "100%", minHeight: "400px" }}
       >
         <div 
           className="tradingview-widget-container__widget" 
