@@ -3,17 +3,25 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ChartCandlestick, Upload, Crown, Star, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Badge } from './ui/badge';
 
-const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
+interface ChartUploaderProps {
+  onUpload: (file: File, pairName: string, timeframe: string) => void;
+}
+
+const ChartUploader = ({ onUpload }: ChartUploaderProps) => {
   const { toast } = useToast();
   const { usage } = useSubscription();
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [pairName, setPairName] = useState('');
+  const [timeframe, setTimeframe] = useState('');
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -39,6 +47,24 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
       toast({
         title: "Error",
         description: "Please select a chart image to upload",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!pairName.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter the trading pair (e.g., EUR/USD, XAU/USD)",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!timeframe.trim()) {
+      toast({
+        title: "Error",
+        description: "Please select the timeframe",
         variant: "destructive"
       });
       return;
@@ -82,14 +108,14 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
 
     setIsUploading(true);
     
-    // Call the parent's onUpload function
-    onUpload(file);
+    // Call the parent's onUpload function with pair and timeframe
+    onUpload(file, pairName.trim(), timeframe);
   };
 
   // Determine button text and disabled state
   const getButtonState = () => {
     if (isUploading) return { text: "Analyzing Chart...", disabled: true };
-    if (!file) return { text: "Select an image first", disabled: true };
+    if (!file || !pairName.trim() || !timeframe) return { text: "Complete all fields to analyze", disabled: true };
     
     if (usage && usage.subscription_tier === 'free') {
       if (usage.daily_count >= 3) {
@@ -159,6 +185,41 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Trading Pair and Timeframe Inputs */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="pair-name" className="text-white">Trading Pair</Label>
+              <Input
+                id="pair-name"
+                type="text"
+                placeholder="e.g., EUR/USD, XAU/USD, BTC/USD"
+                value={pairName}
+                onChange={(e) => setPairName(e.target.value)}
+                className="bg-gray-800 border-gray-600 text-white placeholder-gray-400"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="timeframe" className="text-white">Timeframe</Label>
+              <Select value={timeframe} onValueChange={setTimeframe}>
+                <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+                  <SelectValue placeholder="Select timeframe" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-600">
+                  <SelectItem value="1 Minute">1 Minute</SelectItem>
+                  <SelectItem value="5 Minutes">5 Minutes</SelectItem>
+                  <SelectItem value="15 Minutes">15 Minutes</SelectItem>
+                  <SelectItem value="30 Minutes">30 Minutes</SelectItem>
+                  <SelectItem value="1 Hour">1 Hour</SelectItem>
+                  <SelectItem value="4 Hours">4 Hours</SelectItem>
+                  <SelectItem value="Daily">Daily</SelectItem>
+                  <SelectItem value="Weekly">Weekly</SelectItem>
+                  <SelectItem value="Monthly">Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Chart Upload */}
           <div className="space-y-2">
             <Label htmlFor="chart-upload" className="text-white">Upload Chart Image</Label>
             <div className="border-2 border-dashed border-gray-700 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors">

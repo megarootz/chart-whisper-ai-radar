@@ -11,9 +11,9 @@ const Index = () => {
   const { isAnalyzing, analysisResult, analyzeChart } = useChartAnalysis();
   const isMobile = useIsMobile();
   
-  const handleChartUpload = (file: File) => {
-    // Use empty strings for pair name and timeframe to allow AI detection
-    analyzeChart(file, '', '');
+  const handleChartUpload = (file: File, pairName: string, timeframe: string) => {
+    // Pass the user-provided pair name and timeframe to the analysis
+    analyzeChart(file, pairName, timeframe);
   };
 
   return (
