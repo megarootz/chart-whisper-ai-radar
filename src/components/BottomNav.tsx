@@ -19,12 +19,6 @@ const BottomNav = () => {
       isActive: location.pathname === "/"
     },
     {
-      label: "Chart",
-      href: "/chart",
-      icon: TrendingUp,
-      isActive: location.pathname === "/chart" || (location.pathname === "/chart" && location.search.includes('autoCapture'))
-    },
-    {
       label: "Analyze",
       href: "/analyze",
       icon: Upload,
