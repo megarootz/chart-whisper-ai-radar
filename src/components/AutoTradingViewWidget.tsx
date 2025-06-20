@@ -72,11 +72,11 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       script.onload = () => {
         console.log("✅ TradingView widget script loaded successfully for symbol:", symbol);
         scriptLoaded.current = true;
-        // Give the widget time to fully render with the correct symbol
+        // Increased wait time to ensure latest market data is loaded
         setTimeout(() => {
-          console.log("🏁 TradingView widget render completed for:", symbol);
+          console.log("🏁 TradingView widget with fresh data render completed for:", symbol);
           onLoad?.();
-        }, 6000); // Keep increased wait time to ensure proper symbol loading
+        }, 10000); // Increased from 6s to 10s for better data freshness
       };
 
       script.onerror = (e) => {
@@ -92,9 +92,9 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
 
     useEffect(() => {
       console.log("🔄 TradingView widget effect triggered:", { symbol, interval });
-      // Always recreate widget when symbol or interval changes
+      // Always recreate widget when symbol or interval changes to ensure fresh data
       if (currentSymbol.current !== symbol || currentInterval.current !== interval || !scriptLoaded.current) {
-        console.log("🆕 Recreating widget due to change:", {
+        console.log("🆕 Recreating widget for fresh market data:", {
           oldSymbol: currentSymbol.current,
           newSymbol: symbol,
           oldInterval: currentInterval.current,

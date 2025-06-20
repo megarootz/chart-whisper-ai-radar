@@ -17,9 +17,20 @@ export const captureWidgetScreenshot = async (
   try {
     console.log('📸 Starting widget screenshot capture...');
     
-    // Wait a bit for any rendering to complete
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Wait longer for TradingView widget to load fresh market data
+    // TradingView widgets need time to connect to servers and load latest prices
+    console.log('⏳ Waiting for TradingView widget to load latest market data...');
+    await new Promise(resolve => setTimeout(resolve, 8000)); // Increased from 2s to 8s
     
+    // Additional check to ensure the widget has loaded content
+    const iframe = widgetContainer.querySelector('iframe');
+    if (iframe) {
+      console.log('📊 TradingView iframe detected, waiting for chart rendering...');
+      // Wait additional time for chart rendering inside iframe
+      await new Promise(resolve => setTimeout(resolve, 3000));
+    }
+    
+    console.log('📷 Capturing chart screenshot with latest data...');
     const canvas = await html2canvas(widgetContainer, {
       scale: options?.scale || 1,
       useCORS: options?.useCORS || true,
@@ -33,7 +44,7 @@ export const captureWidgetScreenshot = async (
     
     const dataUrl = canvas.toDataURL('image/png', 0.9);
     
-    console.log('✅ Screenshot captured successfully, size:', dataUrl.length);
+    console.log('✅ Fresh chart screenshot captured successfully, size:', dataUrl.length);
     
     return {
       success: true,

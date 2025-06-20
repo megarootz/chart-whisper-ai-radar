@@ -37,7 +37,7 @@ serve(async (req) => {
       throw new Error("Image appears to be too small or invalid. Please ensure the chart is fully loaded.");
     }
     
-    console.log("📊 GPT-4.1-mini Ultra-High Quality Vision analysis request:", { 
+    console.log("📊 GPT-4.1-mini Fresh Market Data Analysis request:", { 
       pairName, 
       timeframe, 
       imageSizeKB: Math.round(imageSize / 1024),
@@ -46,79 +46,88 @@ serve(async (req) => {
       imageType: base64Image.split(';')[0]?.split('/')[1] || 'unknown'
     });
     
-    // Enhanced prompt for complete analysis in the exact format requested
-    const analysisPrompt = `I want you to act as a professional Forex (Foreign Exchange) analyst. Analyze the following currency pair chart image with your GPT-4.1-mini vision capabilities. 
+    // Get current UTC time for analysis context
+    const currentTime = new Date();
+    const utcTimeString = currentTime.toISOString();
+    const marketDay = currentTime.toLocaleDateString('en-US', { weekday: 'long', timeZone: 'UTC' });
+    
+    // Enhanced prompt that emphasizes analyzing CURRENT/LATEST market data
+    const analysisPrompt = `I want you to act as a professional Forex (Foreign Exchange) analyst. You are analyzing a LIVE, CURRENT chart image captured at ${utcTimeString} (${marketDay} UTC).
 
-CRITICAL INSTRUCTIONS: You MUST provide a COMPLETE analysis by filling in ALL sections below with REAL data from the chart image. Replace ALL [bracketed placeholders] with actual values, prices, dates, and observations from the chart.
+CRITICAL INSTRUCTIONS: This chart image was captured from a live TradingView widget showing the LATEST market data. You MUST analyze the CURRENT, MOST RECENT price action and market conditions visible in this chart.
 
-REQUIRED OUTPUT FORMAT - Fill in every section with real analysis:
+IMPORTANT: Focus on the LATEST/MOST RECENT price bars, candlesticks, and current market activity shown in the chart. Do NOT provide outdated or historical analysis.
 
-📊 Technical Chart Analysis Report (${pairName || '[Detected Pair]'} – ${timeframe || '[Detected Timeframe]'})
+REQUIRED OUTPUT FORMAT - Fill in every section with CURRENT market analysis:
 
-1. Market Snapshot
-• Current Price: [Provide the actual current/latest price visible on the chart]
-• Date Range Analyzed: [Provide the actual date range visible on the chart]
-• General Market Context: [Specify: Ranging, Uptrend, Downtrend, Correction, or High Volatility based on what you see]
+📊 LIVE Technical Chart Analysis Report (${pairName || '[Detected Pair]'} – ${timeframe || '[Detected Timeframe]'})
+Analysis Time: ${utcTimeString}
 
-2. Recent Price Action & Trend
-• Recent Movement:
-  - [Describe the actual major price swings you can see in the chart over recent periods]
-  - [Note any actual sharp rises/drops, consolidations, or trend reversals visible]
-• Market Structure:
-  - [Describe the actual pattern: Higher highs/lows, lower highs/lows, sideways movement, or specific patterns you can identify]
+1. CURRENT Market Snapshot
+• LATEST Price: [State the most recent/current price visible on the RIGHT side of the chart]
+• Current Date/Time: [Note the latest timestamp visible on the chart]
+• LIVE Market Status: [Current market condition: Active Trading, Weekend, Holiday, etc.]
+• Fresh Data Confirmation: [Confirm this appears to be current/live data]
 
-3. Key Support & Resistance Areas
-• Support Levels:
-  - [Identify actual primary support level with specific price] – Main bounce area
-  - [Identify actual secondary support level with specific price] – Next lower level
-• Resistance Levels:
-  - [Identify actual primary resistance level with specific price] – Main reversal area
-  - [Identify actual secondary resistance level with specific price] – Next higher level
+2. LATEST Price Action & Current Trend
+• Most Recent Movement (Last few bars/candles):
+  - [Describe the LATEST price movements you can see in the most recent bars/candlesticks]
+  - [Note any CURRENT volatility, breakouts, or pattern completions happening NOW]
+• Current Market Structure:
+  - [Describe the CURRENT pattern based on the latest price action]
+  - [Focus on what's happening RIGHT NOW in the market]
 
-4. Candlestick & Pattern Analysis
-• [Describe the actual latest candlestick behaviors you can see: indecision, strong engulfing patterns, pin bars, dojis, hammers, etc.]
-• [Identify any actual chart patterns visible: double top/bottom, triangles, channels, flags, head and shoulders, etc.]
+3. CURRENT Support & Resistance Areas
+• Active Support Levels:
+  - [Identify CURRENT support level with the latest price you can see] – Where price is bouncing NOW
+  - [Secondary support based on recent price action]
+• Active Resistance Levels:
+  - [Identify CURRENT resistance level based on latest price] – Where price is being rejected NOW
+  - [Secondary resistance based on recent market activity]
 
-5. Momentum & Trend Indicators
-• [Comment on actual momentum visible in the chart: slowing, picking up, diverging, accelerating]
-• [Note actual visible signs of trend change: higher/lower highs/lows, compression, breakouts]
-• [If no indicators (RSI, MACD, MA) are visible, mention analysis is based purely on price action]
+4. CURRENT Candlestick & Pattern Analysis
+• LATEST Candlestick Behavior: [Describe the most recent 3-5 candlesticks/bars you can see]
+• CURRENT Pattern Status: [Any patterns forming or completing RIGHT NOW]
+• Real-Time Signals: [What the latest price action is telling us about immediate market direction]
 
-6. Trade Setups & Risk Management
+5. IMMEDIATE Momentum & Trend Analysis
+• Current Momentum: [Based on the latest visible price movement]
+• SHORT-TERM Trend Direction: [What the most recent bars suggest for immediate future]
+• LIVE Market Bias: [Current bullish/bearish/neutral bias based on latest action]
 
-Trade Type | Entry Area | Stop Loss (SL) | Take Profit (TP1) | Take Profit (TP2)
-Buy | [Actual support area/specific price] | [Specific price few pips below support] | [Actual first resistance level] | [Actual next resistance level]
-Sell | [Actual resistance area/specific price] | [Specific price few pips above resistance] | [Actual first support level] | [Actual next support level]
+6. CURRENT Trade Setups & Risk Management
 
-Entry Notes:
-• Buy only if price confirms reversal at support (bullish candle, bounce pattern)
-• Sell only on strong rejection/reversal at resistance
+IMMEDIATE Trade Opportunities:
+Buy Setup | Entry Area | Stop Loss | Take Profit 1 | Take Profit 2
+[If bullish] | [Current support/entry] | [Recent swing low] | [Immediate resistance] | [Next resistance level]
 
-Caution:
-• Avoid trading in the middle of the range, as risk of false signals is higher
-• Always set a stop loss. Adjust position size so risk is under 2-3% per trade
+Sell Setup | Entry Area | Stop Loss | Take Profit 1 | Take Profit 2  
+[If bearish] | [Current resistance/entry] | [Recent swing high] | [Immediate support] | [Next support level]
 
-7. Breakout/Breakdown Scenarios
-• If price breaks below [specific support level]: → Expect decline towards [specific lower target level]
-• If price breaks above [specific resistance level]: → Expect rally towards [specific upper target level]
+CURRENT Market Notes:
+• Trade only if the LATEST price action confirms the setup
+• Use the most recent swing highs/lows for stop placement
+• Position size based on CURRENT volatility
 
-8. Summary & Trade Signal Recommendation
-• Market summary: [Provide actual short summary: ranging, trending, bias, recent key price action based on the chart]
-• Best current signal:
-  - [Specify actual price level to watch and react at]
-  - [Give specific Buy/Sell recommendation ONLY IF confirmation at major levels]
-  - [Provide specific price level to watch for entry]
+7. IMMEDIATE Breakout/Breakdown Watch
+• If CURRENT price breaks above [latest resistance]: → Expect move to [next level up]
+• If CURRENT price breaks below [latest support]: → Expect move to [next level down]
 
-9. Trade Plan Table Example
+8. LIVE Market Summary & Current Signal
+• CURRENT Market State: [Summarize what's happening RIGHT NOW based on latest visible data]
+• IMMEDIATE Signal: [What should traders watch for in the next few hours/sessions]
+• Next Key Level to Watch: [The most important price level for immediate price action]
 
-Trade Plan | Entry | Stop Loss | Take Profit 1 | Take Profit 2 | R/R
-Buy Bounce | [Actual support level] | [Actual SL level] | [Actual TP1 level] | [Actual TP2 level] | [Calculate actual R/R ratio]
-Sell Reject | [Actual resistance level] | [Actual SL level] | [Actual TP1 level] | [Actual TP2 level] | [Calculate actual R/R ratio]
+9. CURRENT Trade Plan Table
 
-⚠️ Disclaimer
-This analysis is for educational and idea-generation purposes only. Always do your own research and use proper risk management on every trade.
+Live Trade Plan | Entry | Stop Loss | Take Profit 1 | Take Profit 2 | Risk/Reward
+Active Buy | [Current level] | [Recent low] | [Immediate target] | [Extended target] | [Calculate R:R]
+Active Sell | [Current level] | [Recent high] | [Immediate target] | [Extended target] | [Calculate R:R]
 
-CRITICAL: You MUST analyze the actual chart image provided and fill in ALL bracketed sections with real data, prices, and observations. Do not leave any placeholders unfilled. Provide specific price levels, actual dates, real candlestick patterns, and genuine technical analysis based on what you can see in the chart image.`;
+⚠️ LIVE Market Disclaimer
+This analysis is based on the current chart data captured at ${utcTimeString}. Market conditions can change rapidly. Always verify with live price feeds and use proper risk management.
+
+CRITICAL REQUIREMENT: You MUST analyze the actual CURRENT/LATEST price data visible in the chart image. Focus on the RIGHT SIDE of the chart where the most recent price action is located. Do not provide historical or outdated analysis. This must reflect the LIVE market conditions at the time of capture.`;
     
     const requestData = {
       model: "gpt-4.1-mini-2025-04-14",
@@ -144,9 +153,10 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
       max_tokens: 4000
     };
 
-    console.log("🚀 Sending ultra-high-quality request to OpenRouter GPT-4.1-mini Vision API:", {
+    console.log("🚀 Sending LIVE market analysis request to GPT-4.1-mini Vision:", {
       pair: pairName,
       timeframe,
+      analysisTime: utcTimeString,
       model: requestData.model,
       maxTokens: requestData.max_tokens,
       imageDetail: "high",
@@ -157,7 +167,7 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
       'HTTP-Referer': 'https://chartanalysis.app',
-      'X-Title': 'Ultra-High Quality Forex Chart Analyzer - GPT-4.1-mini Vision Analysis'
+      'X-Title': 'Live Fresh Market Data Forex Chart Analyzer - GPT-4.1-mini Vision'
     };
     
     // Enhanced retry logic with better error handling
@@ -167,7 +177,7 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
     
     while (attempts < maxAttempts) {
       attempts++;
-      console.log(`📤 Ultra-high-quality API call attempt ${attempts}/${maxAttempts} to GPT-4.1-mini Vision`);
+      console.log(`📤 LIVE analysis API call attempt ${attempts}/${maxAttempts} to GPT-4.1-mini Vision`);
       
       try {
         response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -177,14 +187,14 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
         });
         
         if (response.ok) {
-          console.log("✅ GPT-4.1-mini Vision API call successful");
+          console.log("✅ GPT-4.1-mini Vision LIVE analysis API call successful");
           break;
         } else {
           const errorText = await response.text();
           console.error(`❌ API call failed (attempt ${attempts}):`, response.status, errorText);
           
           if (response.status === 400) {
-            throw new Error(`Invalid request to GPT-4.1-mini Vision: ${errorText}. Please check the ultra-high-quality chart image.`);
+            throw new Error(`Invalid request to GPT-4.1-mini Vision: ${errorText}. Please check the live chart image.`);
           } else if (response.status === 401) {
             throw new Error("Authentication failed with GPT-4.1-mini Vision API. Please check API key configuration.");
           } else if (response.status === 429) {
@@ -212,13 +222,13 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
       }
     }
 
-    console.log("📈 GPT-4.1-mini Vision API Response status:", response!.status);
+    console.log("📈 GPT-4.1-mini Vision LIVE Analysis Response status:", response!.status);
     
     const responseText = await response!.text();
     
     if (!response!.ok) {
       console.error("❌ GPT-4.1-mini Vision API Error Response:", responseText);
-      throw new Error(`Failed to analyze ultra-high-quality chart with GPT-4.1-mini Vision: ${response!.status} - ${responseText}`);
+      throw new Error(`Failed to analyze live chart with GPT-4.1-mini Vision: ${response!.status} - ${responseText}`);
     }
     
     let parsedResponse;
@@ -241,7 +251,7 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
       throw new Error("Empty analysis content received from GPT-4.1-mini Vision API");
     }
     
-    // Ultra-enhanced detection of vision failure responses
+    // Enhanced detection of vision failure responses
     const isVisionFailure = 
       analysisContent.toLowerCase().includes("i can't analyze the chart directly") ||
       analysisContent.toLowerCase().includes("i'm unable to analyze the chart image") ||
@@ -257,33 +267,31 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
       analysisContent.toLowerCase().includes("however, i can help you understand how to analyze");
     
     if (isVisionFailure) {
-      console.error("❌ GPT-4.1-mini Vision failed to analyze the ultra-high-quality chart image");
+      console.error("❌ GPT-4.1-mini Vision failed to analyze the live chart image");
       console.error("❌ Response content:", analysisContent.substring(0, 500));
-      throw new Error("GPT-4.1-mini Vision failed to analyze the ultra-high-quality chart image. The AI reported it cannot see the image. Please ensure the chart is fully loaded and try again.");
+      throw new Error("GPT-4.1-mini Vision failed to analyze the live chart image. The AI reported it cannot see the image. Please ensure the chart is fully loaded and try again.");
     }
     
-    // Check for specific chart analysis indicators
-    const hasSpecificAnalysis = 
+    // Check for specific CURRENT chart analysis indicators
+    const hasCurrentAnalysis = 
+      analysisContent.toLowerCase().includes("current") ||
+      analysisContent.toLowerCase().includes("latest") ||
+      analysisContent.toLowerCase().includes("live") ||
+      analysisContent.toLowerCase().includes("recent") ||
       analysisContent.toLowerCase().includes("price") ||
       analysisContent.toLowerCase().includes("level") ||
-      analysisContent.toLowerCase().includes("support") ||
-      analysisContent.toLowerCase().includes("resistance") ||
-      analysisContent.toLowerCase().includes("candlestick") ||
-      analysisContent.toLowerCase().includes("trend") ||
-      analysisContent.toLowerCase().includes("chart") ||
-      analysisContent.toLowerCase().includes("candle") ||
-      analysisContent.toLowerCase().includes("pattern") ||
-      /\d+\.\d+/.test(analysisContent); // Check for price numbers like 1961.40
+      /\d+\.\d+/.test(analysisContent); // Check for price numbers
     
-    if (!hasSpecificAnalysis) {
-      console.warn("⚠️ GPT-4.1-mini Vision response lacks specific chart analysis terms");
+    if (!hasCurrentAnalysis) {
+      console.warn("⚠️ GPT-4.1-mini Vision response may lack current market analysis");
       console.warn("⚠️ Response preview:", analysisContent.substring(0, 200));
     }
     
     const usage = parsedResponse.usage;
-    console.log("✅ GPT-4.1-mini Vision ultra-high-quality chart analysis completed successfully:", {
+    console.log("✅ GPT-4.1-mini Vision LIVE market analysis completed successfully:", {
       pairName,
       timeframe,
+      analysisTime: utcTimeString,
       responseLength: responseText.length,
       analysisLength: analysisContent.length,
       tokensUsed: usage ? {
@@ -292,23 +300,24 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
         total: usage.total_tokens
       } : 'not available',
       model: parsedResponse.model || 'gpt-4.1-mini-2025-04-14',
-      containsSpecificAnalysis: hasSpecificAnalysis,
+      containsCurrentAnalysis: hasCurrentAnalysis,
       hasPriceNumbers: /\d+\.\d+/.test(analysisContent)
     });
     
     const enhancedResponse = {
       ...parsedResponse,
       metadata: {
-        analysis_type: "ultra_high_quality_real_chart_analysis_gpt41mini",
+        analysis_type: "live_current_market_analysis_gpt41mini",
+        analysis_timestamp: utcTimeString,
         image_validated: true,
         tokens_used: usage?.total_tokens || 0,
         pair: pairName,
         timeframe: timeframe,
-        has_specific_analysis: hasSpecificAnalysis,
+        has_current_analysis: hasCurrentAnalysis,
         model_used: "gpt-4.1-mini-2025-04-14",
         image_size_kb: Math.round(imageSize / 1024),
         contains_price_numbers: /\d+\.\d+/.test(analysisContent),
-        quality_level: "ultra_high"
+        quality_level: "live_fresh_data"
       }
     };
     
@@ -317,11 +326,11 @@ CRITICAL: You MUST analyze the actual chart image provided and fill in ALL brack
     });
     
   } catch (error) {
-    console.error("❌ Error in GPT-4.1-mini Vision ultra-high-quality analyze-chart function:", error);
+    console.error("❌ Error in GPT-4.1-mini Vision live market analyze-chart function:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || "An unknown error occurred while analyzing the ultra-high-quality chart with GPT-4.1-mini Vision",
-        error_type: "analysis_error"
+        error: error.message || "An unknown error occurred while analyzing the live chart with GPT-4.1-mini Vision",
+        error_type: "live_analysis_error"
       }),
       {
         status: 500,
