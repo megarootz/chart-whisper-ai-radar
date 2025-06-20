@@ -5,19 +5,26 @@ export interface AnalysisRequest {
   timeframe: string;
 }
 
-export interface DeepSeekMessage {
+export interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
-  content: string;
+  content: string | Array<{
+    type: 'text' | 'image_url';
+    text?: string;
+    image_url?: {
+      url: string;
+      detail?: 'low' | 'high' | 'auto';
+    };
+  }>;
 }
 
-export interface DeepSeekRequest {
+export interface OpenRouterRequest {
   model: string;
-  messages: DeepSeekMessage[];
+  messages: OpenRouterMessage[];
   temperature?: number;
   max_tokens?: number;
 }
 
-export interface DeepSeekResponse {
+export interface OpenRouterResponse {
   choices: Array<{
     message: {
       content: string;

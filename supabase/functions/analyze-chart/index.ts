@@ -1,12 +1,12 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { AnalysisRequest, DeepSeekRequest } from './types.ts';
+import { AnalysisRequest, OpenRouterRequest } from './types.ts';
 import { validateImageData, validateAnalysisContent } from './validation.ts';
-import { DeepSeekClient } from './deepseek-client.ts';
+import { OpenRouterClient } from './openrouter-client.ts';
 import { buildAnalysisPrompt } from './prompt-builder.ts';
 
-const DEEPSEEK_API_KEY = Deno.env.get("DEEPSEEK_API_KEY");
+const OPENROUTER_API_KEY = Deno.env.get("OPENROUTER_API_KEY");
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -19,8 +19,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!DEEPSEEK_API_KEY) {
-      throw new Error("DEEPSEEK_API_KEY environment variable is not set");
+    if (!OPENROUTER_API_KEY) {
+      throw new Error("OPENROUTER_API_KEY environment variable is not set");
     }
 
     const { base64Image, pairName, timeframe }: AnalysisRequest = await req.json();
@@ -41,28 +41,39 @@ serve(async (req) => {
     // Build the analysis prompt
     const analysisPrompt = buildAnalysisPrompt(pairName, timeframe);
     
-    // Create the request data for DeepSeek API
-    // Note: DeepSeek doesn't support vision yet, so we'll send just the text prompt
-    const requestData: DeepSeekRequest = {
-      model: "deepseek-chat",
+    // Create the request data for OpenRouter API with image
+    const requestData: OpenRouterRequest = {
+      model: "openai/gpt-4.1-mini",
       messages: [
         {
           role: "user",
-          content: analysisPrompt
+          content: [
+            {
+              type: "text",
+              text: analysisPrompt
+            },
+            {
+              type: "image_url",
+              image_url: {
+                url: base64Image,
+                detail: "high"
+              }
+            }
+          ]
         }
       ],
       temperature: 0.1,
       max_tokens: 4000
     };
 
-    console.log("🚀 Sending request to DeepSeek API:", {
+    console.log("🚀 Sending request to OpenRouter API:", {
       model: requestData.model,
       maxTokens: requestData.max_tokens,
       imageSizeKB: Math.round((validation.imageSize || 0) / 1024)
     });
     
-    // Initialize DeepSeek client and make the request
-    const client = new DeepSeekClient(DEEPSEEK_API_KEY);
+    // Initialize OpenRouter client and make the request
+    const client = new OpenRouterClient(OPENROUTER_API_KEY);
     const parsedResponse = await client.makeRequest(requestData);
     
     const analysisContent = parsedResponse.choices[0].message?.content;
