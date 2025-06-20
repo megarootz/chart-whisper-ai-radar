@@ -8,7 +8,7 @@ import AnalysisResult from '@/components/AnalysisResult';
 import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
 import RadarAnimation from '@/components/RadarAnimation';
-import ChartUploader from '@/components/ChartUploader';
+import AnalysisMenu from '@/components/AnalysisMenu';
 
 const AnalyzePage = () => {
   const {
@@ -54,16 +54,16 @@ const AnalyzePage = () => {
           {/* Title Section */}
           <div className="mb-6">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
-              AI-Powered Chart Analysis
+              AI-Powered Trading Analysis
             </h1>
             <p className="text-chart-text text-lg max-w-3xl">
-              Upload a chart screenshot to get AI-powered trading insights in a detailed chat format.
+              Choose between instant chart analysis or deep historical data exploration.
             </p>
           </div>
           
-          {/* Chart Upload Section */}
+          {/* Analysis Menu */}
           <div className="mb-6">
-            <ChartUploader onUpload={handleChartUpload} />
+            <AnalysisMenu onChartUpload={handleChartUpload} />
           </div>
           
           {/* Radar Animation Modal when analyzing */}
@@ -85,7 +85,7 @@ const AnalyzePage = () => {
                   </div>
                   <h3 className="text-white font-medium mb-2">No Analysis Yet</h3>
                   <p className="text-gray-400 text-center text-sm md:text-base max-w-md">
-                    Upload a chart image above to get AI-powered analysis
+                    Select Chart Analysis and upload an image to get AI-powered insights
                   </p>
                 </div>
               </div>
