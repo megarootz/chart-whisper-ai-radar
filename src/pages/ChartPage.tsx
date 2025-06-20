@@ -32,15 +32,15 @@ const ChartPage = () => {
       
       toast({
         title: "Chart Ready",
-        description: "Chart loaded. Ensuring live data is synchronized...",
+        description: "Chart loaded. Starting capture...",
         variant: "default",
       });
       
-      // Wait additional time to ensure live data is loaded
+      // Reduced wait time for faster response
       setTimeout(() => {
-        console.log('📊 Starting capture after data synchronization wait');
+        console.log('📊 Starting capture after brief stabilization wait');
         handleScreenshotCapture();
-      }, 3000); // Additional 3 seconds for data sync
+      }, 2000); // Reduced from 3 seconds to 2 seconds
     }
   }, [autoCapture, chartLoaded, isCapturing, captureStatus]);
 
@@ -52,7 +52,7 @@ const ChartPage = () => {
     if (autoCapture) {
       toast({
         title: "Chart Loading",
-        description: "Chart widget ready. Waiting for live data synchronization...",
+        description: "Chart widget ready. Preparing for capture...",
         variant: "default",
       });
     }
@@ -63,24 +63,24 @@ const ChartPage = () => {
 
     setIsCapturing(true);
     setCaptureStatus('capturing');
-    console.log('📸 Starting enhanced screenshot capture process...');
+    console.log('📸 Starting screenshot capture process...');
 
     try {
       toast({
         title: "Capturing Screenshot",
-        description: "Taking high-quality screenshot of live chart data...",
+        description: "Taking screenshot of chart data...",
         variant: "default",
       });
 
       const result = await widgetRef.current.captureScreenshot();
       
       if (result.success && result.dataUrl) {
-        console.log('✅ Screenshot captured successfully with live data');
+        console.log('✅ Screenshot captured successfully');
         setCaptureStatus('success');
         
         toast({
           title: "Screenshot Captured",
-          description: "High-quality chart screenshot captured with live data!",
+          description: "Chart screenshot captured successfully!",
           variant: "default",
         });
         
@@ -95,7 +95,7 @@ const ChartPage = () => {
           
           toast({
             title: "Analyzing Chart",
-            description: "Sending live chart data to AI for analysis...",
+            description: "Sending chart data to AI for analysis...",
             variant: "default",
           });
           
@@ -110,7 +110,7 @@ const ChartPage = () => {
         
         toast({
           title: "Screenshot Failed",
-          description: result.error || "Failed to capture chart screenshot with live data",
+          description: result.error || "Failed to capture chart screenshot",
           variant: "destructive",
         });
       }
@@ -152,13 +152,13 @@ const ChartPage = () => {
   const getStatusText = () => {
     switch (captureStatus) {
       case 'waiting':
-        return 'Loading chart with live data...';
+        return 'Loading chart...';
       case 'ready':
-        return 'Ready to capture live chart';
+        return 'Ready to capture chart';
       case 'capturing':
-        return 'Capturing live screenshot...';
+        return 'Capturing screenshot...';
       case 'success':
-        return 'Live data captured successfully!';
+        return 'Captured successfully!';
       case 'error':
         return 'Capture failed';
       default:
@@ -206,7 +206,7 @@ const ChartPage = () => {
               className="border-gray-600 text-white hover:bg-gray-700"
             >
               <Camera className="h-4 w-4 mr-1" />
-              {isCapturing ? 'Capturing Live Data...' : 'Capture Live Chart'}
+              {isCapturing ? 'Capturing...' : 'Capture Chart'}
             </Button>
           )}
         </div>

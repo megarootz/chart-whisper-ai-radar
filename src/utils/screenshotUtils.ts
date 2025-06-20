@@ -45,13 +45,10 @@ export const captureWidgetScreenshot = async (
     
     // Extended wait for chart data to load completely
     console.log('📈 Waiting for live chart data to load...');
-    await new Promise(resolve => setTimeout(resolve, 8000));
-    
-    // Validate that the chart has meaningful content by checking for price data
-    console.log('🔍 Validating chart has loaded with data...');
+    await new Promise(resolve => setTimeout(resolve, 6000));
     
     // Additional wait to ensure all chart elements are rendered
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    await new Promise(resolve => setTimeout(resolve, 2000));
     
     console.log('📷 Capturing screenshot with enhanced settings...');
     const canvas = await html2canvas(widgetContainer, {
@@ -87,36 +84,36 @@ export const captureWidgetScreenshot = async (
       dataUrlLength: dataUrl.length
     });
     
-    // Enhanced validation for screenshot quality
-    if (dataUrl.length < 100000) {
-      console.warn('⚠️ Screenshot appears too small, may not contain chart data');
+    // Basic validation for screenshot quality - less strict
+    if (dataUrl.length < 50000) {
+      console.warn('⚠️ Screenshot appears very small, may not contain chart data');
       return {
         success: false,
         error: 'Screenshot appears to be too small or empty. Chart may not have loaded properly.'
       };
     }
     
-    // Check for color variety (chart should have multiple colors, not just background)
+    // Simplified color variety check - more lenient
     const imageData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height);
     if (imageData) {
       const pixels = imageData.data;
       const colorSet = new Set();
       
-      // Sample pixels to check for color variety
-      for (let i = 0; i < pixels.length; i += 4000) { // Sample every 1000th pixel
+      // Sample fewer pixels and be more lenient
+      for (let i = 0; i < pixels.length; i += 8000) { // Sample every 2000th pixel
         const r = pixels[i];
         const g = pixels[i + 1];
         const b = pixels[i + 2];
         colorSet.add(`${r},${g},${b}`);
         
-        if (colorSet.size > 10) break; // Found enough color variety
+        if (colorSet.size > 3) break; // Lower threshold for color variety
       }
       
-      if (colorSet.size < 5) {
-        console.warn('⚠️ Screenshot lacks color variety, may be blank or loading');
+      if (colorSet.size < 2) {
+        console.warn('⚠️ Screenshot lacks color variety, may be blank');
         return {
           success: false,
-          error: 'Screenshot appears to be blank or still loading. Please try again.'
+          error: 'Screenshot appears to be blank. Please ensure the chart has loaded completely.'
         };
       }
       

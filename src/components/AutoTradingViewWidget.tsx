@@ -39,7 +39,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         
         // Wait a bit more to ensure the chart has current data
         console.log('⏳ Additional wait for live data synchronization...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
         const { captureWidgetScreenshot } = await import('@/utils/screenshotUtils');
         const result = await captureWidgetScreenshot(container.current, {
@@ -111,25 +111,20 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         console.log("✅ TradingView widget script loaded for symbol:", symbol);
         scriptLoaded.current = true;
         
-        // Extended timeout to ensure chart loads with live data
+        // Optimized timeout to ensure chart loads with data but not too long
         loadingTimeout.current = setTimeout(() => {
           console.log("🏁 TradingView widget ready for:", symbol);
           
-          // Additional validation - check that iframe is present and has content
+          // Check that iframe is present
           const iframe = container.current?.querySelector('iframe');
           if (iframe) {
-            console.log("📊 Iframe confirmed, waiting for chart data...");
-            
-            // Additional wait to ensure chart has live data
-            setTimeout(() => {
-              console.log("✅ Chart should now have live data, calling onLoad");
-              onLoad?.();
-            }, 5000); // Extra 5 seconds for data loading
+            console.log("📊 Iframe confirmed, chart should be ready");
+            onLoad?.();
           } else {
             console.warn("⚠️ Iframe not found, but proceeding anyway");
             onLoad?.();
           }
-        }, 8000); // Increased from 5 to 8 seconds
+        }, 5000); // Reduced to 5 seconds for faster response
       };
 
       script.onerror = (e) => {
