@@ -32,15 +32,15 @@ const ChartPage = () => {
       
       toast({
         title: "Chart Ready",
-        description: "Chart loaded. Starting capture...",
+        description: "Chart loaded. Preparing for capture...",
         variant: "default",
       });
       
-      // Reduced wait time for faster response
+      // Longer wait time for chart to fully load with live data
       setTimeout(() => {
-        console.log('📊 Starting capture after brief stabilization wait');
+        console.log('📊 Starting capture after stabilization wait');
         handleScreenshotCapture();
-      }, 2000); // Reduced from 3 seconds to 2 seconds
+      }, 4000); // Increased to 4 seconds for better data loading
     }
   }, [autoCapture, chartLoaded, isCapturing, captureStatus]);
 

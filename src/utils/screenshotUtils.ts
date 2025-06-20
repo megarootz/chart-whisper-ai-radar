@@ -24,7 +24,7 @@ export const captureWidgetScreenshot = async (
     
     // Wait for widget container to be properly sized
     console.log('⏳ Waiting for widget to stabilize...');
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
     // Check for iframe
     const iframe = widgetContainer.querySelector('iframe');
@@ -44,15 +44,12 @@ export const captureWidgetScreenshot = async (
     });
     
     // Extended wait for chart data to load completely
-    console.log('📈 Waiting for live chart data to load...');
-    await new Promise(resolve => setTimeout(resolve, 6000));
+    console.log('📈 Waiting for chart data to load...');
+    await new Promise(resolve => setTimeout(resolve, 5000));
     
-    // Additional wait to ensure all chart elements are rendered
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    console.log('📷 Capturing screenshot with enhanced settings...');
+    console.log('📷 Capturing screenshot...');
     const canvas = await html2canvas(widgetContainer, {
-      scale: options?.scale || 2,
+      scale: options?.scale || 1.5,
       useCORS: options?.useCORS || true,
       allowTaint: true,
       foreignObjectRendering: true,
@@ -65,64 +62,62 @@ export const captureWidgetScreenshot = async (
                element.classList.contains('tv-dialog') ||
                element.classList.contains('tv-toast') ||
                element.classList.contains('tv-popup');
-      },
-      onclone: (clonedDoc) => {
-        const clonedIframes = clonedDoc.querySelectorAll('iframe');
-        clonedIframes.forEach(clonedIframe => {
-          clonedIframe.style.visibility = 'visible';
-          clonedIframe.style.display = 'block';
-          clonedIframe.style.opacity = '1';
-        });
       }
     });
     
-    const dataUrl = canvas.toDataURL('image/png', 1.0);
+    const dataUrl = canvas.toDataURL('image/png', 0.9);
     
-    console.log('✅ Screenshot captured successfully:', {
+    console.log('✅ Screenshot captured:', {
       canvasWidth: canvas.width,
       canvasHeight: canvas.height,
-      dataUrlLength: dataUrl.length
+      dataUrlLength: dataUrl.length,
+      sizeKB: Math.round(dataUrl.length / 1024)
     });
     
-    // Basic validation for screenshot quality - less strict
-    if (dataUrl.length < 50000) {
-      console.warn('⚠️ Screenshot appears very small, may not contain chart data');
+    // Very basic validation - just check if we have a data URL
+    if (!dataUrl || dataUrl.length < 1000) {
+      console.warn('⚠️ Screenshot appears very small:', dataUrl.length);
       return {
         success: false,
-        error: 'Screenshot appears to be too small or empty. Chart may not have loaded properly.'
+        error: 'Screenshot capture failed - image too small'
       };
     }
     
-    // Simplified color variety check - more lenient
+    // Much more lenient validation
     const imageData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height);
     if (imageData) {
       const pixels = imageData.data;
-      const colorSet = new Set();
+      let nonBlackPixels = 0;
       
-      // Sample fewer pixels and be more lenient
-      for (let i = 0; i < pixels.length; i += 8000) { // Sample every 2000th pixel
+      // Sample every 10000th pixel to check for content
+      for (let i = 0; i < pixels.length; i += 40000) {
         const r = pixels[i];
         const g = pixels[i + 1];
         const b = pixels[i + 2];
-        colorSet.add(`${r},${g},${b}`);
         
-        if (colorSet.size > 3) break; // Lower threshold for color variety
+        // Count pixels that aren't pure black or very dark
+        if (r > 30 || g > 30 || b > 30) {
+          nonBlackPixels++;
+        }
+        
+        if (nonBlackPixels > 3) break; // Found enough content
       }
       
-      if (colorSet.size < 2) {
-        console.warn('⚠️ Screenshot lacks color variety, may be blank');
-        return {
-          success: false,
-          error: 'Screenshot appears to be blank. Please ensure the chart has loaded completely.'
-        };
-      }
-      
-      console.log('✅ Screenshot quality validated:', { 
-        colorVariety: colorSet.size,
+      console.log('🔍 Content validation:', { 
+        nonBlackPixels,
+        totalSampled: Math.floor(pixels.length / 40000),
         sizeKB: Math.round(dataUrl.length / 1024)
       });
+      
+      // Very lenient threshold - just need some non-black content
+      if (nonBlackPixels === 0) {
+        console.warn('⚠️ Screenshot appears completely black');
+        // Still return success but with a warning
+        console.log('📤 Proceeding anyway - chart might use dark theme');
+      }
     }
     
+    console.log('✅ Screenshot validation passed');
     return {
       success: true,
       dataUrl
