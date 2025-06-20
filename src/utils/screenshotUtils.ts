@@ -15,22 +15,21 @@ export const captureWidgetScreenshot = async (
   }
 ): Promise<ScreenshotResult> => {
   try {
-    console.log('📸 Starting widget screenshot capture...');
+    console.log('📸 Starting immediate widget screenshot capture...');
     
-    // Wait longer for TradingView widget to load fresh market data
-    // TradingView widgets need time to connect to servers and load latest prices
-    console.log('⏳ Waiting for TradingView widget to load latest market data...');
-    await new Promise(resolve => setTimeout(resolve, 8000)); // Increased from 2s to 8s
+    // Minimal wait time to ensure widget has rendered
+    console.log('⏳ Brief wait for widget rendering...');
+    await new Promise(resolve => setTimeout(resolve, 2000)); // Reduced from 8s to 2s
     
-    // Additional check to ensure the widget has loaded content
+    // Quick check for iframe presence
     const iframe = widgetContainer.querySelector('iframe');
     if (iframe) {
-      console.log('📊 TradingView iframe detected, waiting for chart rendering...');
-      // Wait additional time for chart rendering inside iframe
-      await new Promise(resolve => setTimeout(resolve, 3000));
+      console.log('📊 TradingView iframe detected, capturing immediately...');
+      // Minimal additional wait for iframe content
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced from 3s to 1s
     }
     
-    console.log('📷 Capturing chart screenshot with latest data...');
+    console.log('📷 Capturing screenshot immediately for analysis...');
     const canvas = await html2canvas(widgetContainer, {
       scale: options?.scale || 1,
       useCORS: options?.useCORS || true,
@@ -44,7 +43,7 @@ export const captureWidgetScreenshot = async (
     
     const dataUrl = canvas.toDataURL('image/png', 0.9);
     
-    console.log('✅ Fresh chart screenshot captured successfully, size:', dataUrl.length);
+    console.log('✅ Screenshot captured immediately, sending for analysis, size:', dataUrl.length);
     
     return {
       success: true,

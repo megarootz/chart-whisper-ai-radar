@@ -50,7 +50,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       container.current.innerHTML = '';
       scriptLoaded.current = false;
 
-      console.log("🔄 Creating TradingView widget with symbol:", symbol, "interval:", interval);
+      console.log("🔄 Creating TradingView widget with OANDA symbol:", symbol, "interval:", interval);
 
       const script = document.createElement("script");
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
@@ -70,13 +70,13 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         }`;
       
       script.onload = () => {
-        console.log("✅ TradingView widget script loaded successfully for symbol:", symbol);
+        console.log("✅ TradingView widget script loaded successfully for OANDA symbol:", symbol);
         scriptLoaded.current = true;
-        // Increased wait time to ensure latest market data is loaded
+        // Reduced wait time for faster screenshot capture
         setTimeout(() => {
-          console.log("🏁 TradingView widget with fresh data render completed for:", symbol);
+          console.log("🏁 TradingView widget ready for immediate screenshot:", symbol);
           onLoad?.();
-        }, 10000); // Increased from 6s to 10s for better data freshness
+        }, 4000); // Reduced from 10s to 4s for faster processing
       };
 
       script.onerror = (e) => {
@@ -91,10 +91,10 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
     }, [symbol, interval, onLoad]);
 
     useEffect(() => {
-      console.log("🔄 TradingView widget effect triggered:", { symbol, interval });
+      console.log("🔄 TradingView widget effect triggered for OANDA pair:", { symbol, interval });
       // Always recreate widget when symbol or interval changes to ensure fresh data
       if (currentSymbol.current !== symbol || currentInterval.current !== interval || !scriptLoaded.current) {
-        console.log("🆕 Recreating widget for fresh market data:", {
+        console.log("🆕 Recreating widget for OANDA pair:", {
           oldSymbol: currentSymbol.current,
           newSymbol: symbol,
           oldInterval: currentInterval.current,
