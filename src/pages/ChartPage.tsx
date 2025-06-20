@@ -6,7 +6,8 @@ import AutoTradingViewWidget, { AutoTradingViewWidgetRef } from '@/components/Au
 import { useIsMobile } from '@/hooks/use-mobile';
 import SEOHead from '@/components/SEOHead';
 import { Button } from '@/components/ui/button';
-import { Camera, ArrowLeft } from 'lucide-react';
+import { Camera, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 const ChartPage = () => {
   const [searchParams] = useSearchParams();
@@ -15,6 +16,8 @@ const ChartPage = () => {
   const widgetRef = useRef<AutoTradingViewWidgetRef>(null);
   const [isCapturing, setIsCapturing] = useState(false);
   const [chartLoaded, setChartLoaded] = useState(false);
+  const [captureStatus, setCaptureStatus] = useState<'waiting' | 'ready' | 'capturing' | 'success' | 'error'>('waiting');
+  const { toast } = useToast();
 
   // Get symbol and interval from URL parameters, with defaults
   const symbol = searchParams.get('symbol') || 'OANDA:EURUSD';
@@ -24,27 +27,45 @@ const ChartPage = () => {
 
   useEffect(() => {
     // If autoCapture is true and chart is loaded, automatically capture screenshot
-    if (autoCapture && chartLoaded && !isCapturing) {
+    if (autoCapture && chartLoaded && !isCapturing && captureStatus === 'ready') {
+      console.log('🚀 Auto-capture triggered');
       handleScreenshotCapture();
     }
-  }, [autoCapture, chartLoaded, isCapturing]);
+  }, [autoCapture, chartLoaded, isCapturing, captureStatus]);
 
   const handleChartLoad = () => {
     console.log('📊 Chart loaded successfully');
     setChartLoaded(true);
+    setCaptureStatus('ready');
+    
+    if (autoCapture) {
+      toast({
+        title: "Chart Loaded",
+        description: "Chart data loaded successfully. Starting automatic capture...",
+        variant: "default",
+      });
+    }
   };
 
   const handleScreenshotCapture = async () => {
     if (!widgetRef.current || isCapturing) return;
 
     setIsCapturing(true);
-    console.log('📸 Starting manual screenshot capture...');
+    setCaptureStatus('capturing');
+    console.log('📸 Starting screenshot capture...');
 
     try {
       const result = await widgetRef.current.captureScreenshot();
       
       if (result.success && result.dataUrl) {
         console.log('✅ Screenshot captured successfully');
+        setCaptureStatus('success');
+        
+        toast({
+          title: "Screenshot Captured",
+          description: "Chart screenshot captured successfully!",
+          variant: "default",
+        });
         
         // If this was triggered by auto-analysis, send the data back
         if (autoCapture && returnTo) {
@@ -53,17 +74,32 @@ const ChartPage = () => {
           sessionStorage.setItem('chartSymbol', symbol);
           sessionStorage.setItem('chartInterval', interval);
           
-          // Navigate back to the analyze page
-          navigate(returnTo);
-        } else {
-          // Manual capture - could show a success message or download
-          console.log('📸 Manual screenshot captured');
+          console.log('📤 Screenshot data stored, navigating back to analyze page');
+          
+          // Small delay to show success message
+          setTimeout(() => {
+            navigate(returnTo);
+          }, 1000);
         }
       } else {
         console.error('❌ Screenshot capture failed:', result.error);
+        setCaptureStatus('error');
+        
+        toast({
+          title: "Screenshot Failed",
+          description: result.error || "Failed to capture chart screenshot",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error('❌ Screenshot error:', error);
+      setCaptureStatus('error');
+      
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred during screenshot capture",
+        variant: "destructive",
+      });
     } finally {
       setIsCapturing(false);
     }
@@ -71,6 +107,40 @@ const ChartPage = () => {
 
   const handleBackToAnalyze = () => {
     navigate('/analyze');
+  };
+
+  const getStatusIcon = () => {
+    switch (captureStatus) {
+      case 'waiting':
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case 'ready':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'capturing':
+        return <Camera className="h-4 w-4 text-blue-500 animate-pulse" />;
+      case 'success':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'error':
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return <AlertCircle className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  const getStatusText = () => {
+    switch (captureStatus) {
+      case 'waiting':
+        return 'Loading chart data...';
+      case 'ready':
+        return 'Ready to capture';
+      case 'capturing':
+        return 'Capturing screenshot...';
+      case 'success':
+        return 'Screenshot captured successfully!';
+      case 'error':
+        return 'Failed to capture screenshot';
+      default:
+        return 'Unknown status';
+    }
   };
 
   return (
@@ -96,12 +166,15 @@ const ChartPage = () => {
               <ArrowLeft className="h-4 w-4 mr-1" />
               Back to Analyze
             </Button>
-            <span className="text-gray-400 text-sm">
-              Loading {symbol} ({interval}) for analysis...
-            </span>
+            <div className="flex items-center space-x-2">
+              {getStatusIcon()}
+              <span className="text-gray-400 text-sm">
+                {symbol} ({interval}) - {getStatusText()}
+              </span>
+            </div>
           </div>
           
-          {chartLoaded && (
+          {captureStatus === 'ready' && (
             <Button
               variant="outline"
               size="sm"

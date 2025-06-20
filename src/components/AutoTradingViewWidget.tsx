@@ -18,6 +18,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
     const scriptLoaded = useRef(false);
     const currentSymbol = useRef<string>('');
     const currentInterval = useRef<string>('');
+    const loadingTimeout = useRef<NodeJS.Timeout>();
 
     const captureScreenshot = useCallback(async () => {
       if (!container.current) {
@@ -25,8 +26,40 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       }
 
       try {
+        console.log('📸 Starting screenshot capture process...');
+        
+        // Wait additional time to ensure chart data is loaded
+        console.log('⏳ Waiting for chart data to stabilize...');
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        
+        // Check if iframe is present and loaded
+        const iframe = container.current.querySelector('iframe');
+        if (!iframe) {
+          console.error('❌ No TradingView iframe found');
+          return { success: false, error: 'TradingView chart not loaded' };
+        }
+        
+        console.log('📊 TradingView iframe found, proceeding with capture');
+        
         const { captureWidgetScreenshot } = await import('@/utils/screenshotUtils');
-        return await captureWidgetScreenshot(container.current);
+        const result = await captureWidgetScreenshot(container.current, {
+          scale: 2,
+          useCORS: true
+        });
+        
+        if (result.success && result.dataUrl) {
+          // Validate screenshot size to ensure it contains chart data
+          if (result.dataUrl.length < 100000) {
+            console.warn('⚠️ Screenshot appears too small, might not contain chart data');
+            return { 
+              success: false, 
+              error: 'Screenshot appears incomplete. Chart may not be fully loaded.' 
+            };
+          }
+          console.log('✅ Screenshot captured successfully, size:', result.dataUrl.length);
+        }
+        
+        return result;
       } catch (error) {
         console.error('Screenshot capture failed:', error);
         return { 
@@ -46,11 +79,16 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
     const createWidget = useCallback(() => {
       if (!container.current) return;
 
+      // Clear any existing timeout
+      if (loadingTimeout.current) {
+        clearTimeout(loadingTimeout.current);
+      }
+
       // Clear previous widget
       container.current.innerHTML = '';
       scriptLoaded.current = false;
 
-      console.log("🔄 Creating TradingView widget with OANDA symbol:", symbol, "interval:", interval);
+      console.log("🔄 Creating TradingView widget with symbol:", symbol, "interval:", interval);
 
       const script = document.createElement("script");
       script.src = "https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js";
@@ -66,17 +104,41 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
           "style": "1",
           "locale": "en",
           "allow_symbol_change": true,
-          "support_host": "https://www.tradingview.com"
+          "support_host": "https://www.tradingview.com",
+          "calendar": false,
+          "studies": [],
+          "show_popup_button": false,
+          "popup_width": "1000",
+          "popup_height": "650"
         }`;
       
       script.onload = () => {
-        console.log("✅ TradingView widget script loaded successfully for OANDA symbol:", symbol);
+        console.log("✅ TradingView widget script loaded for symbol:", symbol);
         scriptLoaded.current = true;
-        // Wait longer to ensure chart is fully loaded with data
-        setTimeout(() => {
-          console.log("🏁 TradingView widget should be ready with chart data:", symbol);
-          onLoad?.();
-        }, 8000); // Increased to 8s to ensure chart data is loaded
+        
+        // Set a longer timeout to ensure the chart loads with real data
+        loadingTimeout.current = setTimeout(() => {
+          console.log("🏁 TradingView widget ready with chart data for:", symbol);
+          
+          // Double-check that iframe is present before calling onLoad
+          const iframe = container.current?.querySelector('iframe');
+          if (iframe) {
+            console.log("📊 Iframe confirmed present, calling onLoad");
+            onLoad?.();
+          } else {
+            console.warn("⚠️ Iframe not found after timeout, retrying...");
+            // Retry after another 3 seconds
+            setTimeout(() => {
+              const retryIframe = container.current?.querySelector('iframe');
+              if (retryIframe) {
+                console.log("📊 Iframe found on retry, calling onLoad");
+                onLoad?.();
+              } else {
+                console.error("❌ Iframe still not found after retry");
+              }
+            }, 3000);
+          }
+        }, 10000); // Increased to 10 seconds for better chart loading
       };
 
       script.onerror = (e) => {
@@ -91,10 +153,10 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
     }, [symbol, interval, onLoad]);
 
     useEffect(() => {
-      console.log("🔄 TradingView widget effect triggered for OANDA pair:", { symbol, interval });
+      console.log("🔄 TradingView widget effect triggered for pair:", { symbol, interval });
       // Always recreate widget when symbol or interval changes to ensure fresh data
       if (currentSymbol.current !== symbol || currentInterval.current !== interval || !scriptLoaded.current) {
-        console.log("🆕 Recreating widget for OANDA pair:", {
+        console.log("🆕 Recreating widget for pair:", {
           oldSymbol: currentSymbol.current,
           newSymbol: symbol,
           oldInterval: currentInterval.current,
@@ -104,6 +166,15 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         createWidget();
       }
     }, [symbol, interval, createWidget]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+      return () => {
+        if (loadingTimeout.current) {
+          clearTimeout(loadingTimeout.current);
+        }
+      };
+    }, []);
 
     return (
       <div 
