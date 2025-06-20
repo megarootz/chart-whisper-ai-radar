@@ -129,7 +129,7 @@ export const useChartAnalysis = () => {
         return;
       }
 
-      console.log('🔍 Starting GPT-4.1-mini Vision chart analysis for authenticated user:', user.id, 'email:', user.email);
+      console.log('🔍 Starting chart analysis for authenticated user:', user.id, 'email:', user.email);
       console.log('📊 Analysis parameters:', { 
         pairName, 
         timeframe, 
@@ -139,79 +139,42 @@ export const useChartAnalysis = () => {
       });
 
       // Check usage limits BEFORE proceeding
-      console.log('📊 Checking usage limits before analysis...');
       const usageData = await checkUsageLimits();
-      console.log('📊 Current usage status:', usageData);
-      
-      if (usageData) {
-        console.log('📊 Detailed usage check:', {
-          tier: usageData.subscription_tier,
-          daily: `${usageData.daily_count}/${usageData.daily_limit}`,
-          monthly: `${usageData.monthly_count}/${usageData.monthly_limit}`,
-          can_analyze: usageData.can_analyze,
-          daily_remaining: usageData.daily_remaining,
-          monthly_remaining: usageData.monthly_remaining
+      if (usageData && !usageData.can_analyze) {
+        toast({
+          title: "Usage Limit Reached",
+          description: `You've reached your analysis limit. Daily: ${usageData.daily_count}/${usageData.daily_limit}, Monthly: ${usageData.monthly_count}/${usageData.monthly_limit}`,
+          variant: "destructive",
         });
-
-        if (!usageData.can_analyze) {
-          console.log('❌ Usage limit reached - cannot analyze');
-          toast({
-            title: "Usage Limit Reached",
-            description: `You've reached your analysis limit. Daily: ${usageData.daily_count}/${usageData.daily_limit}, Monthly: ${usageData.monthly_count}/${usageData.monthly_limit}`,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (usageData.daily_count >= usageData.daily_limit) {
-          console.log('❌ Daily limit specifically reached');
-          toast({
-            title: "Daily Limit Reached",
-            description: `You've used all ${usageData.daily_limit} analyses for today. Please wait until tomorrow or upgrade your plan.`,
-            variant: "destructive",
-          });
-          return;
-        }
-
-        if (usageData.monthly_count >= usageData.monthly_limit) {
-          console.log('❌ Monthly limit specifically reached');
-          toast({
-            title: "Monthly Limit Reached",
-            description: `You've used all ${usageData.monthly_limit} analyses for this month. Please upgrade your plan.`,
-            variant: "destructive",
-          });
-          return;
-        }
+        return;
       }
       
-      console.log('✅ Usage limits check passed, proceeding with GPT-4.1-mini Vision analysis');
-      
-      // Convert image to base64 with enhanced quality
-      console.log('🔄 Converting high-quality image to base64 for GPT-4.1-mini Vision...');
+      // Convert image to base64 with enhanced quality verification
+      console.log('🔄 Converting image to base64...');
       const base64Image = await fileToBase64(file);
-      console.log('✅ Base64 conversion complete for GPT-4.1-mini Vision model, length:', base64Image.length, 'characters');
+      console.log('✅ Base64 conversion complete, length:', base64Image.length, 'characters');
       
-      // Validate base64 image format
+      // Enhanced validation for image content
       if (!base64Image.startsWith('data:image/')) {
-        throw new Error('Invalid image format after base64 conversion for GPT-4.1-mini Vision');
+        throw new Error('Invalid image format after base64 conversion');
       }
       
-      // Additional validation for image size
-      if (base64Image.length < 5000) {
-        throw new Error('Image too small for GPT-4.1-mini Vision analysis. Please ensure chart is fully loaded.');
+      if (base64Image.length < 20000) {
+        throw new Error('Image appears to be too small or corrupted. Please ensure the chart is fully loaded.');
       }
       
-      console.log("🤖 Calling GPT-4.1-mini Vision Supabase Edge Function to analyze chart");
-      console.log('📤 Sending high-quality data to GPT-4.1-mini Vision model:', {
+      // Log image details for debugging
+      console.log("📤 Sending image to AI analysis:", {
         pairName,
         timeframe,
         base64Length: base64Image.length,
-        hasValidImageHeader: base64Image.startsWith('data:image/'),
         imageType: file.type,
-        imageSizeKB: Math.round(file.size / 1024)
+        imageSizeKB: Math.round(file.size / 1024),
+        base64Preview: base64Image.substring(0, 100) + "..."
       });
       
-      // Call our GPT-4.1-mini Vision Supabase Edge Function
+      // Call our Supabase Edge Function with detailed logging
+      console.log("🤖 Calling AI analysis edge function...");
       const { data, error } = await supabase.functions.invoke("analyze-chart", {
         body: {
           base64Image,
@@ -222,116 +185,99 @@ export const useChartAnalysis = () => {
       
       if (error) {
         console.error("❌ Edge function error:", error);
-        throw new Error(`Edge function error: ${error.message}`);
+        throw new Error(`Analysis failed: ${error.message}`);
       }
 
       if (!data) {
-        throw new Error('No response from GPT-4.1-mini Vision analysis function');
+        throw new Error('No response received from AI analysis');
       }
 
-      console.log("✅ GPT-4.1-mini Vision edge function response received");
-      console.log('📥 Raw response type:', typeof data);
+      console.log("✅ AI analysis response received");
+      console.log('📥 Response structure:', {
+        hasChoices: !!data.choices,
+        choicesLength: data.choices?.length,
+        hasContent: !!data.choices?.[0]?.message?.content
+      });
       
       // Parse the API response
       const responseData = data as any;
       
       if (!responseData.choices || responseData.choices.length === 0) {
-        console.error('❌ Invalid response structure from GPT-4.1-mini Vision:', responseData);
-        throw new Error('No response content from GPT-4.1-mini Vision API');
+        console.error('❌ Invalid response structure:', responseData);
+        throw new Error('Invalid response from AI analysis');
       }
 
-      // Get the analysis text from GPT-4.1-mini Vision
+      // Get the analysis text
       const rawAnalysisText = responseData.choices[0].message.content || '';
-      console.log("📝 GPT-4.1-mini Vision Raw Analysis:", rawAnalysisText.substring(0, 300) + "...");
+      console.log("📝 Raw Analysis Preview:", rawAnalysisText.substring(0, 500) + "...");
       
       // Validate analysis content
       if (!rawAnalysisText.trim()) {
-        throw new Error('Empty analysis received from GPT-4.1-mini Vision API');
+        throw new Error('Empty analysis received from AI');
       }
 
-      // Check if the response indicates vision failure
-      if (rawAnalysisText.toLowerCase().includes("i cannot analyze images") || 
-          rawAnalysisText.toLowerCase().includes("i'm unable to analyze images") ||
-          rawAnalysisText.toLowerCase().includes("i don't have the ability to analyze images")) {
-        throw new Error('GPT-4.1-mini Vision failed to process the chart image. Please ensure the chart is fully loaded and try again.');
+      // Check if the response indicates the AI couldn't see the image
+      const failureIndicators = [
+        "i cannot analyze images",
+        "i'm unable to analyze images", 
+        "i don't have the ability to analyze images",
+        "i cannot see the image",
+        "i'm not able to see",
+        "however, i can help you understand how to analyze"
+      ];
+      
+      const hasFailureIndicator = failureIndicators.some(indicator => 
+        rawAnalysisText.toLowerCase().includes(indicator)
+      );
+      
+      if (hasFailureIndicator) {
+        console.error('❌ AI failed to analyze the image:', rawAnalysisText.substring(0, 300));
+        throw new Error('The AI was unable to analyze the chart image. This might be due to the image not loading properly or being corrupted. Please try again.');
       }
       
-      // Create analysis data structure with the GPT-4.1-mini vision-based analysis
+      // Create analysis data structure
       const analysisData: AnalysisResultData = {
         pairName: formatTradingPair(pairName),
         timeframe: timeframe,
-        overallSentiment: 'neutral', // Default since we're showing raw output
-        confidenceScore: 90, // Higher confidence for GPT-4.1-mini
-        marketAnalysis: rawAnalysisText, // Raw output from GPT-4.1-mini Vision
+        overallSentiment: 'neutral',
+        confidenceScore: 90,
+        marketAnalysis: rawAnalysisText,
         trendDirection: 'neutral',
         marketFactors: [],
         chartPatterns: [],
         priceLevels: [],
-        tradingInsight: rawAnalysisText // Show raw output in both sections
+        tradingInsight: rawAnalysisText
       };
       
-      console.log("🎯 GPT-4.1-mini Vision-based analysis data prepared:", { 
+      console.log("🎯 Analysis data prepared:", { 
         pairName: analysisData.pairName, 
         timeframe: analysisData.timeframe,
-        analysisLength: rawAnalysisText.length,
-        confidenceScore: analysisData.confidenceScore
+        analysisLength: rawAnalysisText.length
       });
       
-      // CRITICAL: Increment usage count AFTER successful analysis
-      console.log('📈 GPT-4.1-mini Vision analysis successful, incrementing usage count...');
+      // Increment usage count AFTER successful analysis
       try {
-        console.log('📈 Current user state:', { id: user.id, email: user.email, isAuthenticated: !!user });
-        
-        // Double-check user is still authenticated
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        if (!currentUser) {
-          console.error('❌ User session expired during analysis');
-          throw new Error('User session expired. Please sign in again.');
-        }
-        
         const updatedUsage = await incrementUsage();
-        
         if (updatedUsage) {
-          console.log('✅ Usage incremented successfully:', {
-            daily: `${updatedUsage.daily_count}/${updatedUsage.daily_limit}`,
-            monthly: `${updatedUsage.monthly_count}/${updatedUsage.monthly_limit}`,
-            tier: updatedUsage.subscription_tier,
-            can_analyze: updatedUsage.can_analyze
-          });
-        } else {
-          console.error('❌ incrementUsage returned null/undefined');
-          toast({
-            title: "Usage Count Warning", 
-            description: "Analysis completed but usage count may not have updated. Please refresh the page.",
-            variant: "destructive",
-          });
+          console.log('✅ Usage incremented successfully');
         }
       } catch (usageError) {
-        console.error('❌ CRITICAL Error incrementing usage:', usageError);
-        toast({
-          title: "Usage Count Error", 
-          description: "Analysis completed but usage count failed to update. Please contact support if this continues.",
-          variant: "destructive",
-        });
+        console.error('❌ Error incrementing usage:', usageError);
       }
       
       // Save the analysis result
       setAnalysisResult(analysisData);
-      
-      // Update the latest analysis in the context
       setLatestAnalysis(analysisData);
-      
-      // Save the analysis to Supabase
       await saveAnalysisToDatabase(analysisData);
 
       toast({
         title: "Analysis Complete",
-        description: `Successfully analyzed the ${analysisData.pairName} chart with GPT-4.1-mini Vision`,
+        description: `Successfully analyzed the ${analysisData.pairName} chart`,
         variant: "default",
       });
       
     } catch (error) {
-      console.error("❌ Error analyzing chart with GPT-4.1-mini Vision:", error);
+      console.error("❌ Error analyzing chart:", error);
       toast({
         title: "Analysis Failed",
         description: error instanceof Error ? error.message : "Failed to analyze the chart. Please try again.",
@@ -357,16 +303,16 @@ export const useChartAnalysis = () => {
           return;
         }
         
-        console.log('📄 File converted to base64 for GPT-4.1-mini Vision model:', {
+        console.log('📄 File converted to base64:', {
           originalSize: file.size + " bytes",
           base64Length: result.length + " characters",
-          compressionRatio: (result.length / file.size).toFixed(2),
-          imageType: file.type
+          imageType: file.type,
+          base64Start: result.substring(0, 50)
         });
         resolve(result);
       };
       reader.onerror = error => {
-        console.error('❌ Error converting file to base64 for GPT-4.1-mini Vision:', error);
+        console.error('❌ Error converting file to base64:', error);
         reject(new Error('Failed to convert image to base64 format'));
       };
     });

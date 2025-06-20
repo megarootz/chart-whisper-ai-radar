@@ -15,35 +15,61 @@ export const captureWidgetScreenshot = async (
   }
 ): Promise<ScreenshotResult> => {
   try {
-    console.log('📸 Starting immediate widget screenshot capture...');
+    console.log('📸 Starting widget screenshot capture...');
+    console.log('📊 Widget container details:', {
+      width: widgetContainer.offsetWidth,
+      height: widgetContainer.offsetHeight,
+      hasIframe: !!widgetContainer.querySelector('iframe'),
+      innerHTML: widgetContainer.innerHTML.substring(0, 200)
+    });
     
-    // Minimal wait time to ensure widget has rendered
-    console.log('⏳ Brief wait for widget rendering...');
-    await new Promise(resolve => setTimeout(resolve, 2000)); // Reduced from 8s to 2s
+    // Wait for widget to render
+    console.log('⏳ Waiting for widget to render...');
+    await new Promise(resolve => setTimeout(resolve, 3000));
     
-    // Quick check for iframe presence
+    // Check for iframe and wait for it to load
     const iframe = widgetContainer.querySelector('iframe');
     if (iframe) {
-      console.log('📊 TradingView iframe detected, capturing immediately...');
-      // Minimal additional wait for iframe content
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Reduced from 3s to 1s
+      console.log('📊 TradingView iframe found, waiting for chart data...');
+      // Wait for iframe content to load
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Try to access iframe content to verify it's loaded
+      try {
+        console.log('🔍 Iframe src:', iframe.src);
+        console.log('🔍 Iframe dimensions:', iframe.offsetWidth, 'x', iframe.offsetHeight);
+      } catch (e) {
+        console.log('⚠️ Cannot access iframe content (expected due to CORS)');
+      }
+    } else {
+      console.warn('❌ No TradingView iframe found in widget container!');
     }
     
-    console.log('📷 Capturing screenshot immediately for analysis...');
+    console.log('📷 Capturing screenshot...');
     const canvas = await html2canvas(widgetContainer, {
-      scale: options?.scale || 1,
+      scale: options?.scale || 2, // Increased scale for better quality
       useCORS: options?.useCORS || true,
       allowTaint: true,
       foreignObjectRendering: true,
-      logging: false,
+      logging: true, // Enable logging to see what's happening
       width: widgetContainer.offsetWidth,
       height: widgetContainer.offsetHeight,
       backgroundColor: '#131722'
     });
     
-    const dataUrl = canvas.toDataURL('image/png', 0.9);
+    const dataUrl = canvas.toDataURL('image/png', 1.0); // Maximum quality
     
-    console.log('✅ Screenshot captured immediately, sending for analysis, size:', dataUrl.length);
+    console.log('✅ Screenshot captured successfully:', {
+      canvasWidth: canvas.width,
+      canvasHeight: canvas.height,
+      dataUrlLength: dataUrl.length,
+      dataUrlStart: dataUrl.substring(0, 100)
+    });
+    
+    // Verify the image contains actual chart data
+    if (dataUrl.length < 50000) {
+      console.warn('⚠️ Screenshot seems too small, might not contain chart data');
+    }
     
     return {
       success: true,

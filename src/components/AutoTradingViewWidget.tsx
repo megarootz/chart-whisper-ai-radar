@@ -72,11 +72,11 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       script.onload = () => {
         console.log("✅ TradingView widget script loaded successfully for OANDA symbol:", symbol);
         scriptLoaded.current = true;
-        // Reduced wait time for faster screenshot capture
+        // Wait longer to ensure chart is fully loaded with data
         setTimeout(() => {
-          console.log("🏁 TradingView widget ready for immediate screenshot:", symbol);
+          console.log("🏁 TradingView widget should be ready with chart data:", symbol);
           onLoad?.();
-        }, 4000); // Reduced from 10s to 4s for faster processing
+        }, 8000); // Increased to 8s to ensure chart data is loaded
       };
 
       script.onerror = (e) => {
