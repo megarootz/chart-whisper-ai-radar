@@ -9,7 +9,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import TickmillBanner from '@/components/TickmillBanner';
 import RadarAnimation from '@/components/RadarAnimation';
 import ChartUploader from '@/components/ChartUploader';
-import UsageDisplay from '@/components/UsageDisplay';
 
 const AnalyzePage = () => {
   const {
@@ -53,26 +52,18 @@ const AnalyzePage = () => {
         <div className={`${isMobile ? 'w-full px-4' : 'container mx-auto max-w-6xl'}`}>
           
           {/* Title Section */}
-          <div className="mb-4">
+          <div className="mb-6">
             <h1 className="text-3xl md:text-4xl font-bold text-white mb-3">
               AI-Powered Chart Analysis
             </h1>
-            <p className="text-chart-text text-lg max-w-3xl mb-4">
+            <p className="text-chart-text text-lg max-w-3xl">
               Upload a chart screenshot to get AI-powered trading insights in a detailed chat format.
             </p>
           </div>
           
-          {/* Usage Statistics and Chart Upload Section */}
-          <div className={`grid gap-4 mb-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-3'}`}>
-            {/* Usage Statistics - Compact Version */}
-            <div className={`${isMobile ? 'order-2' : 'lg:col-span-1'}`}>
-              <UsageDisplay />
-            </div>
-            
-            {/* Chart Upload */}
-            <div className={`${isMobile ? 'order-1' : 'lg:col-span-2'}`}>
-              <ChartUploader onUpload={handleChartUpload} />
-            </div>
+          {/* Chart Upload Section */}
+          <div className="mb-6">
+            <ChartUploader onUpload={handleChartUpload} />
           </div>
           
           {/* Radar Animation Modal when analyzing */}

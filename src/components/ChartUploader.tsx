@@ -3,10 +3,10 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { ChartCandlestick, Upload } from 'lucide-react';
+import { ChartCandlestick, Upload, Crown, Star, Zap } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import UsageDisplay from './UsageDisplay';
+import { Badge } from './ui/badge';
 
 const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
   const { toast } = useToast();
@@ -109,65 +109,99 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
     return { text: "Analyze Chart", disabled: false };
   };
 
+  const getPlanBadge = () => {
+    if (!usage) return null;
+    
+    switch (usage.subscription_tier) {
+      case 'pro':
+        return (
+          <Badge variant="outline" className="text-yellow-400 border-yellow-400 bg-yellow-400/10 text-xs">
+            <Crown className="h-3 w-3 mr-1" />
+            Pro
+          </Badge>
+        );
+      case 'starter':
+        return (
+          <Badge variant="outline" className="text-blue-400 border-blue-400 bg-blue-400/10 text-xs">
+            <Star className="h-3 w-3 mr-1" />
+            Starter
+          </Badge>
+        );
+      default:
+        return (
+          <Badge variant="outline" className="text-gray-400 border-gray-400 bg-gray-400/10 text-xs">
+            <Zap className="h-3 w-3 mr-1" />
+            Free
+          </Badge>
+        );
+    }
+  };
+
   const buttonState = getButtonState();
 
   return (
-    <div className="space-y-6">
-      <UsageDisplay />
-      
-      <Card className="w-full bg-chart-card border-gray-700">
-        <CardHeader>
+    <Card className="w-full bg-chart-card border-gray-700">
+      <CardHeader>
+        <div className="flex items-center justify-between">
           <CardTitle className="text-white flex items-center gap-2">
             <ChartCandlestick className="h-6 w-6 text-primary" /> 
             Chart Analysis
           </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="chart-upload" className="text-white">Upload Chart Image</Label>
-              <div className="border-2 border-dashed border-gray-700 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors">
-                <input 
-                  type="file" 
-                  id="chart-upload" 
-                  accept="image/*" 
-                  onChange={handleFileChange} 
-                  className="hidden" 
-                />
-                <label htmlFor="chart-upload" className="cursor-pointer flex flex-col items-center justify-center">
-                  {previewUrl ? (
-                    <div className="w-full">
-                      <img 
-                        src={previewUrl} 
-                        alt="Chart preview" 
-                        className="max-h-[300px] mx-auto rounded-md mb-2 object-contain" 
-                      />
-                      <p className="text-sm text-chart-text">Click to change image</p>
-                    </div>
-                  ) : (
-                    <div className="py-10 flex flex-col items-center">
-                      <Upload className="h-10 w-10 text-gray-400 mb-2" />
-                      <p className="text-white font-medium">Drop your chart image here</p>
-                      <p className="text-sm text-chart-text mt-1">or click to browse files</p>
-                    </div>
-                  )}
-                </label>
+          <div className="flex items-center gap-3">
+            {getPlanBadge()}
+            {usage && (
+              <div className="text-xs text-gray-400">
+                {usage.daily_count}/{usage.daily_limit} today
               </div>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="chart-upload" className="text-white">Upload Chart Image</Label>
+            <div className="border-2 border-dashed border-gray-700 rounded-md p-4 text-center cursor-pointer hover:border-primary transition-colors">
+              <input 
+                type="file" 
+                id="chart-upload" 
+                accept="image/*" 
+                onChange={handleFileChange} 
+                className="hidden" 
+              />
+              <label htmlFor="chart-upload" className="cursor-pointer flex flex-col items-center justify-center">
+                {previewUrl ? (
+                  <div className="w-full">
+                    <img 
+                      src={previewUrl} 
+                      alt="Chart preview" 
+                      className="max-h-[300px] mx-auto rounded-md mb-2 object-contain" 
+                    />
+                    <p className="text-sm text-chart-text">Click to change image</p>
+                  </div>
+                ) : (
+                  <div className="py-10 flex flex-col items-center">
+                    <Upload className="h-10 w-10 text-gray-400 mb-2" />
+                    <p className="text-white font-medium">Drop your chart image here</p>
+                    <p className="text-sm text-chart-text mt-1">or click to browse files</p>
+                  </div>
+                )}
+              </label>
             </div>
-          </form>
-        </CardContent>
-        <CardFooter>
-          <Button 
-            type="submit" 
-            onClick={handleSubmit} 
-            className="w-full" 
-            disabled={buttonState.disabled}
-          >
-            {buttonState.text}
-          </Button>
-        </CardFooter>
-      </Card>
-    </div>
+          </div>
+        </form>
+      </CardContent>
+      <CardFooter>
+        <Button 
+          type="submit" 
+          onClick={handleSubmit} 
+          className="w-full" 
+          disabled={buttonState.disabled}
+        >
+          {buttonState.text}
+        </Button>
+      </CardFooter>
+    </Card>
   );
 };
 
