@@ -1,3 +1,4 @@
+
 import React, { useRef, useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
@@ -226,6 +227,7 @@ const ChartPage = () => {
             symbol={symbol}
             interval={interval}
             onLoad={handleChartLoad}
+            showCameraButton={true}
           />
         </div>
       </main>

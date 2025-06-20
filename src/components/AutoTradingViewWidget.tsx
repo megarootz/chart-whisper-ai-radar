@@ -1,10 +1,14 @@
 
-import React, { useEffect, useRef, memo, useCallback, forwardRef, useImperativeHandle } from 'react';
+import React, { useEffect, useRef, memo, useCallback, forwardRef, useImperativeHandle, useState } from 'react';
+import { Camera, Download } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { captureWidgetScreenshot, dataUrlToFile } from '@/utils/screenshotUtils';
 
 interface AutoTradingViewWidgetProps {
   symbol: string;
   interval: string;
   onLoad?: () => void;
+  showCameraButton?: boolean;
 }
 
 export interface AutoTradingViewWidgetRef {
@@ -13,12 +17,14 @@ export interface AutoTradingViewWidgetRef {
 }
 
 const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingViewWidgetProps>(
-  ({ symbol, interval, onLoad }, ref) => {
+  ({ symbol, interval, onLoad, showCameraButton = true }, ref) => {
     const container = useRef<HTMLDivElement>(null);
     const scriptLoaded = useRef(false);
     const currentSymbol = useRef<string>('');
     const currentInterval = useRef<string>('');
     const loadingTimeout = useRef<NodeJS.Timeout>();
+    const [isCapturing, setIsCapturing] = useState(false);
+    const [chartReady, setChartReady] = useState(false);
 
     const captureScreenshot = useCallback(async () => {
       if (!container.current) {
@@ -50,7 +56,6 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
         console.log('⏳ Final wait for chart rendering...');
         await new Promise(resolve => setTimeout(resolve, 2000));
         
-        const { captureWidgetScreenshot } = await import('@/utils/screenshotUtils');
         console.log('📸 Calling captureWidgetScreenshot...');
         
         const result = await captureWidgetScreenshot(container.current, {
@@ -81,6 +86,42 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       getContainer
     }), [captureScreenshot, getContainer]);
 
+    const handleDownloadChart = useCallback(async () => {
+      if (!chartReady || isCapturing) return;
+
+      setIsCapturing(true);
+      try {
+        console.log('📸 Downloading chart screenshot...');
+        const result = await captureScreenshot();
+        
+        if (result.success && result.dataUrl) {
+          // Convert to file and download
+          const filename = `${symbol.replace('OANDA:', '')}-${interval}-chart.png`;
+          const file = dataUrlToFile(result.dataUrl, filename);
+          
+          // Create download link
+          const url = URL.createObjectURL(file);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = filename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          
+          console.log('✅ Chart downloaded successfully:', filename);
+        } else {
+          console.error('❌ Failed to capture chart:', result.error);
+          alert('Failed to capture chart: ' + (result.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('❌ Download error:', error);
+        alert('Failed to download chart screenshot');
+      } finally {
+        setIsCapturing(false);
+      }
+    }, [captureScreenshot, symbol, interval, chartReady, isCapturing]);
+
     const createWidget = useCallback(() => {
       if (!container.current) return;
 
@@ -92,6 +133,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
       // Clear previous widget
       container.current.innerHTML = '';
       scriptLoaded.current = false;
+      setChartReady(false);
 
       console.log("🔄 Creating TradingView widget with symbol:", symbol, "interval:", interval);
 
@@ -130,6 +172,7 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
           const iframe = container.current?.querySelector('iframe');
           if (iframe) {
             console.log("📊 Iframe confirmed, chart ready");
+            setChartReady(true);
             onLoad?.();
           } else {
             console.warn("⚠️ Iframe not found, but calling onLoad anyway");
@@ -174,20 +217,41 @@ const AutoTradingViewWidget = forwardRef<AutoTradingViewWidgetRef, AutoTradingVi
     }, []);
 
     return (
-      <div 
-        className="tradingview-widget-container" 
-        ref={container} 
-        style={{ height: "100%", width: "100%", minHeight: "400px" }}
-      >
+      <div className="relative w-full h-full">
         <div 
-          className="tradingview-widget-container__widget" 
-          style={{ height: "calc(100% - 32px)", width: "100%" }}
-        ></div>
-        <div className="tradingview-widget-copyright">
-          <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">
-            <span className="blue-text">Track all markets on TradingView</span>
-          </a>
+          className="tradingview-widget-container" 
+          ref={container} 
+          style={{ height: "100%", width: "100%", minHeight: "400px" }}
+        >
+          <div 
+            className="tradingview-widget-container__widget" 
+            style={{ height: "calc(100% - 32px)", width: "100%" }}
+          ></div>
+          <div className="tradingview-widget-copyright">
+            <a href="https://www.tradingview.com/" rel="noopener nofollow" target="_blank">
+              <span className="blue-text">Track all markets on TradingView</span>
+            </a>
+          </div>
         </div>
+
+        {/* Floating Camera Button */}
+        {showCameraButton && (
+          <div className="absolute top-4 right-4 z-10">
+            <Button
+              onClick={handleDownloadChart}
+              disabled={!chartReady || isCapturing}
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg"
+              title="Download Chart Screenshot"
+            >
+              {isCapturing ? (
+                <Download className="h-4 w-4 animate-pulse" />
+              ) : (
+                <Camera className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        )}
       </div>
     );
   }
