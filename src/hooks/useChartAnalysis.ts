@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { AnalysisResultData, MarketFactor, ChartPattern, PriceLevel, TradingSetup } from '@/components/AnalysisResult';
@@ -15,6 +16,53 @@ export const useChartAnalysis = () => {
   const { user } = useAuth();
   const { setLatestAnalysis, addToHistory } = useAnalysis();
   const { incrementUsage, checkUsageLimits } = useSubscription();
+
+  // Extract trading pair and timeframe from analysis text
+  const extractTradingInfo = (analysisText: string) => {
+    // Look for patterns in the Market Context & Trend Detection section
+    const marketContextMatch = analysisText.match(/1\.\s*Market Context.*?Detection[\s\S]*?(?=2\.|$)/i);
+    
+    if (marketContextMatch) {
+      const marketContextText = marketContextMatch[0];
+      
+      // Look for specific patterns like "Gold Spot priced in U.S. Dollars on the 1-hour timeframe"
+      const goldMatch = marketContextText.match(/Gold\s+Spot\s+priced\s+in\s+U\.S\.\s+Dollars?\s+on\s+the\s+([\w\-]+)\s+timeframe/i);
+      if (goldMatch) {
+        return {
+          pair: 'XAU/USD',
+          timeframe: goldMatch[1]
+        };
+      }
+      
+      // Look for other currency pair patterns
+      const pairMatch = marketContextText.match(/(EUR\/USD|GBP\/USD|USD\/JPY|AUD\/USD|USD\/CAD|NZD\/USD|EUR\/GBP|EUR\/JPY|GBP\/JPY|XAU\/USD|XAG\/USD|BTC\/USD|ETH\/USD)/gi);
+      const timeframeMatch = marketContextText.match(/(?:on\s+the\s+|timeframe[:\s]+)(1-hour|4-hour|daily|weekly|monthly|15-minute|30-minute|1h|4h|1d|1w|1m)/gi);
+      
+      if (pairMatch && timeframeMatch) {
+        return {
+          pair: pairMatch[0].toUpperCase(),
+          timeframe: timeframeMatch[0].replace(/^(?:on\s+the\s+|timeframe[:\s]+)/i, '')
+        };
+      }
+      
+      // Fallback: look for any mention of pairs and timeframes
+      if (pairMatch) {
+        return {
+          pair: pairMatch[0].toUpperCase(),
+          timeframe: 'Unknown Timeframe'
+        };
+      }
+    }
+
+    // Fallback patterns
+    const pairMatch = analysisText.match(/(?:Gold|XAU|EUR|USD|GBP|JPY|CHF|CAD|AUD|NZD|BTC|ETH)[\/\s]*(?:USD|EUR|JPY|GBP|CHF|CAD|AUD|NZD|USDT)/gi);
+    const timeframeMatch = analysisText.match(/(?:1|4|15|30)\s*(?:Hour|Minute|Min|H|M)|Daily|Weekly|Monthly/gi);
+    
+    return {
+      pair: pairMatch ? pairMatch[0] : 'Unknown Pair',
+      timeframe: timeframeMatch ? timeframeMatch[0] : 'Unknown Timeframe'
+    };
+  };
 
   // Save analysis to database with client timestamp
   const saveAnalysisToDatabase = async (analysisData: AnalysisResultData) => {
@@ -235,10 +283,13 @@ export const useChartAnalysis = () => {
         throw new Error('The AI was unable to analyze the chart image. This might be due to the image not loading properly or being corrupted. Please try again.');
       }
       
-      // Create analysis data structure
+      // Extract trading info from the analysis text
+      const { pair, timeframe: detectedTimeframe } = extractTradingInfo(rawAnalysisText);
+      
+      // Create analysis data structure with extracted information
       const analysisData: AnalysisResultData = {
-        pairName: formatTradingPair(pairName),
-        timeframe: timeframe,
+        pairName: formatTradingPair(pair),
+        timeframe: detectedTimeframe,
         overallSentiment: 'neutral',
         confidenceScore: 90,
         marketAnalysis: rawAnalysisText,
