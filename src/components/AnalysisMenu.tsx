@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, TrendingUp } from 'lucide-react';
 import ChartUploader from './ChartUploader';
 import IcebergAnimation from './IcebergAnimation';
+import IcebergPopupAnimation from './IcebergPopupAnimation';
+import DukascopyWidget from './DukascopyWidget';
 
 interface AnalysisMenuProps {
   onChartUpload: (file: File) => void;
@@ -11,10 +13,34 @@ interface AnalysisMenuProps {
 
 const AnalysisMenu = ({ onChartUpload }: AnalysisMenuProps) => {
   const [activeTab, setActiveTab] = useState('chart-analysis');
+  const [showIcebergPopup, setShowIcebergPopup] = useState(false);
+  const [showHistoricalContent, setShowHistoricalContent] = useState(false);
+
+  const handleTabChange = (value: string) => {
+    if (value === 'historical-data' && activeTab !== 'historical-data') {
+      // Show popup animation when switching to historical data
+      setShowIcebergPopup(true);
+      setShowHistoricalContent(false);
+    } else {
+      setActiveTab(value);
+      setShowHistoricalContent(value === 'historical-data');
+    }
+  };
+
+  const handlePopupComplete = () => {
+    setShowIcebergPopup(false);
+    setActiveTab('historical-data');
+    setShowHistoricalContent(true);
+  };
 
   return (
     <div className="w-full">
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <IcebergPopupAnimation 
+        isVisible={showIcebergPopup} 
+        onComplete={handlePopupComplete}
+      />
+      
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsList className="grid w-full grid-cols-2 mb-6 bg-gray-800 border border-gray-700">
           <TabsTrigger 
             value="chart-analysis" 
@@ -44,38 +70,21 @@ const AnalysisMenu = ({ onChartUpload }: AnalysisMenuProps) => {
 
         <TabsContent value="historical-data" className="space-y-6">
           <div className="bg-chart-card border border-gray-700 rounded-lg p-6">
-            <IcebergAnimation />
-            
-            <div className="mt-8">
-              <div 
-                id="dukascopy-widget-container"
-                className="w-full rounded-lg overflow-hidden border border-gray-700"
-                style={{ minHeight: '550px' }}
-              >
-                <script 
-                  type="text/javascript"
-                  dangerouslySetInnerHTML={{
-                    __html: `
-                      DukascopyApplet = {
-                        "type": "historical_data_feed",
-                        "params": {
-                          "header": false,
-                          "availableInstruments": "l:",
-                          "width": "100%",
-                          "height": "550",
-                          "adv": "popup"
-                        }
-                      };
-                    `
-                  }}
-                />
-                <script 
-                  type="text/javascript" 
-                  src="https://freeserv-static.dukascopy.com/2.0/core.js"
-                  async
-                />
+            {showHistoricalContent ? (
+              <>
+                <IcebergAnimation />
+                <div className="mt-8">
+                  <DukascopyWidget />
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center py-16">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-gray-400">Preparing Historical Data...</p>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </TabsContent>
       </Tabs>
