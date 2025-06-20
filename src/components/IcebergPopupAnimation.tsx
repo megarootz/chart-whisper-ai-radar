@@ -25,9 +25,9 @@ const IcebergPopupAnimation = ({ isVisible, onComplete }: IcebergPopupAnimationP
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="text-center animate-scale-in">
-        {/* Large Iceberg Animation */}
-        <div className="relative w-80 h-80 mb-8">
+      <div className="text-center animate-scale-in flex flex-col items-center justify-center">
+        {/* Large Iceberg Animation - Perfectly Centered */}
+        <div className="relative w-80 h-80 mb-8 flex items-center justify-center">
           <svg 
             viewBox="0 0 400 400" 
             className="w-full h-full animate-pulse"
@@ -73,7 +73,7 @@ const IcebergPopupAnimation = ({ isVisible, onComplete }: IcebergPopupAnimationP
               opacity="0.7"
             />
             
-            {/* Iceberg tip (visible part) - larger */}
+            {/* Iceberg tip (visible part) - larger and centered */}
             <polygon 
               points="200,120 120,240 280,240" 
               fill="url(#iceGradientLarge)" 
@@ -109,22 +109,15 @@ const IcebergPopupAnimation = ({ isVisible, onComplete }: IcebergPopupAnimationP
           </svg>
         </div>
         
-        {/* Large ripple effects */}
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-          <div className="w-32 h-32 border-4 border-blue-300 rounded-full animate-ping opacity-20"></div>
-          <div className="absolute top-4 left-4 w-24 h-24 border-3 border-blue-400 rounded-full animate-ping opacity-30" style={{ animationDelay: '0.8s' }}></div>
-          <div className="absolute top-8 left-8 w-16 h-16 border-2 border-blue-500 rounded-full animate-ping opacity-40" style={{ animationDelay: '1.6s' }}></div>
-        </div>
-        
-        {/* Text with fade-in animation */}
-        <div className="animate-fade-in" style={{ animationDelay: '0.5s' }}>
-          <h2 className="text-4xl font-bold text-white mb-4">Diving Deep...</h2>
-          <p className="text-xl text-blue-200 max-w-md mx-auto">
+        {/* Text with fade-in animation - Centered */}
+        <div className="animate-fade-in flex flex-col items-center" style={{ animationDelay: '0.5s' }}>
+          <h2 className="text-4xl font-bold text-white mb-4 text-center">Diving Deep...</h2>
+          <p className="text-xl text-blue-200 max-w-md mx-auto text-center">
             Exploring the depths of historical market data to uncover hidden patterns and insights
           </p>
         </div>
         
-        {/* Progress indicator */}
+        {/* Progress indicator - Centered */}
         <div className="mt-8 w-64 mx-auto">
           <div className="h-1 bg-gray-700 rounded-full overflow-hidden">
             <div className="h-full bg-gradient-to-r from-blue-500 to-blue-300 rounded-full animate-[fill_3s_ease-out_forwards]"></div>

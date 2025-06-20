@@ -8,10 +8,12 @@ const DukascopyWidget = () => {
   useEffect(() => {
     if (!containerRef.current || scriptLoadedRef.current) return;
 
+    console.log('Initializing Dukascopy widget...');
+
     // Clear any existing content
     containerRef.current.innerHTML = '';
 
-    // Create and configure the Dukascopy applet
+    // Set up the Dukascopy configuration
     (window as any).DukascopyApplet = {
       "type": "historical_data_feed",
       "params": {
@@ -32,13 +34,30 @@ const DukascopyWidget = () => {
     script.onload = () => {
       console.log('Dukascopy script loaded successfully');
       scriptLoadedRef.current = true;
+      
+      // Try to initialize the widget after a short delay
+      setTimeout(() => {
+        if ((window as any).dukascopy && (window as any).dukascopy.embed) {
+          console.log('Attempting to embed Dukascopy widget...');
+          try {
+            (window as any).dukascopy.embed(containerRef.current);
+          } catch (error) {
+            console.error('Error embedding Dukascopy widget:', error);
+          }
+        } else {
+          console.log('Dukascopy embed function not found, widget should auto-initialize');
+        }
+      }, 1000);
     };
 
-    script.onerror = () => {
-      console.error('Failed to load Dukascopy script');
+    script.onerror = (error) => {
+      console.error('Failed to load Dukascopy script:', error);
     };
 
-    document.head.appendChild(script);
+    // Append the script to the container instead of head
+    if (containerRef.current) {
+      containerRef.current.appendChild(script);
+    }
 
     // Cleanup function
     return () => {
@@ -54,16 +73,19 @@ const DukascopyWidget = () => {
   }, []);
 
   return (
-    <div 
-      ref={containerRef}
-      className="w-full rounded-lg overflow-hidden border border-gray-700 bg-gray-900"
-      style={{ minHeight: '550px' }}
-    >
-      {/* Loading placeholder */}
-      <div className="flex items-center justify-center h-full min-h-[550px] text-gray-400">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p>Loading Historical Data Widget...</p>
+    <div className="w-full">
+      <h3 className="text-xl font-bold text-white mb-4">Historical Market Data</h3>
+      <div 
+        ref={containerRef}
+        className="w-full rounded-lg overflow-hidden border border-gray-700 bg-gray-900"
+        style={{ minHeight: '550px' }}
+      >
+        {/* Loading placeholder */}
+        <div className="flex items-center justify-center h-full min-h-[550px] text-gray-400">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p>Loading Historical Data Widget...</p>
+          </div>
         </div>
       </div>
     </div>

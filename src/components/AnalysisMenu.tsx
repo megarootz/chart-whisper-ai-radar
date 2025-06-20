@@ -3,7 +3,6 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, TrendingUp } from 'lucide-react';
 import ChartUploader from './ChartUploader';
-import IcebergAnimation from './IcebergAnimation';
 import IcebergPopupAnimation from './IcebergPopupAnimation';
 import DukascopyWidget from './DukascopyWidget';
 
@@ -71,12 +70,15 @@ const AnalysisMenu = ({ onChartUpload }: AnalysisMenuProps) => {
         <TabsContent value="historical-data" className="space-y-6">
           <div className="bg-chart-card border border-gray-700 rounded-lg p-6">
             {showHistoricalContent ? (
-              <>
-                <IcebergAnimation />
-                <div className="mt-8">
-                  <DukascopyWidget />
+              <div className="space-y-6">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-bold text-white mb-2">Deep Historical Analysis</h2>
+                  <p className="text-gray-400">
+                    Diving deep into historical market data to uncover patterns and insights hidden beneath the surface
+                  </p>
                 </div>
-              </>
+                <DukascopyWidget />
+              </div>
             ) : (
               <div className="flex items-center justify-center py-16">
                 <div className="text-center">
