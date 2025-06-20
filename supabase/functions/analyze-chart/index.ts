@@ -76,7 +76,7 @@ Focus on:
 Format your response as a professional trading analysis report.`;
     
     const requestData = {
-      model: "gpt-4-vision-preview",
+      model: "gpt-4o", // Using gpt-4o which supports vision
       messages: [
         {
           role: "user",
