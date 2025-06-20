@@ -1,78 +1,64 @@
 
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 
 const DukascopyWidget = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const widgetInitialized = useRef(false);
-
-  useEffect(() => {
-    if (widgetInitialized.current) return;
-
-    console.log('Loading Dukascopy widget...');
-
-    // Clear any existing content
-    if (containerRef.current) {
-      containerRef.current.innerHTML = '';
-      
-      // Create the exact embed code structure as shown on Dukascopy website
-      const widgetHTML = `
-        <script type="text/javascript">
-          DukascopyApplet = {
-            "type": "historical_data_feed",
-            "params": {
-              "header": false,
-              "availableInstruments": "l:",
-              "width": "100%",
-              "height": "550",
-              "adv": "popup"
-            }
-          };
-        </script>
-        <script type="text/javascript" src="https://freeserv-static.dukascopy.com/2.0/core.js"></script>
-      `;
-      
-      // Insert the HTML directly
-      containerRef.current.innerHTML = widgetHTML;
-      
-      // Execute the scripts
-      const scripts = containerRef.current.querySelectorAll('script');
-      scripts.forEach((script) => {
-        const newScript = document.createElement('script');
-        if (script.src) {
-          newScript.src = script.src;
-          newScript.async = true;
-        } else {
-          newScript.textContent = script.textContent;
+  // Create the HTML content for the iframe
+  const widgetHTML = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <style>
+        body { 
+          margin: 0; 
+          padding: 0; 
+          background: white;
+          font-family: Arial, sans-serif;
         }
-        newScript.type = 'text/javascript';
-        document.head.appendChild(newScript);
-      });
-      
-      widgetInitialized.current = true;
-      console.log('Dukascopy widget embed code injected');
-    }
+        #widget-container {
+          width: 100%;
+          height: 550px;
+        }
+      </style>
+    </head>
+    <body>
+      <div id="widget-container"></div>
+      <script type="text/javascript">
+        DukascopyApplet = {
+          "type": "historical_data_feed",
+          "params": {
+            "header": false,
+            "availableInstruments": "l:",
+            "width": "100%",
+            "height": "550",
+            "adv": "popup"
+          }
+        };
+      </script>
+      <script type="text/javascript" src="https://freeserv-static.dukascopy.com/2.0/core.js"></script>
+    </body>
+    </html>
+  `;
 
-    return () => {
-      // Cleanup
-      widgetInitialized.current = false;
-    };
-  }, []);
+  const iframeSrc = `data:text/html;charset=utf-8,${encodeURIComponent(widgetHTML)}`;
 
   return (
     <div className="w-full">
       <h3 className="text-xl font-bold text-white mb-4">Historical Market Data</h3>
-      <div 
-        ref={containerRef}
-        className="w-full rounded-lg overflow-hidden border border-gray-700 bg-white"
-        style={{ minHeight: '550px' }}
-      >
-        {/* Loading state */}
-        <div className="flex items-center justify-center h-full min-h-[550px] text-gray-600">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-            <p>Loading Dukascopy Historical Data Widget...</p>
-          </div>
-        </div>
+      <div className="w-full rounded-lg overflow-hidden border border-gray-700">
+        <iframe
+          src={iframeSrc}
+          width="100%"
+          height="550"
+          frameBorder="0"
+          style={{ 
+            border: 'none',
+            display: 'block',
+            background: 'white'
+          }}
+          title="Dukascopy Historical Data Widget"
+          sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+        />
       </div>
     </div>
   );
