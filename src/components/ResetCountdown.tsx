@@ -40,10 +40,10 @@ const ResetCountdown = () => {
   const formatTime = (time: number) => time.toString().padStart(2, '0');
 
   return (
-    <div className="flex items-center gap-2 text-sm text-gray-400">
-      <Clock className="h-4 w-4" />
+    <div className="flex items-center gap-1.5 text-xs text-gray-400">
+      <Clock className="h-3 w-3" />
       <span>
-        Daily reset in: {formatTime(countdown.hours)}:{formatTime(countdown.minutes)}:{formatTime(countdown.seconds)}
+        Reset: {formatTime(countdown.hours)}:{formatTime(countdown.minutes)}:{formatTime(countdown.seconds)}
       </span>
     </div>
   );
