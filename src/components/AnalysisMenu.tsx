@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, TrendingUp } from 'lucide-react';
 import ChartUploader from './ChartUploader';
 import IcebergPopupAnimation from './IcebergPopupAnimation';
-import DukascopyWidget from './DukascopyWidget';
 import HistoricalDataDownloader from './HistoricalDataDownloader';
 
 interface AnalysisMenuProps {
@@ -78,7 +78,6 @@ const AnalysisMenu = ({ onChartUpload }: AnalysisMenuProps) => {
                   </p>
                 </div>
                 <HistoricalDataDownloader />
-                <DukascopyWidget />
               </div>
             ) : (
               <div className="flex items-center justify-center py-16">
