@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ExternalLink, BarChart3, RefreshCw } from 'lucide-react';
 
 const DukascopyWidget = () => {
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const widgetContainerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [loadAttempts, setLoadAttempts] = useState(0);
@@ -14,64 +14,129 @@ const DukascopyWidget = () => {
     setDebugInfo(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
   };
 
+  const initializeWidget = () => {
+    if (!widgetContainerRef.current) {
+      addDebugInfo('Widget container not found');
+      setHasError(true);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      addDebugInfo('Initializing Dukascopy widget...');
+      
+      // Clear any existing content
+      widgetContainerRef.current.innerHTML = '';
+      
+      // Create the widget configuration
+      const widgetConfig = {
+        width: '100%',
+        height: '550',
+        symbol: 'EURUSD',
+        interval: 'D1',
+        timezone: 'Europe/Zurich',
+        theme: 'light',
+        style: '1',
+        locale: 'en',
+        toolbar_bg: '#f1f3f6',
+        enable_publishing: false,
+        allow_symbol_change: true,
+        container_id: 'dukascopy_widget_container'
+      };
+
+      // Set up the global DukascopyApplet configuration
+      (window as any).DukascopyApplet = {
+        ...widgetConfig,
+        onLoad: () => {
+          addDebugInfo('Widget loaded successfully');
+          setIsLoading(false);
+          setHasError(false);
+        },
+        onError: (error: any) => {
+          addDebugInfo(`Widget error: ${error}`);
+          setIsLoading(false);
+          setHasError(true);
+        }
+      };
+
+      // Create script element
+      const script = document.createElement('script');
+      script.type = 'text/javascript';
+      script.src = 'https://freeserv.dukascopy.com/2.0/core.js';
+      script.async = true;
+      
+      script.onload = () => {
+        addDebugInfo('Dukascopy script loaded');
+        // Give the widget time to initialize
+        setTimeout(() => {
+          if (isLoading) {
+            addDebugInfo('Widget initialization timeout');
+            setIsLoading(false);
+            setHasError(true);
+          }
+        }, 10000);
+      };
+      
+      script.onerror = () => {
+        addDebugInfo('Failed to load Dukascopy script');
+        setIsLoading(false);
+        setHasError(true);
+      };
+
+      // Add the container div with the expected ID
+      const widgetDiv = document.createElement('div');
+      widgetDiv.id = 'dukascopy_widget_container';
+      widgetDiv.style.width = '100%';
+      widgetDiv.style.height = '550px';
+      widgetContainerRef.current.appendChild(widgetDiv);
+
+      // Append script to head
+      document.head.appendChild(script);
+
+    } catch (error) {
+      addDebugInfo(`Widget initialization error: ${error}`);
+      setIsLoading(false);
+      setHasError(true);
+    }
+  };
+
   const handleRetry = () => {
     setLoadAttempts(prev => prev + 1);
     setIsLoading(true);
     setHasError(false);
     addDebugInfo(`Manual retry attempt ${loadAttempts + 1}`);
     
-    if (iframeRef.current) {
-      iframeRef.current.src = iframeRef.current.src; // Force reload
-    }
+    // Clean up existing scripts
+    const existingScripts = document.querySelectorAll('script[src*="dukascopy.com"]');
+    existingScripts.forEach(script => script.remove());
+    
+    // Reinitialize
+    initializeWidget();
   };
 
   useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'dukascopy-widget') {
-        const { status, data } = event.data;
-        
-        addDebugInfo(`Received message: ${status}`);
-        
-        switch (status) {
-          case 'loading':
-            setIsLoading(true);
-            setHasError(false);
-            break;
-          case 'loaded':
-            setIsLoading(false);
-            setHasError(false);
-            addDebugInfo('Widget loaded successfully');
-            break;
-          case 'error':
-            setIsLoading(false);
-            setHasError(true);
-            addDebugInfo(`Widget error after ${data?.attempts || 0} attempts`);
-            break;
-          case 'max-attempts-reached':
-            setIsLoading(false);
-            setHasError(true);
-            addDebugInfo('Maximum load attempts reached');
-            break;
-        }
-      }
-    };
+    addDebugInfo('Component mounted, initializing widget');
+    initializeWidget();
 
-    window.addEventListener('message', handleMessage);
-    
-    // Fallback timeout
-    const timeoutId = setTimeout(() => {
-      if (isLoading && !hasError) {
-        addDebugInfo('Widget loading timeout - showing fallback');
-        setIsLoading(false);
-        setHasError(true);
-      }
-    }, 20000);
-
+    // Cleanup function
     return () => {
-      window.removeEventListener('message', handleMessage);
-      clearTimeout(timeoutId);
+      addDebugInfo('Component unmounting, cleaning up');
+      
+      // Clean up the global DukascopyApplet
+      if ((window as any).DukascopyApplet) {
+        delete (window as any).DukascopyApplet;
+      }
+      
+      // Remove scripts
+      const scripts = document.querySelectorAll('script[src*="dukascopy.com"]');
+      scripts.forEach(script => script.remove());
+      
+      // Clear container
+      if (widgetContainerRef.current) {
+        widgetContainerRef.current.innerHTML = '';
+      }
     };
-  }, [isLoading, hasError]);
+  }, []); // Empty dependency array - run once on mount
 
   if (hasError) {
     return (
@@ -147,29 +212,19 @@ const DukascopyWidget = () => {
             <div className="text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
               <p className="text-gray-400 text-sm">Loading Dukascopy widget...</p>
-              <p className="text-gray-500 text-xs mt-1">Initializing historical data feed</p>
+              <p className="text-gray-500 text-xs mt-1">Initializing with React integration</p>
             </div>
           </div>
         )}
         
-        {/* Iframe container for the Dukascopy widget */}
-        <iframe
-          ref={iframeRef}
-          src="/dukascopy-widget-iframe.html"
-          width="100%"
-          height="550"
-          frameBorder="0"
-          scrolling="no"
-          title="Dukascopy Historical Data Widget"
+        {/* Widget container for direct DOM integration */}
+        <div
+          ref={widgetContainerRef}
           style={{
+            width: '100%',
+            height: '550px',
             backgroundColor: 'white',
             minHeight: '550px'
-          }}
-          onLoad={() => addDebugInfo('Iframe loaded')}
-          onError={() => {
-            addDebugInfo('Iframe load error');
-            setIsLoading(false);
-            setHasError(true);
           }}
         />
 
@@ -179,6 +234,7 @@ const DukascopyWidget = () => {
             <div>Status: {hasError ? 'Error' : 'Loaded'}</div>
             <div>Attempts: {loadAttempts}</div>
             <div>Debug entries: {debugInfo.length}</div>
+            <div>Method: Direct DOM</div>
           </div>
         )}
       </div>
