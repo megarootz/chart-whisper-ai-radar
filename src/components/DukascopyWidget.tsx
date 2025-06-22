@@ -1,11 +1,12 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { ExternalLink, BarChart3 } from 'lucide-react';
+import { ExternalLink, BarChart3, RefreshCw } from 'lucide-react';
 
 const DukascopyWidget = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [loadAttempts, setLoadAttempts] = useState(0);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
 
   const addDebugInfo = (message: string) => {
@@ -13,124 +14,62 @@ const DukascopyWidget = () => {
     setDebugInfo(prev => [...prev, `${new Date().toISOString()}: ${message}`]);
   };
 
-  useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+  const handleRetry = () => {
+    setLoadAttempts(prev => prev + 1);
+    setIsLoading(true);
+    setHasError(false);
+    addDebugInfo(`Manual retry attempt ${loadAttempts + 1}`);
     
-    const loadWidget = async () => {
-      try {
-        addDebugInfo('Starting widget initialization');
+    if (iframeRef.current) {
+      iframeRef.current.src = iframeRef.current.src; // Force reload
+    }
+  };
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'dukascopy-widget') {
+        const { status, data } = event.data;
         
-        // Clear any existing content and ensure clean state
-        if (containerRef.current) {
-          containerRef.current.innerHTML = '';
-        }
-
-        // Remove any existing DukascopyApplet configuration
-        if ((window as any).DukascopyApplet) {
-          delete (window as any).DukascopyApplet;
-          addDebugInfo('Cleared existing DukascopyApplet');
-        }
-
-        // Remove existing script if present to ensure clean reload
-        const existingScript = document.getElementById('dukascopy-core-js');
-        if (existingScript) {
-          existingScript.remove();
-          addDebugInfo('Removed existing Dukascopy script');
-        }
-
-        // Set up the DukascopyApplet configuration BEFORE loading script
-        // This matches the exact format from the provided HTML widget code
-        (window as any).DukascopyApplet = {
-          "type": "historical_data_feed",
-          "params": {
-            "header": false,
-            "availableInstruments": "l:",
-            "width": "100%",
-            "height": "550",
-            "adv": "popup"
-          }
-        };
-
-        addDebugInfo('DukascopyApplet configured');
-        console.log('DukascopyApplet configuration:', (window as any).DukascopyApplet);
-
-        // Create and add the widget container with specific ID that Dukascopy might expect
-        if (containerRef.current) {
-          const widgetContainer = document.createElement('div');
-          widgetContainer.id = 'dukascopy-widget-container';
-          widgetContainer.style.width = '100%';
-          widgetContainer.style.height = '550px';
-          widgetContainer.style.minHeight = '550px';
-          containerRef.current.appendChild(widgetContainer);
-          addDebugInfo('Created widget container');
-        }
-
-        // Load the script with proper error handling
-        const script = document.createElement('script');
-        script.id = 'dukascopy-core-js';
-        script.type = 'text/javascript';
-        script.src = 'https://freeserv-static.dukascopy.com/2.0/core.js';
-        script.async = false; // Changed to synchronous to match HTML behavior
+        addDebugInfo(`Received message: ${status}`);
         
-        script.onload = () => {
-          addDebugInfo('Dukascopy script loaded successfully');
-          
-          // Give the script time to initialize and render the widget
-          setTimeout(() => {
-            // Check if widget has been rendered
-            const widgetElements = document.querySelectorAll('iframe[src*="dukascopy"], div[id*="dukascopy"]');
-            if (widgetElements.length > 0) {
-              addDebugInfo(`Widget detected: ${widgetElements.length} elements found`);
-              setIsLoading(false);
-            } else {
-              addDebugInfo('No widget elements detected after script load');
-              // Try to manually trigger widget if it exists on window
-              if ((window as any).dukascopy || (window as any).Dukascopy) {
-                addDebugInfo('Attempting manual widget initialization');
-                // Additional initialization attempts could go here
-              }
-              
-              // Still mark as loaded even if no elements detected
-              setTimeout(() => {
-                setIsLoading(false);
-              }, 2000);
-            }
-          }, 1500);
-        };
-        
-        script.onerror = (error) => {
-          addDebugInfo(`Script loading failed: ${error}`);
-          setHasError(true);
-          setIsLoading(false);
-        };
-        
-        // Append script to document head to match typical widget behavior
-        document.head.appendChild(script);
-        addDebugInfo('Script appended to document head');
-
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-        addDebugInfo(`Error during widget initialization: ${errorMessage}`);
-        setHasError(true);
-        setIsLoading(false);
+        switch (status) {
+          case 'loading':
+            setIsLoading(true);
+            setHasError(false);
+            break;
+          case 'loaded':
+            setIsLoading(false);
+            setHasError(false);
+            addDebugInfo('Widget loaded successfully');
+            break;
+          case 'error':
+            setIsLoading(false);
+            setHasError(true);
+            addDebugInfo(`Widget error after ${data?.attempts || 0} attempts`);
+            break;
+          case 'max-attempts-reached':
+            setIsLoading(false);
+            setHasError(true);
+            addDebugInfo('Maximum load attempts reached');
+            break;
+        }
       }
     };
 
-    // Set timeout for fallback
-    timeoutId = setTimeout(() => {
+    window.addEventListener('message', handleMessage);
+    
+    // Fallback timeout
+    const timeoutId = setTimeout(() => {
       if (isLoading && !hasError) {
         addDebugInfo('Widget loading timeout - showing fallback');
-        setHasError(true);
         setIsLoading(false);
+        setHasError(true);
       }
-    }, 20000); // 20 second timeout
-
-    loadWidget();
+    }, 20000);
 
     return () => {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      window.removeEventListener('message', handleMessage);
+      clearTimeout(timeoutId);
     };
   }, [isLoading, hasError]);
 
@@ -145,9 +84,19 @@ const DukascopyWidget = () => {
               <BarChart3 className="h-8 w-8 text-blue-400" />
             </div>
             <h4 className="text-white font-semibold mb-2">Access Professional Historical Data</h4>
-            <p className="text-gray-400 mb-6">
-              Get comprehensive historical market data with advanced charting tools and technical indicators.
+            <p className="text-gray-400 mb-4">
+              The widget couldn't load. You can retry or access the data directly through these professional platforms.
             </p>
+            
+            {loadAttempts < 3 && (
+              <button
+                onClick={handleRetry}
+                className="flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors mx-auto mb-6"
+              >
+                <RefreshCw size={16} />
+                Retry Widget
+              </button>
+            )}
           </div>
           
           <div className="grid md:grid-cols-2 gap-4">
@@ -172,7 +121,7 @@ const DukascopyWidget = () => {
             </a>
           </div>
 
-          {/* Debug information (only in development) */}
+          {/* Debug information */}
           {process.env.NODE_ENV === 'development' && debugInfo.length > 0 && (
             <details className="mt-6">
               <summary className="text-gray-400 cursor-pointer text-sm">Debug Information</summary>
@@ -203,22 +152,32 @@ const DukascopyWidget = () => {
           </div>
         )}
         
-        {/* Main container for the Dukascopy widget */}
-        <div 
-          ref={containerRef} 
-          style={{ 
-            width: '100%', 
-            height: '550px',
-            minHeight: '550px',
+        {/* Iframe container for the Dukascopy widget */}
+        <iframe
+          ref={iframeRef}
+          src="/dukascopy-widget-iframe.html"
+          width="100%"
+          height="550"
+          frameBorder="0"
+          scrolling="no"
+          title="Dukascopy Historical Data Widget"
+          style={{
             backgroundColor: 'white',
-            position: 'relative'
+            minHeight: '550px'
+          }}
+          onLoad={() => addDebugInfo('Iframe loaded')}
+          onError={() => {
+            addDebugInfo('Iframe load error');
+            setIsLoading(false);
+            setHasError(true);
           }}
         />
 
-        {/* Debug panel for development */}
+        {/* Debug panel */}
         {process.env.NODE_ENV === 'development' && !isLoading && (
           <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs p-2 rounded max-w-xs">
-            <div>Widget Status: {hasError ? 'Error' : 'Loaded'}</div>
+            <div>Status: {hasError ? 'Error' : 'Loaded'}</div>
+            <div>Attempts: {loadAttempts}</div>
             <div>Debug entries: {debugInfo.length}</div>
           </div>
         )}
