@@ -10,6 +10,25 @@ const DukascopyWidget = () => {
   useEffect(() => {
     const loadWidget = () => {
       try {
+        // Clear any existing content
+        if (containerRef.current) {
+          containerRef.current.innerHTML = '';
+        }
+
+        // Set up the DukascopyApplet configuration first
+        (window as any).DukascopyApplet = {
+          type: "historical_data_feed",
+          params: {
+            header: false,
+            availableInstruments: "l:",
+            width: "100%",
+            height: "550",
+            adv: "popup"
+          }
+        };
+
+        console.log('DukascopyApplet configured:', (window as any).DukascopyApplet);
+
         // Only inject the script if it isn't already present
         if (!document.getElementById("dukascopy-core-js")) {
           const script = document.createElement('script');
@@ -19,7 +38,12 @@ const DukascopyWidget = () => {
           
           script.onload = () => {
             console.log('Dukascopy script loaded successfully');
-            initializeWidget();
+            // Add a small delay to ensure the script is fully initialized
+            setTimeout(() => {
+              setIsLoading(false);
+              // The widget should automatically initialize when the script loads
+              // and sees DukascopyApplet on the window
+            }, 1000);
           };
           
           script.onerror = () => {
@@ -28,10 +52,16 @@ const DukascopyWidget = () => {
             setIsLoading(false);
           };
           
-          document.head.appendChild(script);
+          // Append to container instead of head/body
+          if (containerRef.current) {
+            containerRef.current.appendChild(script);
+          }
         } else {
-          console.log('Dukascopy script already exists, reinitializing widget');
-          initializeWidget();
+          console.log('Dukascopy script already exists');
+          // Script already exists, just wait a bit and mark as loaded
+          setTimeout(() => {
+            setIsLoading(false);
+          }, 500);
         }
       } catch (error) {
         console.error('Error loading Dukascopy widget:', error);
@@ -40,47 +70,21 @@ const DukascopyWidget = () => {
       }
     };
 
-    const initializeWidget = () => {
-      try {
-        // Set up the DukascopyApplet configuration
-        if (typeof window !== 'undefined') {
-          (window as any).DukascopyApplet = {
-            type: "historical_data_feed",
-            params: {
-              header: false,
-              availableInstruments: "l:",
-              width: "100%",
-              height: "550",
-              adv: "popup",
-              container: containerRef.current
-            }
-          };
-          
-          console.log('DukascopyApplet configured:', (window as any).DukascopyApplet);
-          setIsLoading(false);
-        }
-      } catch (error) {
-        console.error('Error initializing Dukascopy widget:', error);
-        setHasError(true);
-        setIsLoading(false);
-      }
-    };
-
     // Add a timeout to show fallback if widget doesn't load
     const timeout = setTimeout(() => {
-      if (isLoading) {
+      if (isLoading && !hasError) {
         console.log('Widget loading timeout, showing fallback');
         setHasError(true);
         setIsLoading(false);
       }
-    }, 10000);
+    }, 15000); // Increased timeout to 15 seconds
 
     loadWidget();
 
     return () => {
       clearTimeout(timeout);
     };
-  }, [isLoading]);
+  }, []);
 
   if (hasError) {
     return (
@@ -119,17 +123,6 @@ const DukascopyWidget = () => {
               TradingView Charts
             </a>
           </div>
-          
-          <div className="mt-6 p-4 bg-gray-900 rounded-lg">
-            <h5 className="text-white font-medium mb-2">Features Available:</h5>
-            <ul className="text-gray-400 text-sm space-y-1">
-              <li>• Historical price data for major currency pairs</li>
-              <li>• Multiple timeframes (1M, 5M, 1H, 4H, 1D)</li>
-              <li>• Technical indicators and drawing tools</li>
-              <li>• Export data in various formats</li>
-              <li>• Professional-grade charting interface</li>
-            </ul>
-          </div>
         </div>
       </div>
     );
@@ -139,7 +132,7 @@ const DukascopyWidget = () => {
     <div className="w-full">
       <h3 className="text-xl font-bold text-white mb-4">Historical Market Data</h3>
       
-      <div className="w-full rounded-lg overflow-hidden border border-gray-700 relative bg-white">
+      <div className="w-full rounded-lg overflow-hidden border border-gray-700 relative">
         {isLoading && (
           <div className="absolute inset-0 bg-gray-800 flex items-center justify-center z-10">
             <div className="text-center">
@@ -155,7 +148,8 @@ const DukascopyWidget = () => {
           style={{ 
             width: '100%', 
             height: '550px',
-            minHeight: '550px'
+            minHeight: '550px',
+            backgroundColor: 'white'
           }}
         />
       </div>
