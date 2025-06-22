@@ -1,27 +1,88 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { ExternalLink, BarChart3 } from 'lucide-react';
 
 const DukascopyWidget = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-  const [showFallback, setShowFallback] = useState(false);
 
   useEffect(() => {
-    // Show fallback after 5 seconds if widget doesn't load
-    const timer = setTimeout(() => {
-      setShowFallback(true);
-    }, 5000);
+    const loadWidget = () => {
+      try {
+        // Only inject the script if it isn't already present
+        if (!document.getElementById("dukascopy-core-js")) {
+          const script = document.createElement('script');
+          script.id = "dukascopy-core-js";
+          script.src = 'https://freeserv-static.dukascopy.com/2.0/core.js';
+          script.async = true;
+          
+          script.onload = () => {
+            console.log('Dukascopy script loaded successfully');
+            initializeWidget();
+          };
+          
+          script.onerror = () => {
+            console.error('Failed to load Dukascopy script');
+            setHasError(true);
+            setIsLoading(false);
+          };
+          
+          document.head.appendChild(script);
+        } else {
+          console.log('Dukascopy script already exists, reinitializing widget');
+          initializeWidget();
+        }
+      } catch (error) {
+        console.error('Error loading Dukascopy widget:', error);
+        setHasError(true);
+        setIsLoading(false);
+      }
+    };
 
-    return () => clearTimeout(timer);
-  }, []);
+    const initializeWidget = () => {
+      try {
+        // Set up the DukascopyApplet configuration
+        if (typeof window !== 'undefined') {
+          (window as any).DukascopyApplet = {
+            type: "historical_data_feed",
+            params: {
+              header: false,
+              availableInstruments: "l:",
+              width: "100%",
+              height: "550",
+              adv: "popup",
+              container: containerRef.current
+            }
+          };
+          
+          console.log('DukascopyApplet configured:', (window as any).DukascopyApplet);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error initializing Dukascopy widget:', error);
+        setHasError(true);
+        setIsLoading(false);
+      }
+    };
 
-  const handleIframeError = () => {
-    console.error('Dukascopy iframe failed to load');
-    setHasError(true);
-    setShowFallback(true);
-  };
+    // Add a timeout to show fallback if widget doesn't load
+    const timeout = setTimeout(() => {
+      if (isLoading) {
+        console.log('Widget loading timeout, showing fallback');
+        setHasError(true);
+        setIsLoading(false);
+      }
+    }, 10000);
 
-  if (hasError || showFallback) {
+    loadWidget();
+
+    return () => {
+      clearTimeout(timeout);
+    };
+  }, [isLoading]);
+
+  if (hasError) {
     return (
       <div className="w-full">
         <h3 className="text-xl font-bold text-white mb-4">Historical Market Data</h3>
@@ -78,27 +139,24 @@ const DukascopyWidget = () => {
     <div className="w-full">
       <h3 className="text-xl font-bold text-white mb-4">Historical Market Data</h3>
       
-      <div className="w-full rounded-lg overflow-hidden border border-gray-700 relative">
-        <div className="absolute inset-0 bg-gray-800 flex items-center justify-center z-10">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-            <p className="text-gray-400 text-sm">Loading widget...</p>
+      <div className="w-full rounded-lg overflow-hidden border border-gray-700 relative bg-white">
+        {isLoading && (
+          <div className="absolute inset-0 bg-gray-800 flex items-center justify-center z-10">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
+              <p className="text-gray-400 text-sm">Loading Dukascopy widget...</p>
+            </div>
           </div>
-        </div>
-        <iframe
-          src="/dukascopy-widget.html"
-          width="100%"
-          height="550"
-          frameBorder="0"
+        )}
+        
+        {/* Container div for the Dukascopy widget */}
+        <div 
+          ref={containerRef} 
           style={{ 
-            border: 'none',
-            display: 'block',
-            background: 'white'
+            width: '100%', 
+            height: '550px',
+            minHeight: '550px'
           }}
-          title="Dukascopy Historical Data Widget"
-          sandbox="allow-scripts allow-same-origin allow-popups allow-forms allow-popups-to-escape-sandbox"
-          allow="scripts; popups; same-origin; forms"
-          onError={handleIframeError}
         />
       </div>
     </div>
