@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https://freeserv-static.dukascopy.com https://*.dukascopy.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://freeserv-static.dukascopy.com https://*.dukascopy.com;">
     <title>Dukascopy Historical Data Widget</title>
     <style>
         body { 
@@ -16,23 +17,96 @@
         #widget-container {
             width: 100%;
             height: 550px;
+            position: relative;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+        #error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: red;
+            display: none;
+        }
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
-    <div id="widget-container"></div>
+    <div id="widget-container">
+        <div id="loading">
+            <div class="spinner"></div>
+            <p>Loading Dukascopy Widget...</p>
+        </div>
+        <div id="error">
+            <p>Unable to load Dukascopy Widget</p>
+            <p><a href="https://www.dukascopy.com/swiss/english/marketwatch/historical/" target="_blank" rel="noopener noreferrer">Open Dukascopy Historical Data</a></p>
+        </div>
+    </div>
+    
     <script type="text/javascript">
-        DukascopyApplet = {
+        console.log('Dukascopy widget HTML loaded');
+        
+        // Show error after timeout if widget doesn't load
+        const errorTimeout = setTimeout(() => {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+            console.error('Dukascopy widget failed to load within timeout');
+        }, 10000);
+        
+        // Dukascopy widget configuration
+        window.DukascopyApplet = {
             "type": "historical_data_feed",
             "params": {
                 "header": false,
                 "availableInstruments": "l:",
                 "width": "100%",
                 "height": "550",
-                "adv": "popup"
+                "adv": "popup",
+                "container": "widget-container"
             }
         };
+        
+        console.log('DukascopyApplet configured:', window.DukascopyApplet);
+        
+        // Load Dukascopy script
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = 'https://freeserv-static.dukascopy.com/2.0/core.js';
+        script.onload = function() {
+            console.log('Dukascopy core script loaded successfully');
+            clearTimeout(errorTimeout);
+            // Hide loading after script loads
+            setTimeout(() => {
+                document.getElementById('loading').style.display = 'none';
+            }, 2000);
+        };
+        script.onerror = function() {
+            console.error('Failed to load Dukascopy core script');
+            clearTimeout(errorTimeout);
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('error').style.display = 'block';
+        };
+        
+        document.head.appendChild(script);
     </script>
-    <script type="text/javascript" src="https://freeserv-static.dukascopy.com/2.0/core.js"></script>
 </body>
 </html>
