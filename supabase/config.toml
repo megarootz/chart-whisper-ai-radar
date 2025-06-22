@@ -3,3 +3,6 @@ project_id = "npougftucphdtujkyyfz"
 
 [functions.analyze-chart]
 verify_jwt = true
+
+[functions.download-historical-data]
+verify_jwt = true

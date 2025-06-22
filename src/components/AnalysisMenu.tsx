@@ -1,10 +1,10 @@
-
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Camera, TrendingUp } from 'lucide-react';
 import ChartUploader from './ChartUploader';
 import IcebergPopupAnimation from './IcebergPopupAnimation';
 import DukascopyWidget from './DukascopyWidget';
+import HistoricalDataDownloader from './HistoricalDataDownloader';
 
 interface AnalysisMenuProps {
   onChartUpload: (file: File) => void;
@@ -77,6 +77,7 @@ const AnalysisMenu = ({ onChartUpload }: AnalysisMenuProps) => {
                     Diving deep into historical market data to uncover patterns and insights hidden beneath the surface
                   </p>
                 </div>
+                <HistoricalDataDownloader />
                 <DukascopyWidget />
               </div>
             ) : (
