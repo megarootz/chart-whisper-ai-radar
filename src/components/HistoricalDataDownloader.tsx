@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -220,8 +221,8 @@ const HistoricalDataDownloader = () => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-gray-700 border-gray-600 text-white hover:bg-gray-600",
-                            !field.value && "text-gray-400"
+                            "w-full pl-3 text-left font-normal bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:text-gray-900",
+                            !field.value && "text-gray-500"
                           )}
                         >
                           {field.value ? (
@@ -233,7 +234,7 @@ const HistoricalDataDownloader = () => {
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-gray-700 border-gray-600" align="start">
+                    <PopoverContent className="w-auto p-0 bg-white border-gray-300" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
@@ -261,8 +262,8 @@ const HistoricalDataDownloader = () => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-gray-700 border-gray-600 text-white hover:bg-gray-600",
-                            !field.value && "text-gray-400"
+                            "w-full pl-3 text-left font-normal bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:text-gray-900",
+                            !field.value && "text-gray-500"
                           )}
                         >
                           {field.value ? (
@@ -274,7 +275,7 @@ const HistoricalDataDownloader = () => {
                         </Button>
                       </FormControl>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-gray-700 border-gray-600" align="start">
+                    <PopoverContent className="w-auto p-0 bg-white border-gray-300" align="start">
                       <Calendar
                         mode="single"
                         selected={field.value}
