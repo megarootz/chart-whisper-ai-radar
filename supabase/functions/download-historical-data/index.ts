@@ -8,6 +8,7 @@ const corsHeaders = {
 interface RequestData {
   currencyPair: string;
   timeframe: string;
+  fileFormat: string;
   fromDate: string;
   toDate: string;
 }
@@ -19,9 +20,9 @@ serve(async (req) => {
   }
 
   try {
-    const { currencyPair, timeframe, fromDate, toDate }: RequestData = await req.json();
+    const { currencyPair, timeframe, fileFormat = 'csv', fromDate, toDate }: RequestData = await req.json();
     
-    console.log('Historical data request:', { currencyPair, timeframe, fromDate, toDate });
+    console.log('Historical data request:', { currencyPair, timeframe, fileFormat, fromDate, toDate });
 
     // Validate date range (max 12 months)
     const startDate = new Date(fromDate);
@@ -40,13 +41,16 @@ serve(async (req) => {
     }
 
     // Fetch real data from your Replit API
-    const csvData = await fetchReplitData(currencyPair, timeframe, startDate, endDate);
+    const fileData = await fetchReplitData(currencyPair, timeframe, startDate, endDate, fileFormat);
     
-    return new Response(csvData, {
+    const contentType = fileFormat === 'csv' ? 'text/csv' : 'text/plain';
+    const fileExtension = fileFormat === 'csv' ? 'csv' : 'txt';
+    
+    return new Response(fileData, {
       headers: {
         ...corsHeaders,
-        'Content-Type': 'text/csv',
-        'Content-Disposition': `attachment; filename="${currencyPair}_${timeframe}_${fromDate}_${toDate}.csv"`
+        'Content-Type': contentType,
+        'Content-Disposition': `attachment; filename="${currencyPair}_${timeframe}_${fromDate}_${toDate}.${fileExtension}"`
       }
     });
 
@@ -63,7 +67,7 @@ serve(async (req) => {
   }
 });
 
-async function fetchReplitData(pair: string, timeframe: string, startDate: Date, endDate: Date): Promise<string> {
+async function fetchReplitData(pair: string, timeframe: string, startDate: Date, endDate: Date, fileFormat: string): Promise<string> {
   try {
     // Map our currency pairs to Replit API format (lowercase)
     const pairMapping: Record<string, string> = {
@@ -140,9 +144,9 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
     const data = await response.text();
     console.log('Replit API response data (first 500 chars):', data.substring(0, 500));
     
-    // If we got data, process it to our CSV format
+    // If we got data, process it to our format
     if (data && data.length > 10 && !data.includes('error') && !data.includes('Error')) {
-      return processReplitData(data, pair);
+      return processReplitData(data, pair, fileFormat);
     } else {
       console.log('No valid data received from Replit API');
       throw new Error('No valid data received from Replit API');
@@ -153,17 +157,20 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
     
     // Fallback: Generate realistic sample data
     console.log('Generating sample data as fallback');
-    return generateRealisticSampleData(pair, startDate, endDate, timeframe);
+    return generateRealisticSampleData(pair, startDate, endDate, timeframe, fileFormat);
   }
 }
 
-function processReplitData(data: string, pair: string): string {
-  // Process Replit data format and convert to our CSV format
-  const header = 'DATE,TIME,OPEN,HIGH,LOW,CLOSE,TICKVOL,VOL,SPREAD\n';
+function processReplitData(data: string, pair: string, fileFormat: string): string {
+  // Process Replit data format and convert to our format
+  const header = fileFormat === 'csv' 
+    ? 'DATE,TIME,OPEN,HIGH,LOW,CLOSE,TICKVOL,VOL,SPREAD\n'
+    : 'DATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
+    
+  let fileContent = header;
   
   try {
     const lines = data.trim().split('\n');
-    let csvContent = header;
     
     console.log('Processing Replit data, total lines:', lines.length);
     console.log('First few lines for analysis:', lines.slice(0, 5));
@@ -207,8 +214,13 @@ function processReplitData(data: string, pair: string): string {
           const date = new Date(timestamp);
           
           if (!isNaN(date.getTime())) {
-            dateStr = date.toISOString().split('T')[0];
-            timeStr = date.toTimeString().split(' ')[0];
+            // Ensure proper date formatting to avoid Excel issues
+            dateStr = date.getFullYear() + '-' + 
+                     String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(date.getDate()).padStart(2, '0');
+            timeStr = String(date.getHours()).padStart(2, '0') + ':' + 
+                     String(date.getMinutes()).padStart(2, '0') + ':' + 
+                     String(date.getSeconds()).padStart(2, '0');
             console.log('Converted timestamp to:', { dateStr, timeStr });
             
             // OHLC values start from index 1 for timestamp format
@@ -226,8 +238,12 @@ function processReplitData(data: string, pair: string): string {
           const datetime = new Date(firstColumn);
           
           if (!isNaN(datetime.getTime())) {
-            dateStr = datetime.toISOString().split('T')[0];
-            timeStr = datetime.toTimeString().split(' ')[0];
+            dateStr = datetime.getFullYear() + '-' + 
+                     String(datetime.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(datetime.getDate()).padStart(2, '0');
+            timeStr = String(datetime.getHours()).padStart(2, '0') + ':' + 
+                     String(datetime.getMinutes()).padStart(2, '0') + ':' + 
+                     String(datetime.getSeconds()).padStart(2, '0');
             
             // OHLC values start from index 1 for combined datetime
             open = parseFloat(parts[1]);
@@ -241,7 +257,17 @@ function processReplitData(data: string, pair: string): string {
         } else {
           // Separate date and time columns
           console.log('Detected separate date/time columns');
-          dateStr = firstColumn;
+          
+          // Validate and format the date
+          const inputDate = new Date(firstColumn);
+          if (!isNaN(inputDate.getTime())) {
+            dateStr = inputDate.getFullYear() + '-' + 
+                     String(inputDate.getMonth() + 1).padStart(2, '0') + '-' + 
+                     String(inputDate.getDate()).padStart(2, '0');
+          } else {
+            dateStr = firstColumn; // Keep as is if already formatted
+          }
+          
           timeStr = parts[1] || '00:00:00';
           
           // OHLC values start from index 2 for separate date/time
@@ -274,7 +300,13 @@ function processReplitData(data: string, pair: string): string {
                       pair.includes('XAG') ? Math.floor(Math.random() * 15) + 5 :
                       Math.floor(Math.random() * 5) + 1;
         
-        csvContent += `${dateStr},${timeStr},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${volume},${Math.floor(volume/10)},${spread}\n`;
+        // Format based on file type
+        if (fileFormat === 'csv') {
+          fileContent += `${dateStr},${timeStr},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${volume},${Math.floor(volume/10)},${spread}\n`;
+        } else {
+          // Text format with tab separation for better alignment
+          fileContent += `${dateStr}\t\t${timeStr}\t\t${open.toFixed(decimals)}\t\t${high.toFixed(decimals)}\t\t${low.toFixed(decimals)}\t\t${close.toFixed(decimals)}\t\t${volume}\t${Math.floor(volume/10)}\t${spread}\n`;
+        }
         
       } catch (lineError) {
         console.error('Error processing line:', lineError, 'Line content:', parts);
@@ -282,8 +314,8 @@ function processReplitData(data: string, pair: string): string {
       }
     }
     
-    console.log('Successfully processed Replit data, output lines:', csvContent.split('\n').length - 2);
-    return csvContent;
+    console.log('Successfully processed Replit data, output lines:', fileContent.split('\n').length - 2);
+    return fileContent;
     
   } catch (error) {
     console.error('Error processing Replit data:', error);
@@ -291,9 +323,12 @@ function processReplitData(data: string, pair: string): string {
   }
 }
 
-function generateRealisticSampleData(pair: string, startDate: Date, endDate: Date, timeframe: string): string {
-  const header = '# NOTE: This is sample data - Replit API could not be accessed\nDATE,TIME,OPEN,HIGH,LOW,CLOSE,TICKVOL,VOL,SPREAD\n';
-  let csvContent = header;
+function generateRealisticSampleData(pair: string, startDate: Date, endDate: Date, timeframe: string, fileFormat: string): string {
+  const header = fileFormat === 'csv'
+    ? '# NOTE: This is sample data - Replit API could not be accessed\nDATE,TIME,OPEN,HIGH,LOW,CLOSE,TICKVOL,VOL,SPREAD\n'
+    : '# NOTE: This is sample data - Replit API could not be accessed\nDATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
+    
+  let fileContent = header;
   
   // Map timeframes to minutes
   const timeframeMap: Record<string, number> = {
@@ -404,8 +439,13 @@ function generateRealisticSampleData(pair: string, startDate: Date, endDate: Dat
   }
   
   while (current <= endDate) {
-    const date = current.toISOString().split('T')[0];
-    const time = current.toTimeString().split(' ')[0];
+    // Ensure proper date formatting to avoid Excel issues
+    const dateStr = current.getFullYear() + '-' + 
+                   String(current.getMonth() + 1).padStart(2, '0') + '-' + 
+                   String(current.getDate()).padStart(2, '0');
+    const timeStr = String(current.getHours()).padStart(2, '0') + ':' + 
+                   String(current.getMinutes()).padStart(2, '0') + ':' + 
+                   String(current.getSeconds()).padStart(2, '0');
     
     // Generate more realistic price movements with proper volatility
     const volatility = pair.includes('XAU') ? 0.015 : pair.includes('XAG') ? 0.03 : 
@@ -427,11 +467,18 @@ function generateRealisticSampleData(pair: string, startDate: Date, endDate: Dat
                    Math.floor(Math.random() * 5) + 1;
     
     const decimals = pair.includes('JPY') ? 3 : 5;
-    csvContent += `${date},${time},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${tickvol},${vol},${spread}\n`;
+    
+    // Format based on file type
+    if (fileFormat === 'csv') {
+      fileContent += `${dateStr},${timeStr},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${tickvol},${vol},${spread}\n`;
+    } else {
+      // Text format with tab separation for better alignment
+      fileContent += `${dateStr}\t\t${timeStr}\t\t${open.toFixed(decimals)}\t\t${high.toFixed(decimals)}\t\t${low.toFixed(decimals)}\t\t${close.toFixed(decimals)}\t\t${tickvol}\t${vol}\t${spread}\n`;
+    }
     
     basePrice = close; // Use close as next base price for continuity
     current.setMinutes(current.getMinutes() + intervalMinutes);
   }
   
-  return csvContent;
+  return fileContent;
 }
