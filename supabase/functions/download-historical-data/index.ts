@@ -166,80 +166,125 @@ function processReplitData(data: string, pair: string): string {
     let csvContent = header;
     
     console.log('Processing Replit data, total lines:', lines.length);
-    console.log('First few lines:', lines.slice(0, 3));
+    console.log('First few lines for analysis:', lines.slice(0, 5));
     
     // Skip header line if present
-    const startIndex = lines[0].toLowerCase().includes('date') || 
-                       lines[0].toLowerCase().includes('time') || 
-                       lines[0].toLowerCase().includes('timestamp') ? 1 : 0;
+    const startIndex = lines[0] && (
+      lines[0].toLowerCase().includes('date') || 
+      lines[0].toLowerCase().includes('time') || 
+      lines[0].toLowerCase().includes('timestamp') ||
+      lines[0].toLowerCase().includes('open')
+    ) ? 1 : 0;
+    
+    console.log('Starting from line index:', startIndex);
     
     for (let i = startIndex; i < lines.length; i++) {
       const line = lines[i].trim();
-      if (line) {
-        const parts = line.split(',');
-        console.log(`Processing line ${i}:`, parts);
+      if (!line) continue;
+      
+      const parts = line.split(',');
+      console.log(`Processing line ${i}:`, parts);
+      
+      if (parts.length < 4) {
+        console.log('Insufficient columns in line:', parts.length);
+        continue;
+      }
+      
+      let dateStr, timeStr, open, high, low, close;
+      
+      try {
+        // Enhanced timestamp detection and conversion
+        const firstColumn = parts[0].trim();
+        console.log('First column value:', firstColumn);
         
-        if (parts.length >= 5) {
-          // Handle different timestamp formats
-          let dateStr, timeStr;
+        // Check if first column is a Unix timestamp (number > 1000000000)
+        const timestampValue = parseFloat(firstColumn);
+        if (!isNaN(timestampValue) && timestampValue > 1000000000) {
+          console.log('Detected Unix timestamp:', timestampValue);
           
-          // Check if first column contains both date and time (ISO format or similar)
-          if (parts[0].includes('T') || parts[0].includes(' ')) {
-            // Combined datetime in first column
-            const datetime = new Date(parts[0]);
-            if (!isNaN(datetime.getTime())) {
-              dateStr = datetime.toISOString().split('T')[0];
-              timeStr = datetime.toTimeString().split(' ')[0];
-            } else {
-              // Try to split on space or T
-              const splitChar = parts[0].includes('T') ? 'T' : ' ';
-              const [datePart, timePart] = parts[0].split(splitChar);
-              dateStr = datePart;
-              timeStr = timePart || '00:00:00';
-            }
-          } else {
-            // Separate date and time columns
-            dateStr = parts[0];
-            timeStr = parts[1] || '00:00:00';
-          }
+          // Handle both millisecond and second timestamps
+          const timestamp = timestampValue > 10000000000 ? timestampValue : timestampValue * 1000;
+          const date = new Date(timestamp);
           
-          // Parse OHLC values - adjust indices based on format
-          let open, high, low, close;
-          
-          if (parts[0].includes('T') || parts[0].includes(' ')) {
-            // Combined datetime format: datetime, open, high, low, close
+          if (!isNaN(date.getTime())) {
+            dateStr = date.toISOString().split('T')[0];
+            timeStr = date.toTimeString().split(' ')[0];
+            console.log('Converted timestamp to:', { dateStr, timeStr });
+            
+            // OHLC values start from index 1 for timestamp format
             open = parseFloat(parts[1]);
             high = parseFloat(parts[2]);
             low = parseFloat(parts[3]);
             close = parseFloat(parts[4]);
           } else {
-            // Separate date/time format: date, time, open, high, low, close
-            open = parseFloat(parts[2]);
-            high = parseFloat(parts[3]);
-            low = parseFloat(parts[4]);
-            close = parseFloat(parts[5]);
+            console.log('Invalid timestamp conversion');
+            continue;
           }
+        } else if (firstColumn.includes('T') || firstColumn.includes(' ')) {
+          // ISO datetime or similar format
+          console.log('Detected datetime string:', firstColumn);
+          const datetime = new Date(firstColumn);
           
-          // Validate the parsed values
-          if (!isNaN(open) && !isNaN(high) && !isNaN(low) && !isNaN(close)) {
-            const decimals = pair.includes('JPY') ? 3 : 5;
-            const volume = Math.floor(Math.random() * 1000) + 100;
-            const spread = pair.includes('XAU') ? Math.floor(Math.random() * 20) + 10 : 
-                          pair.includes('XAG') ? Math.floor(Math.random() * 15) + 5 :
-                          Math.floor(Math.random() * 5) + 1;
+          if (!isNaN(datetime.getTime())) {
+            dateStr = datetime.toISOString().split('T')[0];
+            timeStr = datetime.toTimeString().split(' ')[0];
             
-            csvContent += `${dateStr},${timeStr},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${volume},${Math.floor(volume/10)},${spread}\n`;
+            // OHLC values start from index 1 for combined datetime
+            open = parseFloat(parts[1]);
+            high = parseFloat(parts[2]);
+            low = parseFloat(parts[3]);
+            close = parseFloat(parts[4]);
           } else {
-            console.log('Invalid OHLC values:', { open, high, low, close });
+            console.log('Invalid datetime string');
+            continue;
           }
         } else {
-          console.log('Insufficient columns in line:', parts.length);
+          // Separate date and time columns
+          console.log('Detected separate date/time columns');
+          dateStr = firstColumn;
+          timeStr = parts[1] || '00:00:00';
+          
+          // OHLC values start from index 2 for separate date/time
+          open = parseFloat(parts[2]);
+          high = parseFloat(parts[3]);
+          low = parseFloat(parts[4]);
+          close = parseFloat(parts[5]);
         }
+        
+        console.log('Parsed values:', { dateStr, timeStr, open, high, low, close });
+        
+        // Validate all parsed values
+        if (!dateStr || !timeStr || isNaN(open) || isNaN(high) || isNaN(low) || isNaN(close)) {
+          console.log('Invalid parsed values, skipping line');
+          continue;
+        }
+        
+        // Validate OHLC logic (high >= open,close,low and low <= open,close,high)
+        if (high < Math.max(open, close, low) || low > Math.min(open, close, high)) {
+          console.log('Invalid OHLC relationship, adjusting...');
+          // Fix invalid OHLC relationships
+          const prices = [open, close];
+          high = Math.max(high, ...prices);
+          low = Math.min(low, ...prices);
+        }
+        
+        const decimals = pair.includes('JPY') ? 3 : 5;
+        const volume = Math.floor(Math.random() * 1000) + 100;
+        const spread = pair.includes('XAU') ? Math.floor(Math.random() * 20) + 10 : 
+                      pair.includes('XAG') ? Math.floor(Math.random() * 15) + 5 :
+                      Math.floor(Math.random() * 5) + 1;
+        
+        csvContent += `${dateStr},${timeStr},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${volume},${Math.floor(volume/10)},${spread}\n`;
+        
+      } catch (lineError) {
+        console.error('Error processing line:', lineError, 'Line content:', parts);
+        continue;
       }
     }
     
-    console.log('Successfully processed Replit data, output lines:', csvContent.split('\n').length - 1);
+    console.log('Successfully processed Replit data, output lines:', csvContent.split('\n').length - 2);
     return csvContent;
+    
   } catch (error) {
     console.error('Error processing Replit data:', error);
     throw error;
