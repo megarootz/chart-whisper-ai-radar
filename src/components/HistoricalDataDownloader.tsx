@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -67,24 +66,20 @@ const formSchema = z.object({
   fromDate: z.date({
     required_error: 'From date is required',
   }),
-  toDate: z.date({
-    required_error: 'To date is required',
-  }),
-}).refine((data) => data.toDate > data.fromDate, {
-  message: 'To date must be after from date',
-  path: ['toDate'],
 }).refine((data) => {
-  const diffTime = Math.abs(data.toDate.getTime() - data.fromDate.getTime());
+  const today = new Date();
+  const diffTime = Math.abs(today.getTime() - data.fromDate.getTime());
   const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
   return diffMonths <= 12;
 }, {
-  message: 'Date range cannot exceed 12 months',
-  path: ['toDate'],
+  message: 'Date range cannot exceed 12 months from today',
+  path: ['fromDate'],
 });
 
 const HistoricalDataDownloader = () => {
   const [isDownloading, setIsDownloading] = useState(false);
   const { toast } = useToast();
+  const today = new Date();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -104,7 +99,7 @@ const HistoricalDataDownloader = () => {
           timeframe: values.timeframe,
           fileFormat: 'txt',
           fromDate: format(values.fromDate, 'yyyy-MM-dd'),
-          toDate: format(values.toDate, 'yyyy-MM-dd'),
+          toDate: format(today, 'yyyy-MM-dd'),
         },
       });
 
@@ -117,7 +112,7 @@ const HistoricalDataDownloader = () => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${values.currencyPair}_${values.timeframe}_${format(values.fromDate, 'yyyy-MM-dd')}_${format(values.toDate, 'yyyy-MM-dd')}.txt`;
+      link.download = `${values.currencyPair}_${values.timeframe}_${format(values.fromDate, 'yyyy-MM-dd')}_${format(today, 'yyyy-MM-dd')}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -221,8 +216,8 @@ const HistoricalDataDownloader = () => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:text-gray-900",
-                            !field.value && "text-gray-500"
+                            "w-full pl-3 text-left font-normal bg-gray-200 border-gray-400 text-gray-800 hover:bg-gray-300",
+                            !field.value && "text-gray-600"
                           )}
                         >
                           {field.value ? (
@@ -250,46 +245,16 @@ const HistoricalDataDownloader = () => {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="toDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="text-white">To Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal bg-gray-100 border-gray-300 text-gray-900 hover:bg-gray-200 hover:text-gray-900",
-                            !field.value && "text-gray-500"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Pick end date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-white border-gray-300" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date > new Date()}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="flex flex-col">
+              <FormLabel className="text-white mb-2">To Date</FormLabel>
+              <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
+                <div className="flex items-center justify-between">
+                  <span>{format(today, 'PPP')} (Latest)</span>
+                  <CalendarIcon className="h-4 w-4 opacity-30" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Automatically set to today's date</p>
+            </div>
           </div>
 
           <Button 
