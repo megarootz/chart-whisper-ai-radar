@@ -280,33 +280,69 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
         continue;
       }
       
-      // Handle numbered sections (1., 2., 3., etc.)
-      if (line.match(/^\d+\./)) {
-        result.push(
-          <div key={`section-${i}`} className="mb-6">
-            <h3 className="text-lg font-semibold text-white mb-3">
-              {line.trim()}
-            </h3>
-          </div>
-        );
+      // Handle numbered sections with ### removal and bold formatting
+      if (line.match(/^#{1,3}\s*\d+\./)) {
+        // Remove ### and format with bold numbers
+        const cleanedLine = line.replace(/^#{1,3}\s*/, '').trim();
+        const numberMatch = cleanedLine.match(/^(\d+\.)\s*(.*)/);
+        
+        if (numberMatch) {
+          result.push(
+            <div key={`section-${i}`} className="mb-6 mt-8">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                <span className="font-bold text-primary">{numberMatch[1]}</span> {numberMatch[2]}
+              </h3>
+            </div>
+          );
+        } else {
+          result.push(
+            <div key={`section-${i}`} className="mb-6 mt-8">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                {cleanedLine}
+              </h3>
+            </div>
+          );
+        }
       }
-      // Handle bullet points
+      // Handle regular numbered sections without ###
+      else if (line.match(/^\d+\./)) {
+        const numberMatch = line.match(/^(\d+\.)\s*(.*)/);
+        
+        if (numberMatch) {
+          result.push(
+            <div key={`section-${i}`} className="mb-6 mt-8">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                <span className="font-bold text-primary">{numberMatch[1]}</span> {numberMatch[2]}
+              </h3>
+            </div>
+          );
+        } else {
+          result.push(
+            <div key={`section-${i}`} className="mb-6 mt-8">
+              <h3 className="text-lg font-semibold text-white mb-4">
+                {line.trim()}
+              </h3>
+            </div>
+          );
+        }
+      }
+      // Handle bullet points with better spacing
       else if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
         const bulletContent = line.trim().replace(/^[•-]\s*/, '');
         result.push(
-          <div key={`bullet-${i}`} className="mb-3 ml-4">
+          <div key={`bullet-${i}`} className="mb-4 ml-6">
             <div className="flex items-start">
-              <span className="text-primary mr-3 mt-1">•</span>
+              <span className="text-primary mr-3 mt-1 font-bold">•</span>
               <span className="text-gray-100 leading-relaxed">{bulletContent}</span>
             </div>
           </div>
         );
       }
-      // Handle sub-bullets (lines starting with spaces and then bullet)
+      // Handle sub-bullets with improved spacing
       else if (line.trim().startsWith('- ') && line.startsWith('  ')) {
         const subBulletContent = line.trim().replace(/^-\s*/, '');
         result.push(
-          <div key={`sub-bullet-${i}`} className="mb-2 ml-8">
+          <div key={`sub-bullet-${i}`} className="mb-3 ml-12">
             <div className="flex items-start">
               <span className="text-gray-400 mr-3 mt-1">-</span>
               <span className="text-gray-200 leading-relaxed text-sm">{subBulletContent}</span>
@@ -314,10 +350,22 @@ const AnalysisResult = ({ data }: { data: AnalysisResultData }) => {
           </div>
         );
       }
-      // Regular text content
+      // Handle bold text formatting for key terms
+      else if (line.trim() && line.includes('**')) {
+        const formattedText = line.trim().replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
+        result.push(
+          <div key={`text-${i}`} className="mb-4 ml-6">
+            <span 
+              className="text-gray-100 leading-relaxed" 
+              dangerouslySetInnerHTML={{ __html: formattedText }}
+            />
+          </div>
+        );
+      }
+      // Regular text content with better spacing
       else if (line.trim()) {
         result.push(
-          <div key={`text-${i}`} className="mb-3">
+          <div key={`text-${i}`} className="mb-4">
             <span className="text-gray-100 leading-relaxed">{line.trim()}</span>
           </div>
         );
