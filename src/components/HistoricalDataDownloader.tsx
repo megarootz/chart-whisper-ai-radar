@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -85,17 +84,16 @@ const HistoricalDataDownloader = () => {
     defaultValues: {
       currencyPair: '',
       timeframe: '',
+      fromDate: today, // Set default to today
     },
   });
 
   const selectedTimeframe = form.watch('timeframe');
 
-  // Auto-set from date when timeframe changes
+  // Auto-set from date to today when timeframe changes
   useEffect(() => {
-    if (selectedTimeframe && TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS]) {
-      const daysBack = TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS];
-      const fromDate = subDays(today, daysBack);
-      form.setValue('fromDate', fromDate);
+    if (selectedTimeframe) {
+      form.setValue('fromDate', today);
     }
   }, [selectedTimeframe, form, today]);
 
@@ -220,7 +218,7 @@ const HistoricalDataDownloader = () => {
                   {selectedTimeframe && (
                     <div className="flex items-center mt-2 text-sm text-blue-400">
                       <Info className="w-4 h-4 mr-1" />
-                      <span>Data range limited to {getTimeframeLimitText(selectedTimeframe)} for optimal performance</span>
+                      <span>Using latest available data for optimal performance</span>
                     </div>
                   )}
                   <FormMessage />
@@ -230,51 +228,16 @@ const HistoricalDataDownloader = () => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-              control={form.control}
-              name="fromDate"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel className="text-white">From Date</FormLabel>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <FormControl>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full pl-3 text-left font-normal bg-gray-100 border-gray-300 text-gray-800 hover:bg-gray-200",
-                            !field.value && "text-gray-500"
-                          )}
-                        >
-                          {field.value ? (
-                            format(field.value, 'PPP')
-                          ) : (
-                            <span>Pick start date</span>
-                          )}
-                          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                        </Button>
-                      </FormControl>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 bg-white border-gray-300" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={field.value}
-                        onSelect={field.onChange}
-                        disabled={(date) => date > new Date()}
-                        initialFocus
-                        className="pointer-events-auto"
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {selectedTimeframe && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Auto-set based on timeframe selection
-                    </p>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="flex flex-col">
+              <FormLabel className="text-white mb-2">From Date</FormLabel>
+              <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
+                <div className="flex items-center justify-between">
+                  <span>{format(today, 'PPP')} (Latest)</span>
+                  <CalendarIcon className="h-4 w-4 opacity-30" />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Automatically set to today's date</p>
+            </div>
 
             <div className="flex flex-col">
               <FormLabel className="text-white mb-2">To Date</FormLabel>
