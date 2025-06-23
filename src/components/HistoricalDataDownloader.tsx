@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format } from 'date-fns';
-import { CalendarIcon, Download, Loader2 } from 'lucide-react';
+import { format, subDays } from 'date-fns';
+import { CalendarIcon, Download, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -55,10 +56,16 @@ const TIMEFRAMES = [
   { value: 'D1', label: '1 Day' },
 ];
 
-const FILE_FORMATS = [
-  { value: 'csv', label: 'CSV File' },
-  { value: 'txt', label: 'Text File' },
-];
+// Define the maximum days for each timeframe for optimal performance
+const TIMEFRAME_LIMITS = {
+  'M1': 1,   // 1 day
+  'M5': 4,   // 4 days
+  'M15': 5,  // 5 days
+  'M30': 6,  // 6 days
+  'H1': 10,  // 10 days
+  'H4': 25,  // 25 days
+  'D1': 100, // 100 days
+};
 
 const formSchema = z.object({
   currencyPair: z.string().min(1, 'Please select a currency pair'),
@@ -66,14 +73,6 @@ const formSchema = z.object({
   fromDate: z.date({
     required_error: 'From date is required',
   }),
-}).refine((data) => {
-  const today = new Date();
-  const diffTime = Math.abs(today.getTime() - data.fromDate.getTime());
-  const diffMonths = diffTime / (1000 * 60 * 60 * 24 * 30);
-  return diffMonths <= 12;
-}, {
-  message: 'Date range cannot exceed 12 months from today',
-  path: ['fromDate'],
 });
 
 const HistoricalDataDownloader = () => {
@@ -88,6 +87,27 @@ const HistoricalDataDownloader = () => {
       timeframe: '',
     },
   });
+
+  const selectedTimeframe = form.watch('timeframe');
+
+  // Auto-set from date when timeframe changes
+  useEffect(() => {
+    if (selectedTimeframe && TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS]) {
+      const daysBack = TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS];
+      const fromDate = subDays(today, daysBack);
+      form.setValue('fromDate', fromDate);
+    }
+  }, [selectedTimeframe, form, today]);
+
+  const getTimeframeLimitText = (timeframe: string) => {
+    const days = TIMEFRAME_LIMITS[timeframe as keyof typeof TIMEFRAME_LIMITS];
+    if (!days) return '';
+    
+    if (days === 1) return '1 day';
+    if (days < 30) return `${days} days`;
+    if (days < 365) return `${Math.round(days / 30)} months`;
+    return `${Math.round(days / 365)} year`;
+  };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsDownloading(true);
@@ -197,6 +217,12 @@ const HistoricalDataDownloader = () => {
                       ))}
                     </SelectContent>
                   </Select>
+                  {selectedTimeframe && (
+                    <div className="flex items-center mt-2 text-sm text-blue-400">
+                      <Info className="w-4 h-4 mr-1" />
+                      <span>Data range limited to {getTimeframeLimitText(selectedTimeframe)} for optimal performance</span>
+                    </div>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
@@ -216,8 +242,8 @@ const HistoricalDataDownloader = () => {
                         <Button
                           variant="outline"
                           className={cn(
-                            "w-full pl-3 text-left font-normal bg-gray-200 border-gray-400 text-gray-800 hover:bg-gray-300",
-                            !field.value && "text-gray-600"
+                            "w-full pl-3 text-left font-normal bg-gray-100 border-gray-300 text-gray-800 hover:bg-gray-200",
+                            !field.value && "text-gray-500"
                           )}
                         >
                           {field.value ? (
@@ -240,6 +266,11 @@ const HistoricalDataDownloader = () => {
                       />
                     </PopoverContent>
                   </Popover>
+                  {selectedTimeframe && (
+                    <p className="text-xs text-gray-400 mt-1">
+                      Auto-set based on timeframe selection
+                    </p>
+                  )}
                   <FormMessage />
                 </FormItem>
               )}
