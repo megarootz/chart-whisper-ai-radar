@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -16,14 +15,34 @@ import { useToast } from '@/hooks/use-toast';
 
 const CURRENCY_PAIRS = [
   { value: 'EURUSD', label: 'EUR/USD' },
-  { value: 'GBPUSD', label: 'GBP/USD' },
   { value: 'USDJPY', label: 'USD/JPY' },
-  { value: 'USDCHF', label: 'USD/CHF' },
+  { value: 'GBPUSD', label: 'GBP/USD' },
+  { value: 'EURJPY', label: 'EUR/JPY' },
   { value: 'USDCAD', label: 'USD/CAD' },
   { value: 'AUDUSD', label: 'AUD/USD' },
-  { value: 'NZDUSD', label: 'NZD/USD' },
   { value: 'XAUUSD', label: 'XAU/USD (Gold)' },
   { value: 'XAGUSD', label: 'XAG/USD (Silver)' },
+  { value: 'AUDCAD', label: 'AUD/CAD' },
+  { value: 'AUDCHF', label: 'AUD/CHF' },
+  { value: 'AUDJPY', label: 'AUD/JPY' },
+  { value: 'AUDNZD', label: 'AUD/NZD' },
+  { value: 'CADCHF', label: 'CAD/CHF' },
+  { value: 'CADJPY', label: 'CAD/JPY' },
+  { value: 'CHFJPY', label: 'CHF/JPY' },
+  { value: 'EURAUD', label: 'EUR/AUD' },
+  { value: 'EURCAD', label: 'EUR/CAD' },
+  { value: 'EURCHF', label: 'EUR/CHF' },
+  { value: 'EURGBP', label: 'EUR/GBP' },
+  { value: 'EURNZD', label: 'EUR/NZD' },
+  { value: 'GBPAUD', label: 'GBP/AUD' },
+  { value: 'GBPCAD', label: 'GBP/CAD' },
+  { value: 'GBPCHF', label: 'GBP/CHF' },
+  { value: 'GBPJPY', label: 'GBP/JPY' },
+  { value: 'GBPNZD', label: 'GBP/NZD' },
+  { value: 'NZDCAD', label: 'NZD/CAD' },
+  { value: 'NZDCHF', label: 'NZD/CHF' },
+  { value: 'NZDUSD', label: 'NZD/USD' },
+  { value: 'USDCHF', label: 'USD/CHF' },
 ];
 
 const TIMEFRAMES = [
