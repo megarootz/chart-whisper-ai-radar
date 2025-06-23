@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 
 const corsHeaders = {
@@ -139,7 +138,7 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
     }
 
     const data = await response.text();
-    console.log('Replit API response data length:', data.length);
+    console.log('Replit API response data (first 500 chars):', data.substring(0, 500));
     
     // If we got data, process it to our CSV format
     if (data && data.length > 10 && !data.includes('error') && !data.includes('Error')) {
@@ -163,34 +162,83 @@ function processReplitData(data: string, pair: string): string {
   const header = 'DATE,TIME,OPEN,HIGH,LOW,CLOSE,TICKVOL,VOL,SPREAD\n';
   
   try {
-    // If the data is already in proper CSV format from Replit, we might just need to add our header
     const lines = data.trim().split('\n');
     let csvContent = header;
     
+    console.log('Processing Replit data, total lines:', lines.length);
+    console.log('First few lines:', lines.slice(0, 3));
+    
     // Skip header line if present
-    const startIndex = lines[0].toLowerCase().includes('date') || lines[0].toLowerCase().includes('time') ? 1 : 0;
+    const startIndex = lines[0].toLowerCase().includes('date') || 
+                       lines[0].toLowerCase().includes('time') || 
+                       lines[0].toLowerCase().includes('timestamp') ? 1 : 0;
     
     for (let i = startIndex; i < lines.length; i++) {
       const line = lines[i].trim();
       if (line) {
-        // Process each line of data from Replit
         const parts = line.split(',');
-        if (parts.length >= 6) {
-          const dateStr = parts[0].trim();
-          const timeStr = parts[1] ? parts[1].trim() : '00:00:00';
-          const open = parseFloat(parts[2] || parts[1]).toFixed(5);
-          const high = parseFloat(parts[3] || parts[2]).toFixed(5);
-          const low = parseFloat(parts[4] || parts[3]).toFixed(5);
-          const close = parseFloat(parts[5] || parts[4]).toFixed(5);
-          const volume = parts[6] ? parseInt(parts[6]) : Math.floor(Math.random() * 1000) + 100;
-          const spread = pair.includes('XAU') ? Math.floor(Math.random() * 20) + 10 : Math.floor(Math.random() * 5) + 1;
+        console.log(`Processing line ${i}:`, parts);
+        
+        if (parts.length >= 5) {
+          // Handle different timestamp formats
+          let dateStr, timeStr;
           
-          csvContent += `${dateStr},${timeStr},${open},${high},${low},${close},${volume},${Math.floor(volume/10)},${spread}\n`;
+          // Check if first column contains both date and time (ISO format or similar)
+          if (parts[0].includes('T') || parts[0].includes(' ')) {
+            // Combined datetime in first column
+            const datetime = new Date(parts[0]);
+            if (!isNaN(datetime.getTime())) {
+              dateStr = datetime.toISOString().split('T')[0];
+              timeStr = datetime.toTimeString().split(' ')[0];
+            } else {
+              // Try to split on space or T
+              const splitChar = parts[0].includes('T') ? 'T' : ' ';
+              const [datePart, timePart] = parts[0].split(splitChar);
+              dateStr = datePart;
+              timeStr = timePart || '00:00:00';
+            }
+          } else {
+            // Separate date and time columns
+            dateStr = parts[0];
+            timeStr = parts[1] || '00:00:00';
+          }
+          
+          // Parse OHLC values - adjust indices based on format
+          let open, high, low, close;
+          
+          if (parts[0].includes('T') || parts[0].includes(' ')) {
+            // Combined datetime format: datetime, open, high, low, close
+            open = parseFloat(parts[1]);
+            high = parseFloat(parts[2]);
+            low = parseFloat(parts[3]);
+            close = parseFloat(parts[4]);
+          } else {
+            // Separate date/time format: date, time, open, high, low, close
+            open = parseFloat(parts[2]);
+            high = parseFloat(parts[3]);
+            low = parseFloat(parts[4]);
+            close = parseFloat(parts[5]);
+          }
+          
+          // Validate the parsed values
+          if (!isNaN(open) && !isNaN(high) && !isNaN(low) && !isNaN(close)) {
+            const decimals = pair.includes('JPY') ? 3 : 5;
+            const volume = Math.floor(Math.random() * 1000) + 100;
+            const spread = pair.includes('XAU') ? Math.floor(Math.random() * 20) + 10 : 
+                          pair.includes('XAG') ? Math.floor(Math.random() * 15) + 5 :
+                          Math.floor(Math.random() * 5) + 1;
+            
+            csvContent += `${dateStr},${timeStr},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${volume},${Math.floor(volume/10)},${spread}\n`;
+          } else {
+            console.log('Invalid OHLC values:', { open, high, low, close });
+          }
+        } else {
+          console.log('Insufficient columns in line:', parts.length);
         }
       }
     }
     
-    console.log('Successfully processed Replit data, lines:', lines.length);
+    console.log('Successfully processed Replit data, output lines:', csvContent.split('\n').length - 1);
     return csvContent;
   } catch (error) {
     console.error('Error processing Replit data:', error);
