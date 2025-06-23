@@ -63,7 +63,6 @@ const FILE_FORMATS = [
 const formSchema = z.object({
   currencyPair: z.string().min(1, 'Please select a currency pair'),
   timeframe: z.string().min(1, 'Please select a timeframe'),
-  fileFormat: z.string().min(1, 'Please select a file format'),
   fromDate: z.date({
     required_error: 'From date is required',
   }),
@@ -91,11 +90,8 @@ const HistoricalDataDownloader = () => {
     defaultValues: {
       currencyPair: '',
       timeframe: '',
-      fileFormat: 'csv',
     },
   });
-
-  const selectedFormat = form.watch('fileFormat');
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsDownloading(true);
@@ -105,7 +101,7 @@ const HistoricalDataDownloader = () => {
         body: {
           currencyPair: values.currencyPair,
           timeframe: values.timeframe,
-          fileFormat: values.fileFormat,
+          fileFormat: 'txt',
           fromDate: format(values.fromDate, 'yyyy-MM-dd'),
           toDate: format(values.toDate, 'yyyy-MM-dd'),
         },
@@ -115,16 +111,12 @@ const HistoricalDataDownloader = () => {
         throw error;
       }
 
-      // Determine content type and file extension
-      const contentType = values.fileFormat === 'csv' ? 'text/csv' : 'text/plain';
-      const fileExtension = values.fileFormat === 'csv' ? 'csv' : 'txt';
-
-      // Create blob and download file
-      const blob = new Blob([data], { type: contentType });
+      // Create blob and download file as TXT
+      const blob = new Blob([data], { type: 'text/plain' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${values.currencyPair}_${values.timeframe}_${format(values.fromDate, 'yyyy-MM-dd')}_${format(values.toDate, 'yyyy-MM-dd')}.${fileExtension}`;
+      link.download = `${values.currencyPair}_${values.timeframe}_${format(values.fromDate, 'yyyy-MM-dd')}_${format(values.toDate, 'yyyy-MM-dd')}.txt`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -132,7 +124,7 @@ const HistoricalDataDownloader = () => {
 
       toast({
         title: 'Download Complete',
-        description: `Historical data has been downloaded successfully as ${values.fileFormat.toUpperCase()}.`,
+        description: 'Historical data has been downloaded successfully as TXT.',
       });
     } catch (error) {
       console.error('Download error:', error);
@@ -150,12 +142,12 @@ const HistoricalDataDownloader = () => {
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
       <h3 className="text-xl font-bold text-white mb-4">Download Historical Data</h3>
       <p className="text-gray-400 mb-6">
-        Select parameters to download historical forex data from Dukascopy
+        Select parameters to download historical forex data from Dukascopy as TXT file
       </p>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField
               control={form.control}
               name="currencyPair"
@@ -205,35 +197,6 @@ const HistoricalDataDownloader = () => {
                           className="text-white hover:bg-gray-600"
                         >
                           {tf.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="fileFormat"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-white">File Format</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select file format" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-gray-700 border-gray-600">
-                      {FILE_FORMATS.map((format) => (
-                        <SelectItem 
-                          key={format.value} 
-                          value={format.value}
-                          className="text-white hover:bg-gray-600"
-                        >
-                          {format.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -336,12 +299,12 @@ const HistoricalDataDownloader = () => {
             {isDownloading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Generating {selectedFormat?.toUpperCase()}...
+                Generating TXT...
               </>
             ) : (
               <>
                 <Download className="mr-2 h-4 w-4" />
-                Download {selectedFormat?.toUpperCase()}
+                Download TXT
               </>
             )}
           </Button>

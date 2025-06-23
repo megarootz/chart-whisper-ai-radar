@@ -20,9 +20,9 @@ serve(async (req) => {
   }
 
   try {
-    const { currencyPair, timeframe, fileFormat = 'csv', fromDate, toDate }: RequestData = await req.json();
+    const { currencyPair, timeframe, fromDate, toDate }: RequestData = await req.json();
     
-    console.log('Historical data request:', { currencyPair, timeframe, fileFormat, fromDate, toDate });
+    console.log('Historical data request:', { currencyPair, timeframe, fromDate, toDate });
 
     // Validate date range (max 12 months)
     const startDate = new Date(fromDate);
@@ -40,17 +40,14 @@ serve(async (req) => {
       );
     }
 
-    // Fetch real data from your Replit API
-    const fileData = await fetchReplitData(currencyPair, timeframe, startDate, endDate, fileFormat);
-    
-    const contentType = fileFormat === 'csv' ? 'text/csv' : 'text/plain';
-    const fileExtension = fileFormat === 'csv' ? 'csv' : 'txt';
+    // Fetch real data from your Replit API - always TXT format
+    const fileData = await fetchReplitData(currencyPair, timeframe, startDate, endDate);
     
     return new Response(fileData, {
       headers: {
         ...corsHeaders,
-        'Content-Type': contentType,
-        'Content-Disposition': `attachment; filename="${currencyPair}_${timeframe}_${fromDate}_${toDate}.${fileExtension}"`
+        'Content-Type': 'text/plain',
+        'Content-Disposition': `attachment; filename="${currencyPair}_${timeframe}_${fromDate}_${toDate}.txt"`
       }
     });
 
@@ -67,7 +64,7 @@ serve(async (req) => {
   }
 });
 
-async function fetchReplitData(pair: string, timeframe: string, startDate: Date, endDate: Date, fileFormat: string): Promise<string> {
+async function fetchReplitData(pair: string, timeframe: string, startDate: Date, endDate: Date): Promise<string> {
   try {
     // Map our currency pairs to Replit API format (lowercase)
     const pairMapping: Record<string, string> = {
@@ -146,7 +143,7 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
     
     // If we got data, process it to our format
     if (data && data.length > 10 && !data.includes('error') && !data.includes('Error')) {
-      return processReplitData(data, pair, fileFormat);
+      return processReplitData(data, pair);
     } else {
       console.log('No valid data received from Replit API');
       throw new Error('No valid data received from Replit API');
@@ -157,16 +154,13 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
     
     // Fallback: Generate realistic sample data
     console.log('Generating sample data as fallback');
-    return generateRealisticSampleData(pair, startDate, endDate, timeframe, fileFormat);
+    return generateRealisticSampleData(pair, startDate, endDate, timeframe);
   }
 }
 
-function processReplitData(data: string, pair: string, fileFormat: string): string {
-  // Process Replit data format and convert to our format
-  const header = fileFormat === 'csv' 
-    ? 'DATE,TIME,OPEN,HIGH,LOW,CLOSE,TICKVOL,VOL,SPREAD\n'
-    : 'DATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
-    
+function processReplitData(data: string, pair: string): string {
+  // Process Replit data format and convert to TXT format
+  const header = 'DATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
   let fileContent = header;
   
   try {
@@ -301,12 +295,7 @@ function processReplitData(data: string, pair: string, fileFormat: string): stri
                       Math.floor(Math.random() * 5) + 1;
         
         // Format based on file type
-        if (fileFormat === 'csv') {
-          fileContent += `${dateStr},${timeStr},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${volume},${Math.floor(volume/10)},${spread}\n`;
-        } else {
-          // Text format with tab separation for better alignment
-          fileContent += `${dateStr}\t\t${timeStr}\t\t${open.toFixed(decimals)}\t\t${high.toFixed(decimals)}\t\t${low.toFixed(decimals)}\t\t${close.toFixed(decimals)}\t\t${volume}\t${Math.floor(volume/10)}\t${spread}\n`;
-        }
+        fileContent += `${dateStr}\t\t${timeStr}\t\t${open.toFixed(decimals)}\t\t${high.toFixed(decimals)}\t\t${low.toFixed(decimals)}\t\t${close.toFixed(decimals)}\t\t${volume}\t${Math.floor(volume/10)}\t${spread}\n`;
         
       } catch (lineError) {
         console.error('Error processing line:', lineError, 'Line content:', parts);
@@ -323,11 +312,8 @@ function processReplitData(data: string, pair: string, fileFormat: string): stri
   }
 }
 
-function generateRealisticSampleData(pair: string, startDate: Date, endDate: Date, timeframe: string, fileFormat: string): string {
-  const header = fileFormat === 'csv'
-    ? '# NOTE: This is sample data - Replit API could not be accessed\nDATE,TIME,OPEN,HIGH,LOW,CLOSE,TICKVOL,VOL,SPREAD\n'
-    : '# NOTE: This is sample data - Replit API could not be accessed\nDATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
-    
+function generateRealisticSampleData(pair: string, startDate: Date, endDate: Date, timeframe: string): string {
+  const header = '# NOTE: This is sample data - Replit API could not be accessed\nDATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
   let fileContent = header;
   
   // Map timeframes to minutes
@@ -469,12 +455,7 @@ function generateRealisticSampleData(pair: string, startDate: Date, endDate: Dat
     const decimals = pair.includes('JPY') ? 3 : 5;
     
     // Format based on file type
-    if (fileFormat === 'csv') {
-      fileContent += `${dateStr},${timeStr},${open.toFixed(decimals)},${high.toFixed(decimals)},${low.toFixed(decimals)},${close.toFixed(decimals)},${tickvol},${vol},${spread}\n`;
-    } else {
-      // Text format with tab separation for better alignment
-      fileContent += `${dateStr}\t\t${timeStr}\t\t${open.toFixed(decimals)}\t\t${high.toFixed(decimals)}\t\t${low.toFixed(decimals)}\t\t${close.toFixed(decimals)}\t\t${tickvol}\t${vol}\t${spread}\n`;
-    }
+    fileContent += `${dateStr}\t\t${timeStr}\t\t${open.toFixed(decimals)}\t\t${high.toFixed(decimals)}\t\t${low.toFixed(decimals)}\t\t${close.toFixed(decimals)}\t\t${tickvol}\t${vol}\t${spread}\n`;
     
     basePrice = close; // Use close as next base price for continuity
     current.setMinutes(current.getMinutes() + intervalMinutes);
