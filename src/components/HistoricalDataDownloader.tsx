@@ -90,10 +90,12 @@ const HistoricalDataDownloader = () => {
 
   const selectedTimeframe = form.watch('timeframe');
 
-  // Auto-set from date to today when timeframe changes
+  // Auto-set from date based on timeframe limits
   useEffect(() => {
-    if (selectedTimeframe) {
-      form.setValue('fromDate', today);
+    if (selectedTimeframe && TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS]) {
+      const daysBack = TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS];
+      const fromDate = subDays(today, daysBack);
+      form.setValue('fromDate', fromDate);
     }
   }, [selectedTimeframe, form, today]);
 
@@ -151,6 +153,8 @@ const HistoricalDataDownloader = () => {
       setIsDownloading(false);
     }
   };
+
+  const currentFromDate = form.watch('fromDate');
 
   return (
     <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
@@ -218,7 +222,7 @@ const HistoricalDataDownloader = () => {
                   {selectedTimeframe && (
                     <div className="flex items-center mt-2 text-sm text-blue-400">
                       <Info className="w-4 h-4 mr-1" />
-                      <span>Using latest available data for optimal performance</span>
+                      <span>Data range limited to {getTimeframeLimitText(selectedTimeframe)} for optimal performance</span>
                     </div>
                   )}
                   <FormMessage />
@@ -232,11 +236,19 @@ const HistoricalDataDownloader = () => {
               <FormLabel className="text-white mb-2">From Date</FormLabel>
               <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
                 <div className="flex items-center justify-between">
-                  <span>{format(today, 'PPP')} (Latest)</span>
+                  <span>
+                    {currentFromDate ? format(currentFromDate, 'PPP') : 'Select timeframe first'}
+                    {selectedTimeframe && ' (Auto-set)'}
+                  </span>
                   <CalendarIcon className="h-4 w-4 opacity-30" />
                 </div>
               </div>
-              <p className="text-xs text-gray-400 mt-1">Automatically set to today's date</p>
+              <p className="text-xs text-gray-400 mt-1">
+                {selectedTimeframe 
+                  ? `Automatically set based on ${getTimeframeLimitText(selectedTimeframe)} limit`
+                  : 'Will be set automatically when you select a timeframe'
+                }
+              </p>
             </div>
 
             <div className="flex flex-col">
