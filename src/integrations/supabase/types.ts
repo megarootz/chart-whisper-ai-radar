@@ -104,6 +104,8 @@ export type Database = {
           created_at: string
           daily_count: number
           date: string
+          deep_analysis_daily_count: number | null
+          deep_analysis_monthly_count: number | null
           email: string
           id: string
           month_year: string
@@ -115,6 +117,8 @@ export type Database = {
           created_at?: string
           daily_count?: number
           date?: string
+          deep_analysis_daily_count?: number | null
+          deep_analysis_monthly_count?: number | null
           email: string
           id?: string
           month_year?: string
@@ -126,6 +130,8 @@ export type Database = {
           created_at?: string
           daily_count?: number
           date?: string
+          deep_analysis_daily_count?: number | null
+          deep_analysis_monthly_count?: number | null
           email?: string
           id?: string
           month_year?: string
@@ -169,6 +175,10 @@ export type Database = {
     Functions: {
       check_usage_limits: {
         Args: { p_user_id: string }
+        Returns: Json
+      }
+      increment_deep_analysis_usage: {
+        Args: { p_user_id: string; p_email: string }
         Returns: Json
       }
       increment_usage_count: {

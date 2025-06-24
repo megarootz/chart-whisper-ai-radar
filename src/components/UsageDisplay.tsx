@@ -5,7 +5,7 @@ import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { useIsMobile } from '@/hooks/use-mobile';
 import ResetCountdown from './ResetCountdown';
-import { Crown, Star, Zap } from 'lucide-react';
+import { Crown, Star, Zap, Brain } from 'lucide-react';
 
 const UsageDisplay = () => {
   const { usage, checkUsageLimits } = useSubscription();
@@ -20,6 +20,8 @@ const UsageDisplay = () => {
 
   const dailyProgress = usage.daily_limit > 0 ? (usage.daily_count / usage.daily_limit) * 100 : 0;
   const monthlyProgress = usage.monthly_limit > 0 ? (usage.monthly_count / usage.monthly_limit) * 100 : 0;
+  const deepDailyProgress = usage.deep_analysis_daily_limit > 0 ? (usage.deep_analysis_daily_count / usage.deep_analysis_daily_limit) * 100 : 0;
+  const deepMonthlyProgress = usage.deep_analysis_monthly_limit > 0 ? (usage.deep_analysis_monthly_count / usage.deep_analysis_monthly_limit) * 100 : 0;
 
   const getDailyColor = () => {
     if (dailyProgress >= 100) return 'bg-red-500';
@@ -31,6 +33,18 @@ const UsageDisplay = () => {
     if (monthlyProgress >= 100) return 'bg-red-500';
     if (monthlyProgress >= 80) return 'bg-yellow-500';
     return 'bg-green-500';
+  };
+
+  const getDeepDailyColor = () => {
+    if (deepDailyProgress >= 100) return 'bg-red-500';
+    if (deepDailyProgress >= 80) return 'bg-yellow-500';
+    return 'bg-purple-500';
+  };
+
+  const getDeepMonthlyColor = () => {
+    if (deepMonthlyProgress >= 100) return 'bg-red-500';
+    if (deepMonthlyProgress >= 80) return 'bg-yellow-500';
+    return 'bg-purple-500';
   };
 
   const getPlanBadge = () => {
@@ -66,43 +80,99 @@ const UsageDisplay = () => {
         {getPlanBadge()}
       </div>
 
-      {/* Daily Usage */}
-      <div className="space-y-1.5">
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-300">Daily</span>
-          <span className="text-xs text-gray-400">
-            {usage.daily_count} / {usage.daily_limit}
-          </span>
+      {/* Chart Analysis Usage */}
+      <div className="space-y-3">
+        <h4 className="text-white font-medium text-xs flex items-center">
+          <Zap className="h-3 w-3 mr-1" />
+          Chart Analysis
+        </h4>
+        
+        {/* Daily Usage */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-300">Daily</span>
+            <span className="text-xs text-gray-400">
+              {usage.daily_count} / {usage.daily_limit}
+            </span>
+          </div>
+          <Progress 
+            value={dailyProgress} 
+            className="h-1.5"
+            style={{
+              '--progress-foreground': getDailyColor(),
+            } as React.CSSProperties}
+          />
+          <div className="text-xs text-gray-500">
+            {usage.daily_remaining} remaining today
+          </div>
         </div>
-        <Progress 
-          value={dailyProgress} 
-          className="h-1.5"
-          style={{
-            '--progress-foreground': getDailyColor(),
-          } as React.CSSProperties}
-        />
-        <div className="text-xs text-gray-500">
-          {usage.daily_remaining} remaining today
+
+        {/* Monthly Usage */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-300">Monthly</span>
+            <span className="text-xs text-gray-400">
+              {usage.monthly_count} / {usage.monthly_limit}
+            </span>
+          </div>
+          <Progress 
+            value={monthlyProgress} 
+            className="h-1.5"
+            style={{
+              '--progress-foreground': getMonthlyColor(),
+            } as React.CSSProperties}
+          />
+          <div className="text-xs text-gray-500">
+            {usage.monthly_remaining} remaining this month
+          </div>
         </div>
       </div>
 
-      {/* Monthly Usage */}
-      <div className="space-y-1.5">
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-gray-300">Monthly</span>
-          <span className="text-xs text-gray-400">
-            {usage.monthly_count} / {usage.monthly_limit}
-          </span>
+      {/* Deep Historical Analysis Usage */}
+      <div className="border-t border-gray-700 pt-3 space-y-3">
+        <h4 className="text-white font-medium text-xs flex items-center">
+          <Brain className="h-3 w-3 mr-1 text-purple-400" />
+          Deep Historical Analysis
+        </h4>
+        
+        {/* Deep Daily Usage */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-300">Daily</span>
+            <span className="text-xs text-gray-400">
+              {usage.deep_analysis_daily_count} / {usage.deep_analysis_daily_limit}
+            </span>
+          </div>
+          <Progress 
+            value={deepDailyProgress} 
+            className="h-1.5"
+            style={{
+              '--progress-foreground': getDeepDailyColor(),
+            } as React.CSSProperties}
+          />
+          <div className="text-xs text-gray-500">
+            {usage.deep_analysis_daily_remaining} remaining today
+          </div>
         </div>
-        <Progress 
-          value={monthlyProgress} 
-          className="h-1.5"
-          style={{
-            '--progress-foreground': getMonthlyColor(),
-          } as React.CSSProperties}
-        />
-        <div className="text-xs text-gray-500">
-          {usage.monthly_remaining} remaining this month
+
+        {/* Deep Monthly Usage */}
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center">
+            <span className="text-xs text-gray-300">Monthly</span>
+            <span className="text-xs text-gray-400">
+              {usage.deep_analysis_monthly_count} / {usage.deep_analysis_monthly_limit}
+            </span>
+          </div>
+          <Progress 
+            value={deepMonthlyProgress} 
+            className="h-1.5"
+            style={{
+              '--progress-foreground': getDeepMonthlyColor(),
+            } as React.CSSProperties}
+          />
+          <div className="text-xs text-gray-500">
+            {usage.deep_analysis_monthly_remaining} remaining this month
+          </div>
         </div>
       </div>
 
@@ -112,11 +182,19 @@ const UsageDisplay = () => {
       </div>
 
       {/* Status */}
-      <div className="flex items-center gap-2">
-        <div className={`w-1.5 h-1.5 rounded-full ${usage.can_analyze ? 'bg-green-500' : 'bg-red-500'}`} />
-        <span className={`text-xs ${usage.can_analyze ? 'text-green-400' : 'text-red-400'}`}>
-          {usage.can_analyze ? 'Analysis available' : 'Limits reached'}
-        </span>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <div className={`w-1.5 h-1.5 rounded-full ${usage.can_analyze ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span className={`text-xs ${usage.can_analyze ? 'text-green-400' : 'text-red-400'}`}>
+            {usage.can_analyze ? 'Chart analysis available' : 'Chart analysis limits reached'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className={`w-1.5 h-1.5 rounded-full ${usage.can_deep_analyze ? 'bg-purple-500' : 'bg-red-500'}`} />
+          <span className={`text-xs ${usage.can_deep_analyze ? 'text-purple-400' : 'text-red-400'}`}>
+            {usage.can_deep_analyze ? 'Deep analysis available' : 'Deep analysis limits reached'}
+          </span>
+        </div>
       </div>
     </div>
   );

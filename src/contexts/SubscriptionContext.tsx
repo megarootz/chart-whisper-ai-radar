@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './AuthContext';
@@ -19,6 +18,13 @@ interface UsageData {
   monthly_remaining: number;
   can_analyze: boolean;
   subscription_tier: string;
+  deep_analysis_daily_count: number;
+  deep_analysis_monthly_count: number;
+  deep_analysis_daily_limit: number;
+  deep_analysis_monthly_limit: number;
+  deep_analysis_daily_remaining: number;
+  deep_analysis_monthly_remaining: number;
+  can_deep_analyze: boolean;
 }
 
 interface ServerTimeData {
@@ -100,8 +106,8 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   };
 
-  const getActualUsageCounts = async (): Promise<{ dailyCount: number; monthlyCount: number }> => {
-    if (!user) return { dailyCount: 0, monthlyCount: 0 };
+  const getActualUsageCounts = async (): Promise<{ dailyCount: number; monthlyCount: number; deepAnalysisDailyCount: number; deepAnalysisMonthlyCount: number }> => {
+    if (!user) return { dailyCount: 0, monthlyCount: 0, deepAnalysisDailyCount: 0, deepAnalysisMonthlyCount: 0 };
 
     try {
       // Get today's date in UTC
@@ -128,49 +134,70 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Count actual analyses from chart_analyses table for today
       const { data: dailyAnalyses, error: dailyError } = await supabase
         .from('chart_analyses')
-        .select('id')
+        .select('id, analysis_data')
         .eq('user_id', user.id)
         .gte('created_at', `${today}T00:00:00.000Z`)
         .lt('created_at', `${today}T23:59:59.999Z`);
 
       if (dailyError) {
         console.error('❌ Error fetching daily analyses:', dailyError);
-        return { dailyCount: 0, monthlyCount: 0 };
+        return { dailyCount: 0, monthlyCount: 0, deepAnalysisDailyCount: 0, deepAnalysisMonthlyCount: 0 };
       }
 
       // Count actual analyses from chart_analyses table for this month
       const { data: monthlyAnalyses, error: monthlyError } = await supabase
         .from('chart_analyses')
-        .select('id')
+        .select('id, analysis_data')
         .eq('user_id', user.id)
         .gte('created_at', monthStart.toISOString())
         .lt('created_at', monthEnd.toISOString());
 
       if (monthlyError) {
         console.error('❌ Error fetching monthly analyses:', monthlyError);
-        return { dailyCount: dailyAnalyses?.length || 0, monthlyCount: 0 };
+        return { dailyCount: dailyAnalyses?.length || 0, monthlyCount: 0, deepAnalysisDailyCount: 0, deepAnalysisMonthlyCount: 0 };
       }
 
-      const actualDailyCount = dailyAnalyses?.length || 0;
-      const actualMonthlyCount = monthlyAnalyses?.length || 0;
+      // Separate regular and deep analyses
+      const dailyRegularAnalyses = dailyAnalyses?.filter(a => 
+        !a.analysis_data || (typeof a.analysis_data === 'object' && (a.analysis_data as any).type !== 'deep_historical')
+      ) || [];
+      
+      const dailyDeepAnalyses = dailyAnalyses?.filter(a => 
+        a.analysis_data && typeof a.analysis_data === 'object' && (a.analysis_data as any).type === 'deep_historical'
+      ) || [];
+
+      const monthlyRegularAnalyses = monthlyAnalyses?.filter(a => 
+        !a.analysis_data || (typeof a.analysis_data === 'object' && (a.analysis_data as any).type !== 'deep_historical')
+      ) || [];
+      
+      const monthlyDeepAnalyses = monthlyAnalyses?.filter(a => 
+        a.analysis_data && typeof a.analysis_data === 'object' && (a.analysis_data as any).type === 'deep_historical'
+      ) || [];
+
+      const actualDailyCount = dailyRegularAnalyses.length;
+      const actualMonthlyCount = monthlyRegularAnalyses.length;
+      const actualDailyDeepCount = dailyDeepAnalyses.length;
+      const actualMonthlyDeepCount = monthlyDeepAnalyses.length;
 
       console.log('📊 ACTUAL usage counts from chart_analyses:', {
         daily: actualDailyCount,
         monthly: actualMonthlyCount,
+        deepDaily: actualDailyDeepCount,
+        deepMonthly: actualMonthlyDeepCount,
         today,
         monthStart: monthStart.toISOString(),
-        monthEnd: monthEnd.toISOString(),
-        dailyAnalyses: dailyAnalyses?.map(a => a.id),
-        monthlyAnalyses: monthlyAnalyses?.map(a => a.id)
+        monthEnd: monthEnd.toISOString()
       });
 
       return { 
-        dailyCount: actualDailyCount, 
-        monthlyCount: actualMonthlyCount 
+        dailyCount: actualDailyCount,
+        monthlyCount: actualMonthlyCount,
+        deepAnalysisDailyCount: actualDailyDeepCount,
+        deepAnalysisMonthlyCount: actualMonthlyDeepCount
       };
     } catch (error) {
       console.error('❌ Error getting actual usage counts:', error);
-      return { dailyCount: 0, monthlyCount: 0 };
+      return { dailyCount: 0, monthlyCount: 0, deepAnalysisDailyCount: 0, deepAnalysisMonthlyCount: 0 };
     }
   };
 
@@ -191,7 +218,7 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       }
       
       // Get actual usage counts from chart_analyses table
-      const { dailyCount: actualDailyCount, monthlyCount: actualMonthlyCount } = await getActualUsageCounts();
+      const { dailyCount: actualDailyCount, monthlyCount: actualMonthlyCount, deepAnalysisDailyCount: actualDailyDeepCount, deepAnalysisMonthlyCount: actualMonthlyDeepCount } = await getActualUsageCounts();
       
       // Get subscription tier and limits
       const { data: subscriptionData, error: subError } = await supabase
@@ -209,37 +236,55 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
       // Set limits based on subscription tier
       let dailyLimit: number;
       let monthlyLimit: number;
+      let deepAnalysisDailyLimit: number;
+      let deepAnalysisMonthlyLimit: number;
       
       switch (subscriptionTier) {
         case 'starter':
           dailyLimit = 15;
           monthlyLimit = 450;
+          deepAnalysisDailyLimit = 5;
+          deepAnalysisMonthlyLimit = 150;
           break;
         case 'pro':
           dailyLimit = 30;
           monthlyLimit = 900;
+          deepAnalysisDailyLimit = 15;
+          deepAnalysisMonthlyLimit = 450;
           break;
         default: // 'free'
           dailyLimit = 3;
           monthlyLimit = 90;
+          deepAnalysisDailyLimit = 1;
+          deepAnalysisMonthlyLimit = 30;
       }
 
       // Calculate remaining counts
       const dailyRemaining = Math.max(0, dailyLimit - actualDailyCount);
       const monthlyRemaining = Math.max(0, monthlyLimit - actualMonthlyCount);
+      const deepAnalysisDailyRemaining = Math.max(0, deepAnalysisDailyLimit - actualDailyDeepCount);
+      const deepAnalysisMonthlyRemaining = Math.max(0, deepAnalysisMonthlyLimit - actualMonthlyDeepCount);
       
       // Determine if user can analyze (both daily and monthly limits must allow)
       const canAnalyze = (actualDailyCount < dailyLimit) && (actualMonthlyCount < monthlyLimit);
+      const canDeepAnalyze = (actualDailyDeepCount < deepAnalysisDailyLimit) && (actualMonthlyDeepCount < deepAnalysisMonthlyLimit);
       
       console.log('📊 CORRECTED usage data:', {
         actual_daily_count: actualDailyCount,
         actual_monthly_count: actualMonthlyCount,
+        actual_deep_daily_count: actualDailyDeepCount,
+        actual_deep_monthly_count: actualMonthlyDeepCount,
         daily_limit: dailyLimit,
         monthly_limit: monthlyLimit,
+        deep_analysis_daily_limit: deepAnalysisDailyLimit,
+        deep_analysis_monthly_limit: deepAnalysisMonthlyLimit,
         subscription_tier: subscriptionTier,
         can_analyze: canAnalyze,
+        can_deep_analyze: canDeepAnalyze,
         daily_remaining: dailyRemaining,
-        monthly_remaining: monthlyRemaining
+        monthly_remaining: monthlyRemaining,
+        deep_analysis_daily_remaining: deepAnalysisDailyRemaining,
+        deep_analysis_monthly_remaining: deepAnalysisMonthlyRemaining
       });
 
       const correctedUsageData: UsageData = {
@@ -250,7 +295,14 @@ export const SubscriptionProvider: React.FC<{ children: React.ReactNode }> = ({ 
         subscription_tier: subscriptionTier,
         daily_remaining: dailyRemaining,
         monthly_remaining: monthlyRemaining,
-        can_analyze: canAnalyze
+        can_analyze: canAnalyze,
+        deep_analysis_daily_count: actualDailyDeepCount,
+        deep_analysis_monthly_count: actualMonthlyDeepCount,
+        deep_analysis_daily_limit: deepAnalysisDailyLimit,
+        deep_analysis_monthly_limit: deepAnalysisMonthlyLimit,
+        deep_analysis_daily_remaining: deepAnalysisDailyRemaining,
+        deep_analysis_monthly_remaining: deepAnalysisMonthlyRemaining,
+        can_deep_analyze: canDeepAnalyze
       };
       
       // Update state immediately
