@@ -305,7 +305,7 @@ Be specific with price levels and provide actionable insights for traders.`;
       // Don't throw error here, just log it
     }
 
-    // Store the analysis result
+    // Store the analysis result with proper pair name formatting
     const analysisData = {
       type: 'deep_historical',
       analysis_type: analysisType,
@@ -314,7 +314,12 @@ Be specific with price levels and provide actionable insights for traders.`;
       date_range: `${fromDate} to ${toDate}`,
       analysis: analysis,
       data_points: Array.isArray(historicalData) ? historicalData.length : 1,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      // Add these fields for proper display in history
+      pairName: currencyPair,
+      marketAnalysis: analysis,
+      overallSentiment: 'Deep Analysis',
+      trendDirection: 'analyzed'
     };
 
     const { data: storedAnalysis, error: storeError } = await supabaseClient

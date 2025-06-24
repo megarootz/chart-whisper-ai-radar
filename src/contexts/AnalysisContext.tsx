@@ -40,11 +40,25 @@ export const AnalysisProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const processedData = data.map(item => ({
-        ...item.analysis_data as unknown as AnalysisResultData,
-        id: item.id,
-        created_at: item.created_at
-      }));
+      const processedData = data.map(item => {
+        const analysisData = item.analysis_data as any;
+        
+        // Handle both regular analysis and deep analysis
+        return {
+          id: item.id,
+          created_at: item.created_at,
+          pairName: analysisData.pairName || item.pair_name || 'Unknown Pair',
+          timeframe: analysisData.timeframe || item.timeframe || 'Unknown Timeframe',
+          overallSentiment: analysisData.overallSentiment || analysisData.analysis_type || 'Analysis',
+          confidenceScore: analysisData.confidenceScore || 90,
+          marketAnalysis: analysisData.marketAnalysis || analysisData.analysis || '',
+          trendDirection: analysisData.trendDirection || 'analyzed',
+          marketFactors: analysisData.marketFactors || [],
+          chartPatterns: analysisData.chartPatterns || [],
+          priceLevels: analysisData.priceLevels || [],
+          tradingInsight: analysisData.tradingInsight || analysisData.analysis || ''
+        };
+      });
       
       setAnalysisHistory(processedData);
     } catch (error) {
