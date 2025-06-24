@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -10,13 +9,12 @@ interface TimeframeSelectorProps {
 }
 
 const TIMEFRAMES = [
-  { value: 'M1', label: '1M', description: '1 Minute' },
-  { value: 'M5', label: '5M', description: '5 Minutes' },
-  { value: 'M15', label: '15M', description: '15 Minutes' },
-  { value: 'M30', label: '30M', description: '30 Minutes' },
-  { value: 'H1', label: '1H', description: '1 Hour' },
-  { value: 'H4', label: '4H', description: '4 Hours' },
-  { value: 'D1', label: '1D', description: '1 Day' }
+  { value: 'm5', label: '5M', description: '5 Minutes' },
+  { value: 'm15', label: '15M', description: '15 Minutes' },
+  { value: 'm30', label: '30M', description: '30 Minutes' },
+  { value: 'h1', label: '1H', description: '1 Hour' },
+  { value: 'h4', label: '4H', description: '4 Hours' },
+  { value: 'd1', label: '1D', description: '1 Day' }
 ];
 
 const TimeframeSelector: React.FC<TimeframeSelectorProps> = ({
