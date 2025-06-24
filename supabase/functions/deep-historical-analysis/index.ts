@@ -93,8 +93,22 @@ serve(async (req) => {
       throw new Error("Deep analysis limit reached. Please upgrade your plan or wait for the next reset period.");
     }
 
-    // Fix the URL construction to match the Replit API format
-    const replitUrl = `https://dukas-megarootz181.replit.app/historical?instrument=${currencyPair}&from=${fromDate}&to=${toDate}&timeframe=${timeframe}&format=json`;
+    // Map timeframes to match Replit API expectations
+    const timeframeMapping: Record<string, string> = {
+      'M1': 'm1',
+      'M5': 'm5', 
+      'M15': 'm15',
+      'M30': 'm30',
+      'H1': 'h1',
+      'H4': 'h4',
+      'D1': 'd1'
+    };
+
+    const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
+    logStep("Timeframe mapping", { original: timeframe, mapped: mappedTimeframe });
+
+    // Use the exact same URL format as working in history (07:36)
+    const replitUrl = `https://dukas-megarootz181.replit.app/historical?instrument=${currencyPair}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
     logStep("Fetching data from Replit", { url: replitUrl });
 
     const controller = new AbortController();
@@ -215,7 +229,7 @@ serve(async (req) => {
 
     const systemPrompt = analysisPrompts[analysisType as keyof typeof analysisPrompts] || analysisPrompts.market_structure;
 
-    const userPrompt = `Analyze the following ${currencyPair} ${timeframe} historical forex data from ${fromDate} to ${toDate}:
+    const userPrompt = `Analyze the following ${currencyPair} ${mappedTimeframe} historical forex data from ${fromDate} to ${toDate}:
 
 ${dataText}
 
@@ -296,7 +310,7 @@ Be specific with price levels and provide actionable insights for traders.`;
       type: 'deep_historical',
       analysis_type: analysisType,
       currency_pair: currencyPair,
-      timeframe: timeframe,
+      timeframe: mappedTimeframe,
       date_range: `${fromDate} to ${toDate}`,
       analysis: analysis,
       data_points: Array.isArray(historicalData) ? historicalData.length : 1,
@@ -308,7 +322,7 @@ Be specific with price levels and provide actionable insights for traders.`;
       .insert({
         user_id: user.id,
         pair_name: currencyPair,
-        timeframe: timeframe,
+        timeframe: mappedTimeframe,
         analysis_data: analysisData
       })
       .select()

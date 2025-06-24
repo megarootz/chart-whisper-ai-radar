@@ -10,11 +10,13 @@ interface TimeframeSelectorProps {
 }
 
 const TIMEFRAMES = [
-  { value: '60', label: '1H', description: '1 Hour' },
-  { value: '240', label: '4H', description: '4 Hours' },
-  { value: '1D', label: '1D', description: '1 Day' },
-  { value: '1W', label: '1W', description: '1 Week' },
-  { value: '1M', label: '1M', description: '1 Month' }
+  { value: 'M1', label: '1M', description: '1 Minute' },
+  { value: 'M5', label: '5M', description: '5 Minutes' },
+  { value: 'M15', label: '15M', description: '15 Minutes' },
+  { value: 'M30', label: '30M', description: '30 Minutes' },
+  { value: 'H1', label: '1H', description: '1 Hour' },
+  { value: 'H4', label: '4H', description: '4 Hours' },
+  { value: 'D1', label: '1D', description: '1 Day' }
 ];
 
 const TimeframeSelector: React.FC<TimeframeSelectorProps> = ({
