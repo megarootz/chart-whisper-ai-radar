@@ -48,7 +48,14 @@ serve(async (req) => {
       throw new Error(`Usage check failed: ${usageError.message}`);
     }
 
-    if (!usageData.can_deep_analyze) {
+    logStep("Usage data received", usageData);
+
+    // Check if user can perform deep analysis
+    const canDeepAnalyze = usageData?.can_deep_analyze === true || 
+                          (usageData?.deep_analysis_daily_count < usageData?.deep_analysis_daily_limit && 
+                           usageData?.deep_analysis_monthly_count < usageData?.deep_analysis_monthly_limit);
+
+    if (!canDeepAnalyze) {
       logStep("Deep analysis limit reached", usageData);
       throw new Error("Deep analysis limit reached. Please upgrade your plan or wait for the next reset period.");
     }
