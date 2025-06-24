@@ -93,8 +93,8 @@ serve(async (req) => {
       throw new Error("Deep analysis limit reached. Please upgrade your plan or wait for the next reset period.");
     }
 
-    // Download historical data from correct Replit URL
-    const replitUrl = `https://dukas-megarootz181.replit.app/api/candles?symbol=${currencyPair}&timeframe=${timeframe}&format=txt&from=${fromDate}&to=${toDate}`;
+    // Fix the URL construction to match the Replit API format
+    const replitUrl = `https://dukas-megarootz181.replit.app/historical?instrument=${currencyPair}&from=${fromDate}&to=${toDate}&timeframe=${timeframe}&format=json`;
     logStep("Fetching data from Replit", { url: replitUrl });
 
     const controller = new AbortController();
@@ -105,7 +105,8 @@ serve(async (req) => {
       replitResponse = await fetch(replitUrl, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'ForexRadar7-DeepAnalysis/1.0'
+          'User-Agent': 'ForexRadar7-DeepAnalysis/1.0',
+          'Accept': 'application/json'
         }
       });
       clearTimeout(timeoutId);
@@ -126,22 +127,30 @@ serve(async (req) => {
       throw new Error(`Data service unavailable: ${replitResponse.status} - ${replitResponse.statusText}`);
     }
 
-    const historicalData = await replitResponse.text();
+    const historicalData = await replitResponse.json();
     logStep("Historical data fetched", { 
-      dataLength: historicalData.length,
-      preview: historicalData.substring(0, 200)
+      dataType: typeof historicalData,
+      dataLength: Array.isArray(historicalData) ? historicalData.length : 'not array'
     });
 
     // Validate that we have meaningful data
-    if (!historicalData || historicalData.trim().length === 0) {
+    if (!historicalData || (Array.isArray(historicalData) && historicalData.length === 0)) {
       logStep("ERROR: Empty data received");
       throw new Error("No historical data available for the selected parameters.");
     }
 
-    // Check if data looks like error message or invalid format
-    const dataLines = historicalData.trim().split('\n');
-    if (dataLines.length < 2) {
-      logStep("ERROR: Insufficient data lines", { lineCount: dataLines.length });
+    // Convert JSON data to text format for AI analysis
+    let dataText = '';
+    if (Array.isArray(historicalData)) {
+      dataText = historicalData.map(candle => 
+        `${candle.date || candle.time || ''} ${candle.open || ''} ${candle.high || ''} ${candle.low || ''} ${candle.close || ''} ${candle.volume || ''}`
+      ).join('\n');
+    } else {
+      dataText = JSON.stringify(historicalData);
+    }
+
+    if (dataText.length < 10) {
+      logStep("ERROR: Insufficient data content", { dataText });
       throw new Error("Insufficient historical data for analysis. Please try different parameters.");
     }
 
@@ -208,9 +217,7 @@ serve(async (req) => {
 
     const userPrompt = `Analyze the following ${currencyPair} ${timeframe} historical forex data from ${fromDate} to ${toDate}:
 
-${historicalData}
-
-Data format: Each line contains: Date, Time, Open, High, Low, Close, Volume
+${dataText}
 
 Please provide a comprehensive analysis following your expertise. Structure your response with:
 
@@ -292,7 +299,7 @@ Be specific with price levels and provide actionable insights for traders.`;
       timeframe: timeframe,
       date_range: `${fromDate} to ${toDate}`,
       analysis: analysis,
-      data_points: dataLines.length - 1,
+      data_points: Array.isArray(historicalData) ? historicalData.length : 1,
       created_at: new Date().toISOString()
     };
 
