@@ -8,7 +8,12 @@ import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { Badge } from './ui/badge';
 
-const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
+interface ChartUploaderProps {
+  onUpload?: (file: File) => void;
+  onAnalysisComplete?: (analysis: any) => void;
+}
+
+const ChartUploader: React.FC<ChartUploaderProps> = ({ onUpload, onAnalysisComplete }) => {
   const { toast } = useToast();
   const { usage } = useSubscription();
   const [file, setFile] = useState<File | null>(null);
@@ -82,8 +87,13 @@ const ChartUploader = ({ onUpload }: { onUpload: (file: File) => void }) => {
 
     setIsUploading(true);
     
-    // Call the parent's onUpload function
-    onUpload(file);
+    // Call the appropriate callback
+    if (onUpload) {
+      onUpload(file);
+    } else if (onAnalysisComplete) {
+      // For backwards compatibility, simulate the old behavior
+      onAnalysisComplete({ file });
+    }
   };
 
   // Determine button text and disabled state
