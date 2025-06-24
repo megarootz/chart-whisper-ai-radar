@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -26,19 +27,36 @@ serve(async (req) => {
     );
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) throw new Error("No authorization header provided");
+    if (!authHeader) {
+      logStep("ERROR: No authorization header");
+      throw new Error("No authorization header provided");
+    }
 
     const token = authHeader.replace("Bearer ", "");
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
-    if (userError) throw new Error(`Authentication error: ${userError.message}`);
+    if (userError) {
+      logStep("ERROR: Authentication failed", userError);
+      throw new Error(`Authentication error: ${userError.message}`);
+    }
+    
     const user = userData.user;
-    if (!user?.email) throw new Error("User not authenticated or email not available");
+    if (!user?.email) {
+      logStep("ERROR: User not authenticated");
+      throw new Error("User not authenticated or email not available");
+    }
     logStep("User authenticated", { userId: user.id, email: user.email });
 
-    const { currencyPair, timeframe, analysisType, fromDate, toDate } = await req.json();
+    const requestBody = await req.json();
+    const { currencyPair, timeframe, analysisType, fromDate, toDate } = requestBody;
     logStep("Request body parsed", { currencyPair, timeframe, analysisType, fromDate, toDate });
 
-    // Check deep analysis usage limits with better error handling
+    if (!currencyPair || !timeframe || !analysisType || !fromDate || !toDate) {
+      logStep("ERROR: Missing required parameters");
+      throw new Error("Missing required parameters: currencyPair, timeframe, analysisType, fromDate, toDate");
+    }
+
+    // Check deep analysis usage limits
+    logStep("Checking usage limits");
     const { data: usageData, error: usageError } = await supabaseClient
       .rpc('check_usage_limits', { p_user_id: user.id });
 
@@ -49,7 +67,6 @@ serve(async (req) => {
 
     logStep("Usage data received", usageData);
 
-    // More robust usage checking
     if (!usageData) {
       logStep("No usage data returned");
       throw new Error("Unable to retrieve usage information. Please try again.");
@@ -72,10 +89,7 @@ serve(async (req) => {
     });
 
     if (!canUseDeepAnalysis) {
-      logStep("Deep analysis limit reached", {
-        dailyUsage: `${deepDailyCount}/${deepDailyLimit}`,
-        monthlyUsage: `${deepMonthlyCount}/${deepMonthlyLimit}`
-      });
+      logStep("Deep analysis limit reached");
       throw new Error("Deep analysis limit reached. Please upgrade your plan or wait for the next reset period.");
     }
 
@@ -83,23 +97,59 @@ serve(async (req) => {
     const replitUrl = `https://dukas-megarootz181.replit.app/api/candles?symbol=${currencyPair}&timeframe=${timeframe}&format=txt&from=${fromDate}&to=${toDate}`;
     logStep("Fetching data from Replit", { url: replitUrl });
 
-    const replitResponse = await fetch(replitUrl);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+    let replitResponse;
+    try {
+      replitResponse = await fetch(replitUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'ForexRadar7-DeepAnalysis/1.0'
+        }
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      logStep("ERROR: Failed to fetch from Replit", { 
+        error: fetchError.message,
+        url: replitUrl 
+      });
+      throw new Error(`Failed to fetch historical data: ${fetchError.message}`);
+    }
+
     if (!replitResponse.ok) {
-      throw new Error(`Failed to fetch data from Replit: ${replitResponse.statusText}`);
+      logStep("ERROR: Replit response not OK", { 
+        status: replitResponse.status, 
+        statusText: replitResponse.statusText 
+      });
+      throw new Error(`Data service unavailable: ${replitResponse.status} - ${replitResponse.statusText}`);
     }
 
     const historicalData = await replitResponse.text();
-    logStep("Historical data fetched", { dataLength: historicalData.length });
+    logStep("Historical data fetched", { 
+      dataLength: historicalData.length,
+      preview: historicalData.substring(0, 200)
+    });
 
-    // Validate that we have data
+    // Validate that we have meaningful data
     if (!historicalData || historicalData.trim().length === 0) {
-      throw new Error("No historical data available for the selected parameters. Please try different dates or currency pair.");
+      logStep("ERROR: Empty data received");
+      throw new Error("No historical data available for the selected parameters.");
+    }
+
+    // Check if data looks like error message or invalid format
+    const dataLines = historicalData.trim().split('\n');
+    if (dataLines.length < 2) {
+      logStep("ERROR: Insufficient data lines", { lineCount: dataLines.length });
+      throw new Error("Insufficient historical data for analysis. Please try different parameters.");
     }
 
     // Get OpenRouter API key
     const openRouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
     if (!openRouterApiKey) {
-      throw new Error("OpenRouter API key not configured");
+      logStep("ERROR: OpenRouter API key missing");
+      throw new Error("AI analysis service not configured");
     }
 
     // Create analysis prompt based on technique
@@ -175,35 +225,48 @@ Be specific with price levels and provide actionable insights for traders.`;
 
     logStep("Sending request to OpenRouter");
 
-    const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${openRouterApiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://forexradar7.com",
-        "X-Title": "ForexRadar7 Deep Historical Analysis"
-      },
-      body: JSON.stringify({
-        model: "openai/gpt-4o-mini",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      })
-    });
+    const aiController = new AbortController();
+    const aiTimeoutId = setTimeout(() => aiController.abort(), 60000); // 60 second timeout
+
+    let aiResponse;
+    try {
+      aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${openRouterApiKey}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": "https://forexradar7.com",
+          "X-Title": "ForexRadar7 Deep Historical Analysis"
+        },
+        body: JSON.stringify({
+          model: "openai/gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt }
+          ],
+          temperature: 0.7,
+          max_tokens: 2000
+        }),
+        signal: aiController.signal
+      });
+      clearTimeout(aiTimeoutId);
+    } catch (aiError) {
+      clearTimeout(aiTimeoutId);
+      logStep("ERROR: AI request failed", aiError);
+      throw new Error(`AI analysis failed: ${aiError.message}`);
+    }
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       logStep("OpenRouter API error", { status: aiResponse.status, error: errorText });
-      throw new Error(`OpenRouter API failed: ${aiResponse.status} - ${errorText}`);
+      throw new Error(`AI service error: ${aiResponse.status} - ${errorText}`);
     }
 
     const aiData = await aiResponse.json();
-    const analysis = aiData.choices[0]?.message?.content;
+    const analysis = aiData.choices?.[0]?.message?.content;
 
     if (!analysis) {
+      logStep("ERROR: No analysis content received");
       throw new Error("No analysis content received from AI");
     }
 
@@ -217,7 +280,8 @@ Be specific with price levels and provide actionable insights for traders.`;
       });
 
     if (incrementError) {
-      logStep("Error incrementing deep analysis usage", incrementError);
+      logStep("Warning: Error incrementing usage", incrementError);
+      // Don't throw error here, just log it
     }
 
     // Store the analysis result
@@ -228,7 +292,7 @@ Be specific with price levels and provide actionable insights for traders.`;
       timeframe: timeframe,
       date_range: `${fromDate} to ${toDate}`,
       analysis: analysis,
-      data_points: historicalData.split('\n').length - 1, // Subtract header
+      data_points: dataLines.length - 1,
       created_at: new Date().toISOString()
     };
 
@@ -244,7 +308,7 @@ Be specific with price levels and provide actionable insights for traders.`;
       .single();
 
     if (storeError) {
-      logStep("Error storing analysis", storeError);
+      logStep("Warning: Error storing analysis", storeError);
       // Don't throw error here, just log it
     }
 
@@ -261,8 +325,12 @@ Be specific with price levels and provide actionable insights for traders.`;
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    logStep("ERROR in deep-historical-analysis", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    logStep("ERROR in deep-historical-analysis", { message: errorMessage, stack: error instanceof Error ? error.stack : undefined });
+    
+    return new Response(JSON.stringify({ 
+      error: errorMessage,
+      timestamp: new Date().toISOString()
+    }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
