@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -80,8 +79,8 @@ serve(async (req) => {
       throw new Error("Deep analysis limit reached. Please upgrade your plan or wait for the next reset period.");
     }
 
-    // Download historical data from Replit
-    const replitUrl = `https://dukascopy-node.radenrafi2.repl.co/api/candles?symbol=${currencyPair}&timeframe=${timeframe}&format=txt&from=${fromDate}&to=${toDate}`;
+    // Download historical data from correct Replit URL
+    const replitUrl = `https://dukas-megarootz181.replit.app/api/candles?symbol=${currencyPair}&timeframe=${timeframe}&format=txt&from=${fromDate}&to=${toDate}`;
     logStep("Fetching data from Replit", { url: replitUrl });
 
     const replitResponse = await fetch(replitUrl);
