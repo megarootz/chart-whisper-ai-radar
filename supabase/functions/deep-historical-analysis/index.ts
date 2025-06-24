@@ -39,7 +39,7 @@ serve(async (req) => {
     const { currencyPair, timeframe, analysisType, fromDate, toDate } = await req.json();
     logStep("Request body parsed", { currencyPair, timeframe, analysisType, fromDate, toDate });
 
-    // Check deep analysis usage limits
+    // Check deep analysis usage limits with better error handling
     const { data: usageData, error: usageError } = await supabaseClient
       .rpc('check_usage_limits', { p_user_id: user.id });
 
@@ -50,9 +50,33 @@ serve(async (req) => {
 
     logStep("Usage data received", usageData);
 
-    // Check if user can perform deep analysis
-    if (!usageData?.can_deep_analyze) {
-      logStep("Deep analysis limit reached", usageData);
+    // More robust usage checking
+    if (!usageData) {
+      logStep("No usage data returned");
+      throw new Error("Unable to retrieve usage information. Please try again.");
+    }
+
+    // Check both daily and monthly limits for deep analysis
+    const deepDailyCount = usageData.deep_analysis_daily_count || 0;
+    const deepMonthlyCount = usageData.deep_analysis_monthly_count || 0;
+    const deepDailyLimit = usageData.deep_analysis_daily_limit || 1;
+    const deepMonthlyLimit = usageData.deep_analysis_monthly_limit || 30;
+
+    const canUseDeepAnalysis = (deepDailyCount < deepDailyLimit) && (deepMonthlyCount < deepMonthlyLimit);
+
+    logStep("Deep analysis limits check", {
+      deepDailyCount,
+      deepMonthlyCount,
+      deepDailyLimit,
+      deepMonthlyLimit,
+      canUseDeepAnalysis
+    });
+
+    if (!canUseDeepAnalysis) {
+      logStep("Deep analysis limit reached", {
+        dailyUsage: `${deepDailyCount}/${deepDailyLimit}`,
+        monthlyUsage: `${deepMonthlyCount}/${deepMonthlyLimit}`
+      });
       throw new Error("Deep analysis limit reached. Please upgrade your plan or wait for the next reset period.");
     }
 
@@ -67,6 +91,11 @@ serve(async (req) => {
 
     const historicalData = await replitResponse.text();
     logStep("Historical data fetched", { dataLength: historicalData.length });
+
+    // Validate that we have data
+    if (!historicalData || historicalData.trim().length === 0) {
+      throw new Error("No historical data available for the selected parameters. Please try different dates or currency pair.");
+    }
 
     // Get OpenRouter API key
     const openRouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
