@@ -44,7 +44,6 @@ const CURRENCY_PAIRS = [
 ];
 
 const TIMEFRAMES = [
-  { value: 'M1', label: '1 Minute' },
   { value: 'M5', label: '5 Minutes' },
   { value: 'M15', label: '15 Minutes' },
   { value: 'M30', label: '30 Minutes' },
@@ -63,7 +62,6 @@ const ANALYSIS_TYPES = [
 ];
 
 const TIMEFRAME_LIMITS = {
-  'M1': 1,   // 1 day
   'M5': 4,   // 4 days
   'M15': 5,  // 5 days
   'M30': 6,  // 6 days
