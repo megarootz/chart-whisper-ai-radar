@@ -5,7 +5,7 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, Crown, Zap } from 'lucide-react';
+import { Check, Crown, Zap, Brain } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSubscription } from '@/contexts/SubscriptionContext';
@@ -72,7 +72,7 @@ const PricingPage = () => {
                 Choose Your Plan
               </h1>
               <p className="text-gray-400 max-w-2xl mx-auto text-sm md:text-base px-2">
-                Unlock more analyses with our subscription plans
+                Unlock more deep analyses with our subscription plans
               </p>
             </div>
 
@@ -155,9 +155,9 @@ const PricingPage = () => {
       period: '',
       icon: <Check className="h-6 w-6" />,
       features: [
-        '3 analyses per day',
-        '90 analyses per month',
-        'Basic chart analysis',
+        '1 deep analysis per day',
+        '30 deep analyses per month',
+        'Basic historical analysis',
         'Standard support'
       ],
       color: 'bg-gray-500',
@@ -170,11 +170,11 @@ const PricingPage = () => {
       name: 'Starter Plan',
       price: '$9.99',
       period: '/month',
-      icon: <Zap className="h-6 w-6" />,
+      icon: <Brain className="h-6 w-6" />,
       features: [
-        '15 analyses per day',
-        '450 analyses per month',
-        'Advanced chart analysis',
+        '5 deep analyses per day',
+        '150 deep analyses per month',
+        'Advanced historical analysis',
         'Priority support',
         'Export analysis reports'
       ],
@@ -191,9 +191,9 @@ const PricingPage = () => {
       period: '/month',
       icon: <Crown className="h-6 w-6" />,
       features: [
-        '30 analyses per day',
-        '900 analyses per month',
-        'Premium chart analysis',
+        '15 deep analyses per day',
+        '450 deep analyses per month',
+        'Premium historical analysis',
         'VIP support',
         'Advanced export options',
         'API access'
@@ -217,7 +217,7 @@ const PricingPage = () => {
               Choose Your Plan
             </h1>
             <p className="text-gray-400 max-w-2xl mx-auto text-sm md:text-base px-2">
-              Unlock more analyses with our subscription plans
+              Unlock more deep analyses with our subscription plans
             </p>
           </div>
 
@@ -233,24 +233,24 @@ const PricingPage = () => {
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-gray-400">Daily</span>
-                        <span className="text-white">{usage.daily_count}/{usage.daily_limit}</span>
+                        <span className="text-white">{usage.deep_analysis_daily_count}/{usage.deep_analysis_daily_limit}</span>
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-2">
                         <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${Math.min((usage.daily_count / usage.daily_limit) * 100, 100)}%` }}
+                          className="bg-purple-500 h-2 rounded-full transition-all duration-300" 
+                          style={{ width: `${Math.min((usage.deep_analysis_daily_count / usage.deep_analysis_daily_limit) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span className="text-gray-400">Monthly</span>
-                        <span className="text-white">{usage.monthly_count}/{usage.monthly_limit}</span>
+                        <span className="text-white">{usage.deep_analysis_monthly_count}/{usage.deep_analysis_monthly_limit}</span>
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-2">
                         <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${Math.min((usage.monthly_count / usage.monthly_limit) * 100, 100)}%` }}
+                          className="bg-purple-500 h-2 rounded-full transition-all duration-300" 
+                          style={{ width: `${Math.min((usage.deep_analysis_monthly_count / usage.deep_analysis_monthly_limit) * 100, 100)}%` }}
                         ></div>
                       </div>
                     </div>

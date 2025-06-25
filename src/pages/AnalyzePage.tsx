@@ -28,13 +28,13 @@ const AnalyzePage = () => {
               className="text-xl md:text-2xl font-bold text-white mb-1 md:mb-2" 
               style={{ color: '#ffffff', fontWeight: 'bold', fontSize: isMobile ? '1.25rem' : '1.5rem' }}
             >
-              AI Analysis
+              Deep Historical Analysis
             </h1>
             <p 
               className="text-gray-400 text-sm md:text-base"
               style={{ color: '#9ca3af' }}
             >
-              Upload chart images or analyze historical data with advanced AI techniques
+              Analyze historical forex data with advanced AI techniques
             </p>
           </div>
 
