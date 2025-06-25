@@ -1,8 +1,9 @@
+
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ChartCandlestick, BarChart2, TrendingUp, History, Award, Zap } from 'lucide-react';
+import { ChartCandlestick, BarChart2, TrendingUp, History, Award, Brain } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import TickmillBanner from '@/components/TickmillBanner';
@@ -50,10 +51,10 @@ const HomePage = () => {
                 {/* Content overlay */}
                 <div className="relative z-10 w-full space-y-4 text-center px-2 max-w-full">
                   <h1 className="text-3xl font-bold text-white leading-tight">
-                    ForexRadar7: Your ultimate <span className="text-primary">AI-Powered Forex Chart Analysis tool</span>
+                    ForexRadar7: Your ultimate <span className="text-primary">AI-Powered Deep Historical Analysis tool</span>
                   </h1>
                   <p className="text-base text-gray-300 max-w-sm mx-auto">
-                    Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
+                    Analyze historical forex data using advanced AI techniques for comprehensive market insights.
                   </p>
                   <div className="pt-2">
                     <Button onClick={handleGetStartedClick} size="default" className="bg-primary hover:bg-primary/90 text-white font-medium px-8 py-3">
@@ -66,10 +67,10 @@ const HomePage = () => {
               <div className="flex flex-col md:flex-row gap-6 md:gap-16 items-center w-full overflow-x-hidden">
                 <div className="w-full md:w-1/2 space-y-4 md:space-y-6">
                   <h1 className="text-3xl md:text-5xl font-bold text-white leading-tight">
-                    ForexRadar7: Your ultimate <span className="text-primary">AI-Powered Forex Chart Analysis tool</span>
+                    ForexRadar7: Your ultimate <span className="text-primary">AI-Powered Deep Historical Analysis tool</span>
                   </h1>
                   <p className="text-lg text-gray-300">
-                    Upload your forex charts and get instant, professional-level technical analysis with precise entry points, stop losses, and profit targets.
+                    Analyze historical forex data using advanced AI techniques for comprehensive market insights.
                   </p>
                   <div className="pt-3 md:pt-4">
                     <Button onClick={handleGetStartedClick} size="lg" className="bg-primary hover:bg-primary/90 text-white font-medium">
@@ -99,25 +100,25 @@ const HomePage = () => {
           <div className="container mx-auto max-w-6xl w-full overflow-x-hidden">
             <div className="text-center mb-8 md:mb-12">
               <h2 className={`${isMobile ? 'text-xl' : 'text-2xl md:text-3xl'} font-bold text-white mb-3 md:mb-4`}>
-                Powerful Analysis Features
+                Powerful Deep Historical Analysis Features
               </h2>
               <p className="text-gray-400 max-w-2xl mx-auto text-sm md:text-base px-2">
-                Our AI trading assistant analyzes your charts with professional precision to identify key patterns and opportunities.
+                Our AI analyzes historical forex data using advanced techniques to identify patterns and market opportunities.
               </p>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
-              <FeatureCard icon={<ChartCandlestick className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Pattern Recognition" description="Automatically detects chart patterns like head and shoulders, double tops, flags, and more." />
-              <FeatureCard icon={<BarChart2 className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Support & Resistance" description="Identifies key support and resistance levels with precision to optimize your entries and exits." />
-              <FeatureCard icon={<TrendingUp className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Trend Analysis" description="Determines the overall trend direction and strength to keep you trading with the momentum." />
-              <FeatureCard icon={<Zap className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Entry & Exit Points" description="Get precise entry triggers, stop loss levels, and multiple take profit targets for each setup." />
-              <FeatureCard icon={<Award className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Risk Assessment" description="Each analysis includes risk-reward ratios and confidence scores to prioritize the best trades." />
-              <FeatureCard icon={<History className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Analysis History" description="Save all your chart analyses to track performance and review previous setups." />
+              <FeatureCard icon={<Brain className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="ICT Analysis" description="Inner Circle Trader methodology for identifying market structure and key levels." />
+              <FeatureCard icon={<ChartCandlestick className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Elliott Wave" description="Advanced Elliott Wave analysis to predict future market movements and cycles." />
+              <FeatureCard icon={<BarChart2 className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Support & Resistance" description="Identifies key support and resistance levels with precision across different timeframes." />
+              <FeatureCard icon={<TrendingUp className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Fibonacci Analysis" description="Comprehensive Fibonacci retracement and extension analysis for optimal entry and exit points." />
+              <FeatureCard icon={<Award className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Volume Profile" description="Volume-based analysis to understand market participation and key price levels." />
+              <FeatureCard icon={<History className="h-8 w-8 md:h-10 md:w-10 text-primary" />} title="Market Structure" description="Deep analysis of market structure including order blocks and fair value gaps." />
             </div>
             
             <div className="mt-8 md:mt-12 text-center">
               <Button onClick={handleGetStartedClick} className="bg-primary hover:bg-primary/90 text-white font-medium">
-                Analyze Your Chart Now
+                Start Deep Analysis Now
               </Button>
             </div>
           </div>
