@@ -21,37 +21,26 @@ const AnalyzePage = () => {
     <div className="min-h-screen bg-chart-bg flex flex-col">
       <Header />
       
-      <main className={`flex-grow pt-20 ${isMobile ? 'px-3 pb-20' : 'py-6 px-6 pb-24'}`} style={{ paddingTop: isMobile ? '80px' : '100px' }}>
-        <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-6xl'}`}>
-          <div className={`mb-4 md:mb-6 ${isMobile ? 'px-1' : 'px-0'}`}>
-            <h1 
-              className="text-xl md:text-2xl font-bold text-white mb-1 md:mb-2" 
-              style={{ color: '#ffffff', fontWeight: 'bold', fontSize: isMobile ? '1.25rem' : '1.5rem' }}
-            >
-              Deep Historical Analysis
-            </h1>
-            <p 
-              className="text-gray-400 text-sm md:text-base"
-              style={{ color: '#9ca3af' }}
-            >
-              Analyze historical forex data with advanced AI techniques
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-3">
+      <main className={`flex-grow ${isMobile ? 'pt-20 px-4 pb-20' : 'pt-24 py-6 px-6 pb-24'}`}>
+        <div className={`${isMobile ? 'w-full' : 'container mx-auto max-w-7xl'}`}>
+          <div className={`grid grid-cols-1 ${isMobile ? 'gap-6' : 'lg:grid-cols-4 gap-8'}`}>
+            <div className={isMobile ? 'order-1' : 'lg:col-span-3'}>
               <AnalysisMenu onAnalysisComplete={handleAnalysisComplete} />
               
               {currentAnalysis && (
-                <AnalysisResult 
-                  analysis={currentAnalysis} 
-                  isDeepAnalysis={isDeepAnalysis}
-                />
+                <div className="mt-6">
+                  <AnalysisResult 
+                    analysis={currentAnalysis} 
+                    isDeepAnalysis={isDeepAnalysis}
+                  />
+                </div>
               )}
             </div>
             
-            <div className="lg:col-span-1">
-              <UsageDisplay />
+            <div className={`${isMobile ? 'order-2' : 'lg:col-span-1'}`}>
+              <div className="sticky top-24">
+                <UsageDisplay />
+              </div>
             </div>
           </div>
         </div>
