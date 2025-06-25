@@ -32,7 +32,7 @@ const ProfilePage = () => {
             </p>
           </div>
 
-          {/* User Info Section - Moved to top */}
+          {/* User Info Section */}
           <div className={`bg-chart-card border border-gray-700 rounded-lg overflow-hidden mb-4 md:mb-6 ${isMobile ? 'mx-0' : 'mx-0 md:mx-0'}`}>
             <div className="p-4 md:p-5 flex items-center">
               <div className="bg-primary/10 text-primary rounded-full w-12 h-12 md:w-16 md:h-16 flex items-center justify-center mr-3 md:mr-4">
