@@ -260,7 +260,7 @@ Be specific with price levels and provide actionable insights for traders.`;
           "X-Title": "ForexRadar7 Deep Historical Analysis"
         },
         body: JSON.stringify({
-          model: "openai/gpt-4o-mini",
+          model: "x-ai/grok-3-mini",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
