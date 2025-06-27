@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import ReasoningPopup from './ReasoningPopup';
 
 const CURRENCY_PAIRS = [
   { value: 'EURUSD', label: 'EUR/USD' },
@@ -85,6 +86,7 @@ interface DeepHistoricalAnalysisProps {
 
 const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnalysisComplete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showReasoningPopup, setShowReasoningPopup] = useState(false);
   const { toast } = useToast();
   const { usage, checkUsageLimits } = useSubscription();
   const today = new Date();
@@ -120,6 +122,19 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     return `${Math.round(days / 365)} year`;
   };
 
+  const scrollToAnalysisResults = () => {
+    // Wait a bit for the results to render, then scroll
+    setTimeout(() => {
+      const analysisSection = document.querySelector('[data-analysis-results]');
+      if (analysisSection) {
+        analysisSection.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+      }
+    }, 100);
+  };
+
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     if (!usage?.can_deep_analyze) {
       toast({
@@ -131,6 +146,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     }
 
     setIsAnalyzing(true);
+    setShowReasoningPopup(true);
     
     try {
       const { data, error } = await supabase.functions.invoke('deep-historical-analysis', {
@@ -158,6 +174,9 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       // Pass the analysis to parent component
       onAnalysisComplete(data.analysis);
 
+      // Auto-scroll to results
+      scrollToAnalysisResults();
+
     } catch (error) {
       console.error('Deep analysis error:', error);
       toast({
@@ -167,41 +186,108 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       });
     } finally {
       setIsAnalyzing(false);
+      setShowReasoningPopup(false);
     }
   };
 
   const currentFromDate = form.watch('fromDate');
 
   return (
-    <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
-      <h3 className="text-xl font-bold text-white mb-4">Deep Historical Analysis</h3>
-      <p className="text-gray-400 mb-6">
-        Analyze historical forex data using advanced techniques powered by AI
-      </p>
+    <>
+      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
+        <h3 className="text-xl font-bold text-white mb-4">Deep Historical Analysis</h3>
+        <p className="text-gray-400 mb-6">
+          Analyze historical forex data using advanced techniques powered by AI
+        </p>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FormField
+                control={form.control}
+                name="currencyPair"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-white">Currency Pair</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                          <SelectValue placeholder="Select currency pair" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-gray-700 border-gray-600">
+                        {CURRENCY_PAIRS.map((pair) => (
+                          <SelectItem 
+                            key={pair.value} 
+                            value={pair.value}
+                            className="text-white hover:bg-gray-600"
+                          >
+                            {pair.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="timeframe"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-white">Timeframe</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                          <SelectValue placeholder="Select timeframe" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent className="bg-gray-700 border-gray-600">
+                        {TIMEFRAMES.map((tf) => (
+                          <SelectItem 
+                            key={tf.value} 
+                            value={tf.value}
+                            className="text-white hover:bg-gray-600"
+                          >
+                            {tf.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedTimeframe && (
+                      <div className="flex items-center mt-2 text-sm text-blue-400">
+                        <Info className="w-4 h-4 mr-1" />
+                        <span>Data range limited to {getTimeframeLimitText(selectedTimeframe)} for optimal performance</span>
+                      </div>
+                    )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
             <FormField
               control={form.control}
-              name="currencyPair"
+              name="analysisType"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-white">Currency Pair</FormLabel>
+                  <FormLabel className="text-white">Analysis Technique</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select currency pair" />
+                        <SelectValue placeholder="Select analysis technique" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent className="bg-gray-700 border-gray-600">
-                      {CURRENCY_PAIRS.map((pair) => (
+                      {ANALYSIS_TYPES.map((type) => (
                         <SelectItem 
-                          key={pair.value} 
-                          value={pair.value}
+                          key={type.value} 
+                          value={type.value}
                           className="text-white hover:bg-gray-600"
                         >
-                          {pair.label}
+                          {type.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -211,131 +297,69 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="timeframe"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-white">Timeframe</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select timeframe" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-gray-700 border-gray-600">
-                      {TIMEFRAMES.map((tf) => (
-                        <SelectItem 
-                          key={tf.value} 
-                          value={tf.value}
-                          className="text-white hover:bg-gray-600"
-                        >
-                          {tf.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {selectedTimeframe && (
-                    <div className="flex items-center mt-2 text-sm text-blue-400">
-                      <Info className="w-4 h-4 mr-1" />
-                      <span>Data range limited to {getTimeframeLimitText(selectedTimeframe)} for optimal performance</span>
-                    </div>
-                  )}
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="analysisType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-white">Analysis Technique</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
-                  <FormControl>
-                    <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                      <SelectValue placeholder="Select analysis technique" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent className="bg-gray-700 border-gray-600">
-                    {ANALYSIS_TYPES.map((type) => (
-                      <SelectItem 
-                        key={type.value} 
-                        value={type.value}
-                        className="text-white hover:bg-gray-600"
-                      >
-                        {type.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex flex-col">
-              <FormLabel className="text-white mb-2">From Date</FormLabel>
-              <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
-                <div className="flex items-center justify-between">
-                  <span>
-                    {currentFromDate ? format(currentFromDate, 'PPP') : 'Select timeframe first'}
-                    {selectedTimeframe && ' (Auto-set)'}
-                  </span>
-                  <CalendarIcon className="h-4 w-4 opacity-30" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="flex flex-col">
+                <FormLabel className="text-white mb-2">From Date</FormLabel>
+                <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
+                  <div className="flex items-center justify-between">
+                    <span>
+                      {currentFromDate ? format(currentFromDate, 'PPP') : 'Select timeframe first'}
+                      {selectedTimeframe && ' (Auto-set)'}
+                    </span>
+                    <CalendarIcon className="h-4 w-4 opacity-30" />
+                  </div>
                 </div>
+                <p className="text-xs text-gray-400 mt-1">
+                  {selectedTimeframe 
+                    ? `Automatically set based on ${getTimeframeLimitText(selectedTimeframe)} limit`
+                    : 'Will be set automatically when you select a timeframe'
+                  }
+                </p>
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {selectedTimeframe 
-                  ? `Automatically set based on ${getTimeframeLimitText(selectedTimeframe)} limit`
-                  : 'Will be set automatically when you select a timeframe'
-                }
-              </p>
+
+              <div className="flex flex-col">
+                <FormLabel className="text-white mb-2">To Date</FormLabel>
+                <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
+                  <div className="flex items-center justify-between">
+                    <span>{format(today, 'PPP')} (Latest)</span>
+                    <CalendarIcon className="h-4 w-4 opacity-30" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Automatically set to today's date</p>
+              </div>
             </div>
 
-            <div className="flex flex-col">
-              <FormLabel className="text-white mb-2">To Date</FormLabel>
-              <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
-                <div className="flex items-center justify-between">
-                  <span>{format(today, 'PPP')} (Latest)</span>
-                  <CalendarIcon className="h-4 w-4 opacity-30" />
+            <div className="flex flex-col space-y-2">
+              {usage && (
+                <div className="text-sm text-gray-400">
+                  Deep Analysis Usage: {usage.deep_analysis_daily_count || 0} / {usage.deep_analysis_daily_limit || 1} today
                 </div>
-              </div>
-              <p className="text-xs text-gray-400 mt-1">Automatically set to today's date</p>
-            </div>
-          </div>
-
-          <div className="flex flex-col space-y-2">
-            {usage && (
-              <div className="text-sm text-gray-400">
-                Deep Analysis Usage: {usage.deep_analysis_daily_count || 0} / {usage.deep_analysis_daily_limit || 1} today
-              </div>
-            )}
-            
-            <Button 
-              type="submit" 
-              disabled={isAnalyzing || !usage?.can_deep_analyze}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Analyzing Data...
-                </>
-              ) : (
-                <>
-                  <Brain className="mr-2 h-4 w-4" />
-                  Start Deep Analysis
-                </>
               )}
-            </Button>
-          </div>
-        </form>
-      </Form>
-    </div>
+              
+              <Button 
+                type="submit" 
+                disabled={isAnalyzing || !usage?.can_deep_analyze}
+                className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+              >
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyzing Data...
+                  </>
+                ) : (
+                  <>
+                    <Brain className="mr-2 h-4 w-4" />
+                    Start Deep Analysis
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      </div>
+      
+      <ReasoningPopup isOpen={showReasoningPopup} />
+    </>
   );
 };
 

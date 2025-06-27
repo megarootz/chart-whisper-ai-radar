@@ -28,7 +28,7 @@ const AnalyzePage = () => {
               <AnalysisMenu onAnalysisComplete={handleAnalysisComplete} />
               
               {currentAnalysis && (
-                <div className="mt-6">
+                <div className="mt-6" data-analysis-results>
                   <AnalysisResult 
                     analysis={currentAnalysis} 
                     isDeepAnalysis={isDeepAnalysis}
