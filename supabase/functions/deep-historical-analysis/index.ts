@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -266,7 +265,7 @@ Be specific with price levels and provide actionable insights for traders.`;
             { role: "user", content: userPrompt }
           ],
           temperature: 0.7,
-          max_tokens: 2000
+          max_tokens: 4000
         }),
         signal: aiController.signal
       });
@@ -291,7 +290,20 @@ Be specific with price levels and provide actionable insights for traders.`;
       throw new Error("No analysis content received from AI");
     }
 
-    logStep("AI analysis completed", { analysisLength: analysis.length });
+    // Check if response was truncated due to token limits
+    const finishReason = aiData.choices?.[0]?.finish_reason;
+    if (finishReason === 'length') {
+      logStep("Warning: Analysis was truncated due to token limit", { 
+        finishReason, 
+        analysisLength: analysis.length 
+      });
+      // Don't throw error, but log the warning
+    }
+
+    logStep("AI analysis completed", { 
+      analysisLength: analysis.length,
+      finishReason: finishReason 
+    });
 
     // Increment deep analysis usage
     const { error: incrementError } = await supabaseClient
@@ -319,7 +331,8 @@ Be specific with price levels and provide actionable insights for traders.`;
       pairName: currencyPair,
       marketAnalysis: analysis,
       overallSentiment: 'Deep Analysis',
-      trendDirection: 'analyzed'
+      trendDirection: 'analyzed',
+      truncated: finishReason === 'length'
     };
 
     const { data: storedAnalysis, error: storeError } = await supabaseClient
@@ -343,7 +356,8 @@ Be specific with price levels and provide actionable insights for traders.`;
     return new Response(JSON.stringify({
       success: true,
       analysis: analysisData,
-      analysis_id: storedAnalysis?.id
+      analysis_id: storedAnalysis?.id,
+      warning: finishReason === 'length' ? 'Analysis may be incomplete due to length limits' : null
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
