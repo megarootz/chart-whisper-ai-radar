@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -46,12 +47,12 @@ serve(async (req) => {
     logStep("User authenticated", { userId: user.id, email: user.email });
 
     const requestBody = await req.json();
-    const { currencyPair, timeframe, analysisType, fromDate, toDate } = requestBody;
-    logStep("Request body parsed", { currencyPair, timeframe, analysisType, fromDate, toDate });
+    const { currencyPair, timeframe, fromDate, toDate } = requestBody;
+    logStep("Request body parsed", { currencyPair, timeframe, fromDate, toDate });
 
-    if (!currencyPair || !timeframe || !analysisType || !fromDate || !toDate) {
+    if (!currencyPair || !timeframe || !fromDate || !toDate) {
       logStep("ERROR: Missing required parameters");
-      throw new Error("Missing required parameters: currencyPair, timeframe, analysisType, fromDate, toDate");
+      throw new Error("Missing required parameters: currencyPair, timeframe, fromDate, toDate");
     }
 
     // Check deep analysis usage limits
@@ -174,74 +175,58 @@ serve(async (req) => {
       throw new Error("AI analysis service not configured");
     }
 
-    // Create analysis prompt based on technique
-    const analysisPrompts = {
-      ict: `You are an expert ICT (Inner Circle Trader) analyst. Analyze this forex historical data and provide insights focusing on:
-- Market structure (higher highs, higher lows, lower highs, lower lows)
-- Liquidity zones and sweep areas
-- Order blocks (bullish and bearish)
-- Fair value gaps (FVG)
-- Imbalances and inefficiencies
-- Key support and resistance levels
-- Potential entry and exit points based on ICT concepts`,
-      
-      elliott_wave: `You are an expert Elliott Wave analyst. Analyze this forex historical data and provide insights focusing on:
-- Wave count identification (impulse waves 1-5 and corrective waves A-C)
-- Wave degree and structure
-- Fibonacci retracements and extensions
-- Key turning points and wave relationships
-- Current wave position and future projections
-- Support and resistance levels based on wave analysis`,
-      
-      support_resistance: `You are an expert technical analyst specializing in support and resistance. Analyze this forex historical data and provide insights focusing on:
-- Key horizontal support and resistance levels
-- Dynamic support/resistance (trend lines)
-- Breakout and breakdown points
-- Volume confirmation at key levels
-- Level retests and rejections
-- Potential price targets and reversal zones`,
-      
-      fibonacci: `You are an expert Fibonacci analyst. Analyze this forex historical data and provide insights focusing on:
-- Fibonacci retracement levels (23.6%, 38.2%, 50%, 61.8%, 78.6%)
-- Fibonacci extension levels (127.2%, 161.8%, 261.8%)
-- Key swing points for Fibonacci analysis
-- Confluence areas with multiple Fibonacci levels
-- Price reactions at Fibonacci levels
-- Potential reversal and continuation patterns`,
-      
-      volume_profile: `You are an expert volume profile analyst. Analyze this forex historical data and provide insights focusing on:
-- Volume distribution across price levels
-- Point of control (POC) identification
-- Value area high and low
-- Volume clusters and gaps
-- Price acceptance and rejection zones
-- Volume-based support and resistance levels`,
-      
-      market_structure: `You are an expert market structure analyst. Analyze this forex historical data and provide insights focusing on:
-- Trend identification and strength
-- Market phases (accumulation, markup, distribution, markdown)
-- Swing highs and swing lows analysis
-- Trend line breaks and confirmations
-- Market momentum and divergences
-- Key structural levels and zones`
+    // Get timeframe label for the prompt
+    const timeframeLabels: Record<string, string> = {
+      'm5': '5-minute',
+      'm15': '15-minute',
+      'm30': '30-minute',
+      'h1': '1-hour',
+      'h4': '4-hour',
+      'd1': 'daily'
     };
 
-    const systemPrompt = analysisPrompts[analysisType as keyof typeof analysisPrompts] || analysisPrompts.market_structure;
+    const timeframeLabel = timeframeLabels[mappedTimeframe] || mappedTimeframe;
 
-    const userPrompt = `Analyze the following ${currencyPair} ${mappedTimeframe} historical forex data from ${fromDate} to ${toDate}:
+    // Create the comprehensive trading analysis prompt
+    const systemPrompt = `You are a highly experienced financial market analyst, specializing in technical analysis for forex currency pairs. I will provide you with historical price data in candlestick format for the currency pair ${currencyPair}. This data is for the ${timeframeLabel} timeframe, covering the date range from ${fromDate} to ${toDate}.
+
+The candlestick data will be provided chronologically, from the oldest to the most recent.
+
+Your primary task is to comprehensively analyze this candlestick data and provide me with insightful market analysis and actionable trading recommendations.
+
+Please focus on the following aspects in your analysis:
+
+1. Current Market Trend:
+   - Identify the overall current market trend – is it bullish (upward), bearish (downward), or ranging (sideways)?
+   - Estimate the duration of this trend (short-term or medium-term).
+   - Briefly justify your conclusion.
+
+2. Key Support and Resistance Levels:
+   - Identify 2 to 3 of the most significant price levels acting as support and resistance based on the price action.
+
+3. Technical Chart Patterns:
+   - Check if any significant technical chart patterns have formed (e.g., Head and Shoulders, Double Top/Bottom, Triangles, Flags).
+   - If any are found, name the pattern and explain its implications.
+   - If none are found, clearly state that.
+
+4. Market Momentum and Volatility:
+   - Assess whether the market is overbought or oversold.
+   - Determine the strength of momentum (strong, moderate, or weak).
+   - Assess the current volatility (high, low, or normal).
+
+5. Clear Trading Recommendation:
+   - State the recommended action: BUY, SELL, or DO NOT TRADE (HOLD/WAIT).
+   - Provide a concise rationale based on the findings.
+   - If BUY or SELL is recommended, suggest reasonable Take Profit (TP) and Stop Loss (SL) levels.
+   - If TP and SL are not appropriate, state that clearly.
+
+Finally, present the analysis and recommendations in a concise, clear, easy-to-understand format. Avoid unnecessary introductory or concluding remarks. The goal is to deliver the most relevant and actionable information to the user.`;
+
+    const userPrompt = `Analyze the following ${currencyPair} ${timeframeLabel} historical forex data from ${fromDate} to ${toDate}:
 
 ${dataText}
 
-Please provide a comprehensive analysis following your expertise. Structure your response with:
-
-1. **Market Overview**: General market condition and trend
-2. **Key Levels**: Important price levels identified
-3. **Analysis Findings**: Detailed analysis based on your technique
-4. **Trading Opportunities**: Potential setups and entry points
-5. **Risk Management**: Key levels for stops and targets
-6. **Market Outlook**: Short to medium-term expectations
-
-Be specific with price levels and provide actionable insights for traders.`;
+Please provide your comprehensive technical analysis and trading recommendations following the structure outlined above.`;
 
     logStep("Sending request to OpenRouter");
 
@@ -297,7 +282,6 @@ Be specific with price levels and provide actionable insights for traders.`;
         finishReason, 
         analysisLength: analysis.length 
       });
-      // Don't throw error, but log the warning
     }
 
     logStep("AI analysis completed", { 
@@ -314,13 +298,12 @@ Be specific with price levels and provide actionable insights for traders.`;
 
     if (incrementError) {
       logStep("Warning: Error incrementing usage", incrementError);
-      // Don't throw error here, just log it
     }
 
     // Store the analysis result with proper pair name formatting
     const analysisData = {
       type: 'deep_historical',
-      analysis_type: analysisType,
+      analysis_type: 'comprehensive_technical',
       currency_pair: currencyPair,
       timeframe: mappedTimeframe,
       date_range: `${fromDate} to ${toDate}`,
@@ -348,7 +331,6 @@ Be specific with price levels and provide actionable insights for traders.`;
 
     if (storeError) {
       logStep("Warning: Error storing analysis", storeError);
-      // Don't throw error here, just log it
     }
 
     logStep("Deep historical analysis completed successfully");

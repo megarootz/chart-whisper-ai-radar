@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -53,15 +54,6 @@ const TIMEFRAMES = [
   { value: 'D1', label: '1 Day' },
 ];
 
-const ANALYSIS_TYPES = [
-  { value: 'ict', label: 'ICT (Inner Circle Trader)' },
-  { value: 'elliott_wave', label: 'Elliott Wave Analysis' },
-  { value: 'support_resistance', label: 'Support & Resistance' },
-  { value: 'fibonacci', label: 'Fibonacci Analysis' },
-  { value: 'volume_profile', label: 'Volume Profile' },
-  { value: 'market_structure', label: 'Market Structure' },
-];
-
 const TIMEFRAME_LIMITS = {
   'M5': 4,   // 4 days
   'M15': 5,  // 5 days
@@ -74,7 +66,6 @@ const TIMEFRAME_LIMITS = {
 const formSchema = z.object({
   currencyPair: z.string().min(1, 'Please select a currency pair'),
   timeframe: z.string().min(1, 'Please select a timeframe'),
-  analysisType: z.string().min(1, 'Please select an analysis type'),
   fromDate: z.date({
     required_error: 'From date is required',
   }),
@@ -96,7 +87,6 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     defaultValues: {
       currencyPair: '',
       timeframe: '',
-      analysisType: '',
       fromDate: today,
     },
   });
@@ -153,7 +143,6 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         body: {
           currencyPair: values.currencyPair,
           timeframe: values.timeframe,
-          analysisType: values.analysisType,
           fromDate: format(values.fromDate, 'yyyy-MM-dd'),
           toDate: format(today, 'yyyy-MM-dd'),
         },
@@ -197,7 +186,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
         <h3 className="text-xl font-bold text-white mb-4">Deep Historical Analysis</h3>
         <p className="text-gray-400 mb-6">
-          Analyze historical forex data using advanced techniques powered by AI
+          Comprehensive technical analysis of historical forex data with trading recommendations
         </p>
 
         <Form {...form}>
@@ -267,35 +256,6 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
                 )}
               />
             </div>
-
-            <FormField
-              control={form.control}
-              name="analysisType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-white">Analysis Technique</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select analysis technique" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent className="bg-gray-700 border-gray-600">
-                      {ANALYSIS_TYPES.map((type) => (
-                        <SelectItem 
-                          key={type.value} 
-                          value={type.value}
-                          className="text-white hover:bg-gray-600"
-                        >
-                          {type.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="flex flex-col">
