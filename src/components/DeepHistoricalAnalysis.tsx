@@ -227,12 +227,19 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
                           <SelectValue placeholder="Select currency pair" />
                         </SelectTrigger>
                       </FormControl>
-                      <SelectContent className="bg-gray-700 border-gray-600">
+                      <SelectContent 
+                        className="bg-gray-700 border-gray-600 max-h-60 overflow-y-auto"
+                        position="popper"
+                        side="bottom"
+                        align="start"
+                        onWheel={(e) => e.stopPropagation()}
+                        onPointerMove={(e) => e.preventDefault()}
+                      >
                         {CURRENCY_PAIRS.map((pair) => (
                           <SelectItem 
                             key={pair.value} 
                             value={pair.value}
-                            className="text-white hover:bg-gray-600"
+                            className="text-white hover:bg-gray-600 focus:bg-gray-600"
                           >
                             {pair.label}
                           </SelectItem>
