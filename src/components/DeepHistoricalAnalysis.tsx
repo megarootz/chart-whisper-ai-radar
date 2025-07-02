@@ -1,9 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format, subDays } from 'date-fns';
+import { format, subDays, subMonths } from 'date-fns';
 import { CalendarIcon, Brain, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -46,21 +45,21 @@ const CURRENCY_PAIRS = [
 ];
 
 const TIMEFRAMES = [
-  { value: 'M5', label: '5 Minutes' },
   { value: 'M15', label: '15 Minutes' },
   { value: 'M30', label: '30 Minutes' },
   { value: 'H1', label: '1 Hour' },
   { value: 'H4', label: '4 Hours' },
   { value: 'D1', label: '1 Day' },
+  { value: 'W1', label: '1 Week' },
 ];
 
 const TIMEFRAME_LIMITS = {
-  'M5': 4,   // 4 days
-  'M15': 5,  // 5 days
-  'M30': 6,  // 6 days
-  'H1': 10,  // 10 days
-  'H4': 25,  // 25 days
-  'D1': 100, // 100 days
+  'M15': 5,   // 5 days
+  'M30': 10,  // 10 days
+  'H1': 20,   // 20 days
+  'H4': 80,   // 2 months and 20 days (approximately 80 days)
+  'D1': 490,  // 1 year and 4 months (approximately 490 days)
+  'W1': 3650, // 10 years (approximately 3650 days)
 };
 
 const formSchema = z.object({
@@ -97,19 +96,43 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
   useEffect(() => {
     if (selectedTimeframe && TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS]) {
       const daysBack = TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS];
-      const fromDate = subDays(today, daysBack);
+      let fromDate;
+      
+      // For larger timeframes, use months for more accurate calculation
+      if (selectedTimeframe === 'H4') {
+        // 2 months and 20 days
+        fromDate = subDays(subMonths(today, 2), 20);
+      } else if (selectedTimeframe === 'D1') {
+        // 1 year and 4 months
+        fromDate = subMonths(today, 16);
+      } else if (selectedTimeframe === 'W1') {
+        // 10 years
+        fromDate = subMonths(today, 120);
+      } else {
+        fromDate = subDays(today, daysBack);
+      }
+      
       form.setValue('fromDate', fromDate);
     }
   }, [selectedTimeframe, form, today]);
 
   const getTimeframeLimitText = (timeframe: string) => {
-    const days = TIMEFRAME_LIMITS[timeframe as keyof typeof TIMEFRAME_LIMITS];
-    if (!days) return '';
-    
-    if (days === 1) return '1 day';
-    if (days < 30) return `${days} days`;
-    if (days < 365) return `${Math.round(days / 30)} months`;
-    return `${Math.round(days / 365)} year`;
+    switch (timeframe) {
+      case 'M15':
+        return '5 days';
+      case 'M30':
+        return '10 days';
+      case 'H1':
+        return '20 days';
+      case 'H4':
+        return '2 months and 20 days';
+      case 'D1':
+        return '1 year and 4 months';
+      case 'W1':
+        return '10 years';
+      default:
+        return '';
+    }
   };
 
   const scrollToAnalysisResults = () => {

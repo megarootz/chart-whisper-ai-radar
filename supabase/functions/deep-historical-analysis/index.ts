@@ -96,12 +96,12 @@ serve(async (req) => {
     // Map timeframes to match Replit API expectations
     const timeframeMapping: Record<string, string> = {
       'M1': 'm1',
-      'M5': 'm5', 
       'M15': 'm15',
       'M30': 'm30',
       'H1': 'h1',
       'H4': 'h4',
-      'D1': 'd1'
+      'D1': 'd1',
+      'W1': 'w1'
     };
 
     const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
@@ -177,12 +177,12 @@ serve(async (req) => {
 
     // Get timeframe label for the prompt
     const timeframeLabels: Record<string, string> = {
-      'm5': '5-minute',
       'm15': '15-minute',
       'm30': '30-minute',
       'h1': '1-hour',
       'h4': '4-hour',
-      'd1': 'daily'
+      'd1': 'daily',
+      'w1': 'weekly'
     };
 
     const timeframeLabel = timeframeLabels[mappedTimeframe] || mappedTimeframe;
