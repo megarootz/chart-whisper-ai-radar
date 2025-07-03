@@ -12,6 +12,41 @@ const logStep = (step: string, details?: any) => {
   console.log(`[DEEP-HISTORICAL-ANALYSIS] ${step}${detailsStr}`);
 };
 
+// Helper function to format timestamps to readable dates
+const formatTimestamp = (timestamp: any): string => {
+  if (!timestamp) return '';
+  
+  try {
+    let date: Date;
+    
+    // Handle different timestamp formats
+    if (typeof timestamp === 'string') {
+      // If it's already a date string, use it
+      if (timestamp.includes('-') || timestamp.includes('/')) {
+        date = new Date(timestamp);
+      } else {
+        // If it's a string number, parse it
+        const num = parseInt(timestamp);
+        date = new Date(num);
+      }
+    } else if (typeof timestamp === 'number') {
+      // Handle both seconds and milliseconds timestamps
+      date = timestamp > 1000000000000 ? new Date(timestamp) : new Date(timestamp * 1000);
+    } else {
+      return String(timestamp);
+    }
+    
+    // Return formatted date if valid
+    if (!isNaN(date.getTime())) {
+      return date.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+    }
+  } catch (error) {
+    logStep("Warning: Error formatting timestamp", { timestamp, error: error.message });
+  }
+  
+  return String(timestamp);
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -287,11 +322,11 @@ serve(async (req) => {
       dataType: `${dataPointCount} ${mappedTimeframe} bars/candles`
     });
 
-    // Convert historical data to text format for AI analysis
+    // Convert historical data to text format for AI analysis WITH FORMATTED TIMESTAMPS
     let dataText = '';
     if (Array.isArray(historicalData)) {
       dataText = historicalData.map(candle => {
-        const timestamp = candle.timestamp || candle.date || candle.time || '';
+        const timestamp = formatTimestamp(candle.timestamp || candle.date || candle.time || '');
         const open = candle.open || '';
         const high = candle.high || '';
         const low = candle.low || '';
@@ -312,7 +347,7 @@ serve(async (req) => {
       historicalDataPoints: dataPointCount, 
       historicalDataLength: dataText.length,
       currentPrice: currentPrice,
-      analysisType: `${mappedTimeframe} bars with current price context`
+      analysisType: `${mappedTimeframe} bars with current price context and formatted timestamps`
     });
 
     // Get OpenRouter API key
@@ -351,7 +386,8 @@ serve(async (req) => {
 
     const systemPrompt = `You are a highly experienced forex trader and technical analyst. You will analyze historical price data for ${currencyPair} on the ${timeframeLabel} timeframe from ${fromDate} to ${toDate}.
 
-The data contains ${dataPointCount} data points in CSV format: timestamp,open,high,low,close,volume.${currentPriceContext}
+The data contains ${dataPointCount} data points in CSV format: timestamp,open,high,low,close,volume.
+**IMPORTANT:** All timestamps in the data have been formatted as readable dates (YYYY-MM-DD HH:MM:SS UTC) for your analysis.${currentPriceContext}
 
 **ANALYSIS STRUCTURE REQUIRED:**
 
