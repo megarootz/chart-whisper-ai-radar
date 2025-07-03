@@ -107,13 +107,15 @@ serve(async (req) => {
     const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
     logStep("Timeframe mapping", { original: timeframe, mapped: mappedTimeframe });
 
-    // STEP 1: Fetch current tick price (just 1 latest tick for current price reference)
+    // STEP 1: Fetch current tick price (single latest tick for current price reference)
     let currentPrice = null;
     let currentPriceTimestamp = null;
     
     try {
-      const tickUrl = `https://duka-qr9j.onrender.com/tick?instrument=${currencyPair.toLowerCase()}`;
-      logStep("Fetching current tick data", { url: tickUrl });
+      // Use historical endpoint with tick timeframe to get latest price
+      const todayDate = new Date().toISOString().split('T')[0];
+      const tickUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${todayDate}&to=${todayDate}&timeframe=tick&format=json&limit=1`;
+      logStep("Fetching current tick price", { url: tickUrl });
 
       const tickController = new AbortController();
       const tickTimeoutId = setTimeout(() => tickController.abort(), 15000);
@@ -128,21 +130,48 @@ serve(async (req) => {
       clearTimeout(tickTimeoutId);
 
       if (tickResponse.ok) {
-        const tickData = await tickResponse.json();
-        logStep("Tick data fetched", { 
-          dataType: typeof tickData,
-          tickData: JSON.stringify(tickData).substring(0, 200)
+        const tickResponseText = await tickResponse.text();
+        logStep("Tick response received", { 
+          length: tickResponseText.length,
+          firstChars: tickResponseText.substring(0, 200)
         });
 
-        if (tickData && typeof tickData === 'object') {
-          // Extract current price from various possible field names
-          currentPrice = tickData.price || tickData.bid || tickData.ask || tickData.close || tickData.last;
-          currentPriceTimestamp = tickData.timestamp || tickData.time || new Date().toISOString();
+        let tickData;
+        try {
+          tickData = JSON.parse(tickResponseText);
+        } catch (parseError) {
+          logStep("JSON parse failed for tick data, trying CSV", { parseError: parseError.message });
           
-          logStep("Current price extracted", { 
+          // Try to parse as CSV if JSON fails
+          if (tickResponseText.includes(',') && tickResponseText.includes('\n')) {
+            const lines = tickResponseText.trim().split('\n');
+            if (lines.length > 1) {
+              const parts = lines[1].split(','); // Skip header line
+              if (parts.length >= 5) {
+                tickData = [{
+                  timestamp: parts[0],
+                  open: parseFloat(parts[1]),
+                  high: parseFloat(parts[2]),
+                  low: parseFloat(parts[3]),
+                  close: parseFloat(parts[4])
+                }];
+              }
+            }
+          }
+        }
+
+        if (tickData && Array.isArray(tickData) && tickData.length > 0) {
+          const latestTick = tickData[0];
+          currentPrice = latestTick.close || latestTick.price || latestTick.bid || latestTick.ask;
+          currentPriceTimestamp = latestTick.timestamp || latestTick.time || new Date().toISOString();
+          
+          logStep("Current price extracted from tick data", { 
             currentPrice, 
-            currentPriceTimestamp
+            currentPriceTimestamp,
+            tickDataLength: tickData.length
           });
+        } else {
+          logStep("No valid tick data received", { tickData });
         }
       } else {
         logStep("Warning: Could not fetch tick data", { 
@@ -246,9 +275,10 @@ serve(async (req) => {
     }
 
     const dataPointCount = Array.isArray(historicalData) ? historicalData.length : 1;
-    logStep("Historical data validation complete", { 
-      dataPointCount,
-      hasCurrentPrice: !!currentPrice
+    logStep("Data validation complete", { 
+      historicalDataPoints: dataPointCount,
+      hasCurrentPrice: !!currentPrice,
+      currentPrice: currentPrice
     });
 
     // Convert historical data to text format for AI analysis
