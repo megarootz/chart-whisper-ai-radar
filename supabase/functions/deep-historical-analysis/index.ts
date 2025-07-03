@@ -107,7 +107,7 @@ serve(async (req) => {
     const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
     logStep("Timeframe mapping", { original: timeframe, mapped: mappedTimeframe });
 
-    // First, fetch current tick price
+    // STEP 1: Fetch current tick price (just 1 latest tick for current price reference)
     let currentPrice = null;
     let currentPriceTimestamp = null;
     
@@ -154,12 +154,12 @@ serve(async (req) => {
       logStep("Warning: Error fetching tick data", { error: tickError.message });
     }
 
-    // Fetch historical data with better error handling and retry logic
+    // STEP 2: Fetch historical data based on selected timeframe
     const renderUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
     logStep("Fetching historical data from Render", { url: renderUrl });
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased timeout
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     let renderResponse;
     let historicalData;
@@ -176,74 +176,84 @@ serve(async (req) => {
       clearTimeout(timeoutId);
 
       if (!renderResponse.ok) {
-        logStep("ERROR: Render response not OK", { 
+        logStep("ERROR: Render API response not OK", { 
           status: renderResponse.status, 
           statusText: renderResponse.statusText 
         });
-        throw new Error(`Data service returned ${renderResponse.status}: ${renderResponse.statusText}`);
+        throw new Error(`Historical data service error: ${renderResponse.status} - ${renderResponse.statusText}`);
       }
 
       const responseText = await renderResponse.text();
-      logStep("Raw response received", { 
+      logStep("Historical data response received", { 
         length: responseText.length,
         firstChars: responseText.substring(0, 100)
       });
 
+      // Try to parse as JSON first
       try {
         historicalData = JSON.parse(responseText);
+        logStep("Historical data parsed as JSON", { 
+          isArray: Array.isArray(historicalData),
+          length: Array.isArray(historicalData) ? historicalData.length : 'not array'
+        });
       } catch (parseError) {
-        logStep("JSON parse error, trying to handle as text", { parseError: parseError.message });
-        // If it's not JSON, maybe it's CSV or other format
+        logStep("JSON parse failed, trying CSV format", { parseError: parseError.message });
+        
+        // If it's not JSON, try to parse as CSV
         if (responseText.includes(',') && responseText.includes('\n')) {
-          // Convert CSV-like data to JSON format
           const lines = responseText.trim().split('\n');
-          historicalData = lines.slice(1).map((line, index) => {
-            const parts = line.split(',');
-            if (parts.length >= 5) {
-              return {
-                timestamp: parts[0],
-                open: parseFloat(parts[1]),
-                high: parseFloat(parts[2]),
-                low: parseFloat(parts[3]),
-                close: parseFloat(parts[4]),
-                volume: parts[5] ? parseFloat(parts[5]) : 0
-              };
-            }
-            return null;
-          }).filter(item => item !== null);
-        } else {
-          throw new Error('Unable to parse response data');
+          if (lines.length > 1) {
+            historicalData = lines.slice(1).map((line) => {
+              const parts = line.split(',');
+              if (parts.length >= 5) {
+                return {
+                  timestamp: parts[0],
+                  open: parseFloat(parts[1]),
+                  high: parseFloat(parts[2]),
+                  low: parseFloat(parts[3]),
+                  close: parseFloat(parts[4]),
+                  volume: parts[5] ? parseFloat(parts[5]) : 0
+                };
+              }
+              return null;
+            }).filter(item => item !== null);
+            
+            logStep("Historical data parsed as CSV", { 
+              totalLines: lines.length,
+              validCandles: historicalData.length
+            });
+          }
+        }
+        
+        if (!historicalData || historicalData.length === 0) {
+          throw new Error('Unable to parse historical data response');
         }
       }
 
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      logStep("ERROR: Failed to fetch from Render", { 
+      logStep("ERROR: Failed to fetch historical data", { 
         error: fetchError.message,
         url: renderUrl 
       });
       throw new Error(`Failed to fetch historical data: ${fetchError.message}`);
     }
 
-    logStep("Historical data processed", { 
-      dataType: typeof historicalData,
-      dataLength: Array.isArray(historicalData) ? historicalData.length : 'not array',
-      firstItem: Array.isArray(historicalData) && historicalData.length > 0 ? 
-        JSON.stringify(historicalData[0]).substring(0, 200) : 'no data'
-    });
-
-    // Validate that we have meaningful data
+    // Validate historical data
     if (!historicalData || (Array.isArray(historicalData) && historicalData.length === 0)) {
-      logStep("ERROR: Empty data received");
+      logStep("ERROR: No historical data received");
       throw new Error("No historical data available for the selected parameters. Please try different date range or timeframe.");
     }
 
-    // Convert data to text format for AI analysis
+    const dataPointCount = Array.isArray(historicalData) ? historicalData.length : 1;
+    logStep("Historical data validation complete", { 
+      dataPointCount,
+      hasCurrentPrice: !!currentPrice
+    });
+
+    // Convert historical data to text format for AI analysis
     let dataText = '';
-    let dataPointCount = 0;
-    
     if (Array.isArray(historicalData)) {
-      dataPointCount = historicalData.length;
       dataText = historicalData.map(candle => {
         const timestamp = candle.timestamp || candle.date || candle.time || '';
         const open = candle.open || '';
@@ -254,16 +264,19 @@ serve(async (req) => {
         return `${timestamp},${open},${high},${low},${close},${volume}`;
       }).join('\n');
     } else if (typeof historicalData === 'object') {
-      dataPointCount = 1;
       dataText = JSON.stringify(historicalData);
     }
 
     if (dataText.length < 10 || dataPointCount === 0) {
-      logStep("ERROR: Insufficient data content", { dataText: dataText.substring(0, 100), dataPointCount });
-      throw new Error("Insufficient historical data for analysis. Please try different parameters or check data availability.");
+      logStep("ERROR: Insufficient historical data", { dataTextLength: dataText.length, dataPointCount });
+      throw new Error("Insufficient historical data for analysis. Please try different parameters.");
     }
 
-    logStep("Data prepared for AI", { dataPointCount, textLength: dataText.length });
+    logStep("Data preparation complete", { 
+      historicalDataPoints: dataPointCount, 
+      historicalDataLength: dataText.length,
+      currentPrice: currentPrice
+    });
 
     // Get OpenRouter API key
     const openRouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
@@ -274,6 +287,7 @@ serve(async (req) => {
 
     // Get timeframe label for the prompt
     const timeframeLabels: Record<string, string> = {
+      'm1': '1-minute',
       'm15': '15-minute',
       'm30': '30-minute',
       'h1': '1-hour',
@@ -341,7 +355,11 @@ ${dataText}
 
 Provide your comprehensive technical analysis following the required structure.`;
 
-    logStep("Sending request to OpenRouter AI");
+    logStep("Sending request to OpenRouter AI", { 
+      hasCurrentPrice: !!currentPrice,
+      currentPrice: currentPrice,
+      dataPoints: dataPointCount
+    });
 
     const aiController = new AbortController();
     const aiTimeoutId = setTimeout(() => aiController.abort(), 60000);
@@ -397,7 +415,7 @@ Provide your comprehensive technical analysis following the required structure.`
       });
     }
 
-    logStep("AI analysis completed", { 
+    logStep("AI analysis completed successfully", { 
       analysisLength: analysis.length,
       finishReason: finishReason,
       currentPrice: currentPrice,
@@ -453,8 +471,10 @@ Provide your comprehensive technical analysis following the required structure.`
     }
 
     logStep("Deep historical analysis completed successfully", { 
-      dataPoints: dataPointCount,
-      hasCurrentPrice: !!currentPrice 
+      historicalDataPoints: dataPointCount,
+      hasCurrentPrice: !!currentPrice,
+      currentPrice: currentPrice,
+      storedAnalysisId: storedAnalysis?.id
     });
 
     return new Response(JSON.stringify({
