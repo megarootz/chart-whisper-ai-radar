@@ -107,9 +107,9 @@ serve(async (req) => {
     const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
     logStep("Timeframe mapping", { original: timeframe, mapped: mappedTimeframe });
 
-    // Use the exact same URL format as working in history (07:36)
+    // Fetch historical data
     const replitUrl = `https://dukas-megarootz181.replit.app/historical?instrument=${currencyPair}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
-    logStep("Fetching data from Replit", { url: replitUrl });
+    logStep("Fetching historical data from Replit", { url: replitUrl });
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
@@ -153,6 +153,58 @@ serve(async (req) => {
       throw new Error("No historical data available for the selected parameters.");
     }
 
+    // Fetch current tick data for current price
+    let currentPrice = null;
+    let currentPriceTimestamp = null;
+    
+    try {
+      const todayDate = new Date().toISOString().split('T')[0];
+      const tickUrl = `https://dukas-megarootz181.replit.app/historical?instrument=${currencyPair}&from=${todayDate}&to=${todayDate}&timeframe=tick&format=json`;
+      logStep("Fetching current tick data", { url: tickUrl });
+
+      const tickController = new AbortController();
+      const tickTimeoutId = setTimeout(() => tickController.abort(), 15000); // 15 second timeout
+
+      const tickResponse = await fetch(tickUrl, {
+        signal: tickController.signal,
+        headers: {
+          'User-Agent': 'ForexRadar7-CurrentPrice/1.0',
+          'Accept': 'application/json'
+        }
+      });
+      clearTimeout(tickTimeoutId);
+
+      if (tickResponse.ok) {
+        const tickData = await tickResponse.json();
+        logStep("Tick data fetched", { 
+          dataType: typeof tickData,
+          dataLength: Array.isArray(tickData) ? tickData.length : 'not array'
+        });
+
+        // Get the latest tick (last element in array)
+        if (Array.isArray(tickData) && tickData.length > 0) {
+          const latestTick = tickData[tickData.length - 1];
+          // Try different possible field names for price
+          currentPrice = latestTick.close || latestTick.bid || latestTick.price || latestTick.last;
+          currentPriceTimestamp = latestTick.date || latestTick.time || latestTick.timestamp;
+          
+          logStep("Current price extracted", { 
+            currentPrice, 
+            currentPriceTimestamp,
+            latestTick: JSON.stringify(latestTick).substring(0, 200)
+          });
+        }
+      } else {
+        logStep("Warning: Could not fetch tick data", { 
+          status: tickResponse.status, 
+          statusText: tickResponse.statusText 
+        });
+      }
+    } catch (tickError) {
+      logStep("Warning: Error fetching tick data", { error: tickError.message });
+      // Continue without current price - not a critical failure
+    }
+
     // Convert JSON data to text format for AI analysis
     let dataText = '';
     if (Array.isArray(historicalData)) {
@@ -187,10 +239,18 @@ serve(async (req) => {
 
     const timeframeLabel = timeframeLabels[mappedTimeframe] || mappedTimeframe;
 
-    // Create the comprehensive trading analysis prompt
+    // Create the enhanced trading analysis prompt with current price context
+    const currentPriceContext = currentPrice ? 
+      `\n\nIMPORTANT: The current market price is ${currentPrice} as of ${currentPriceTimestamp || 'latest available time'}. Please consider this current price when analyzing the historical data and making recommendations. Specifically:
+      - If you identify potential setups or patterns, indicate whether they are still valid given the current price
+      - If a setup has already been triggered (price has moved past the suggested entry), clearly state this
+      - Provide context on how close the current price is to key support/resistance levels you identify
+      - Assess whether any identified opportunities are still actionable or have already played out` : 
+      '\n\nNote: Current price data is not available, so analysis is based solely on historical data.';
+
     const systemPrompt = `You are a highly experienced financial market analyst, specializing in technical analysis for forex currency pairs. I will provide you with historical price data in candlestick format for the currency pair ${currencyPair}. This data is for the ${timeframeLabel} timeframe, covering the date range from ${fromDate} to ${toDate}.
 
-The candlestick data will be provided chronologically, from the oldest to the most recent.
+The candlestick data will be provided chronologically, from the oldest to the most recent.${currentPriceContext}
 
 Your primary task is to comprehensively analyze this candlestick data and provide me with insightful market analysis and actionable trading recommendations.
 
@@ -203,6 +263,7 @@ Please focus on the following aspects in your analysis:
 
 2. Key Support and Resistance Levels:
    - Identify 2 to 3 of the most significant price levels acting as support and resistance based on the price action.
+   ${currentPrice ? '- Compare these levels to the current price and indicate proximity.' : ''}
 
 3. Technical Chart Patterns:
    - Check if any significant technical chart patterns have formed (e.g., Head and Shoulders, Double Top/Bottom, Triangles, Flags).
@@ -218,7 +279,11 @@ Please focus on the following aspects in your analysis:
    - State the recommended action: BUY, SELL, or DO NOT TRADE (HOLD/WAIT).
    - Provide a concise rationale based on the findings.
    - If BUY or SELL is recommended, suggest reasonable Take Profit (TP) and Stop Loss (SL) levels.
+   ${currentPrice ? '- Clearly indicate if the suggested setup is still valid given the current price, or if it has already been triggered.' : ''}
    - If TP and SL are not appropriate, state that clearly.
+
+6. Setup Validity Assessment:
+   ${currentPrice ? '- Given the current price context, explicitly state whether any identified trading opportunities are still actionable or have already played out.' : '- Note that without current price data, the timing of any suggested setups cannot be validated.'}
 
 Finally, present the analysis and recommendations in a concise, clear, easy-to-understand format. Avoid unnecessary introductory or concluding remarks. The goal is to deliver the most relevant and actionable information to the user.`;
 
@@ -286,7 +351,9 @@ Please provide your comprehensive technical analysis and trading recommendations
 
     logStep("AI analysis completed", { 
       analysisLength: analysis.length,
-      finishReason: finishReason 
+      finishReason: finishReason,
+      currentPrice: currentPrice,
+      hasPriceData: !!currentPrice
     });
 
     // Increment deep analysis usage
@@ -300,7 +367,7 @@ Please provide your comprehensive technical analysis and trading recommendations
       logStep("Warning: Error incrementing usage", incrementError);
     }
 
-    // Store the analysis result with proper pair name formatting
+    // Store the analysis result with proper pair name formatting and current price info
     const analysisData = {
       type: 'deep_historical',
       analysis_type: 'comprehensive_technical',
@@ -309,6 +376,9 @@ Please provide your comprehensive technical analysis and trading recommendations
       date_range: `${fromDate} to ${toDate}`,
       analysis: analysis,
       data_points: Array.isArray(historicalData) ? historicalData.length : 1,
+      current_price: currentPrice,
+      current_price_timestamp: currentPriceTimestamp,
+      has_current_price: !!currentPrice,
       created_at: new Date().toISOString(),
       // Add these fields for proper display in history
       pairName: currencyPair,
@@ -339,6 +409,8 @@ Please provide your comprehensive technical analysis and trading recommendations
       success: true,
       analysis: analysisData,
       analysis_id: storedAnalysis?.id,
+      has_current_price: !!currentPrice,
+      current_price: currentPrice,
       warning: finishReason === 'length' ? 'Analysis may be incomplete due to length limits' : null
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
