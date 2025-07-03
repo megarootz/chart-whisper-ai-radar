@@ -359,74 +359,112 @@ serve(async (req) => {
 
     // Get timeframe label for the prompt
     const timeframeLabels: Record<string, string> = {
-      'm1': '1-minute',
-      'm15': '15-minute',
-      'm30': '30-minute',
-      'h1': '1-hour',
-      'h4': '4-hour',
-      'd1': 'daily',
-      'w1': 'weekly'
+      'm1': 'M1',
+      'm15': 'M15',
+      'm30': 'M30',
+      'h1': 'H1',
+      'h4': 'H4',
+      'd1': 'D1',
+      'w1': 'W1'
     };
 
-    const timeframeLabel = timeframeLabels[mappedTimeframe] || mappedTimeframe;
+    const timeframeLabel = timeframeLabels[mappedTimeframe] || timeframe;
 
-    // Create the enhanced trading analysis prompt with current price context
-    const currentPriceContext = currentPrice ? 
-      `\n\n🎯 **CRITICAL CURRENT MARKET CONTEXT:**
-      The LIVE current market price for ${currencyPair} is ${currentPrice} as of ${currentPriceTimestamp || 'latest available time'}.
-      
-      This current tick price is ESSENTIAL for your analysis. Please:
-      - Compare ALL historical patterns and levels against this current price of ${currentPrice}
-      - Determine if any identified setups are still valid or have already been triggered
-      - Assess how close the current price is to key support/resistance levels
-      - Provide actionable recommendations based on where price currently stands at ${currentPrice}
-      - If you identify potential entry points, state clearly whether they are above or below the current price of ${currentPrice}
-      - Evaluate if any patterns or setups have already played out given the current price position` : 
-      '\n\n⚠️ **NOTE:** Current live price data is not available, so analysis is based solely on historical data up to the latest candle.';
+    // Create the professional forex trading analysis prompt
+    const systemPrompt = `You are a professional forex trader who specializes in technical price action analysis on any timeframe or pair.
 
-    const systemPrompt = `You are a highly experienced forex trader and technical analyst. You will analyze historical price data for ${currencyPair} on the ${timeframeLabel} timeframe from ${fromDate} to ${toDate}.
+You will be given:
 
-The data contains ${dataPointCount} data points in CSV format: timestamp,open,high,low,close,volume.
-**IMPORTANT:** All timestamps in the data have been formatted as readable dates (YYYY-MM-DD HH:MM:SS UTC) for your analysis.${currentPriceContext}
+A forex pair: ${currencyPair}
 
-**ANALYSIS STRUCTURE REQUIRED:**
+A timeframe: ${timeframeLabel} (can be M15, M30, H1, H4, D1, or Weekly)
 
-### 1. Current Market Trend
-- Identify the prevailing trend (bullish/bearish/sideways)
-- Assess trend strength and likely duration
-- Provide clear justification
+The latest current_price (the live tick price): ${currentPrice || 'Not available'}
 
-### 2. Key Support and Resistance Levels
-- Identify 2-3 most significant support levels
-- Identify 2-3 most significant resistance levels
-${currentPrice ? `- Compare these levels to the current price of ${currentPrice}` : ''}
+Historical OHLCV data based on the selected timeframe
+(Note: All data is in UTC. Candle format = timestamp,open,high,low,close,volume)
 
-### 3. Technical Chart Patterns
-- Identify any significant patterns (Head & Shoulders, Triangles, Flags, etc.)
-- If none found, state clearly "No significant patterns identified"
-- Explain implications of any patterns found
+🎯 Your goal:
+Analyze the market using clean price action techniques (no indicators), and return only reliable trade setups that fulfill all of the following rules:
 
-### 4. Market Momentum and Volatility Assessment
-- Evaluate overbought/oversold conditions
-- Assess momentum strength (strong/moderate/weak)
-- Determine volatility level (high/normal/low)
+🚦 Setup Requirements:
+Setup must be in the direction of a clean trend or a valid reversal pattern
 
-### 5. Clear Trading Recommendation
-- State: BUY, SELL, or HOLD/WAIT
-- Provide specific rationale
-- Suggest realistic Take Profit and Stop Loss levels
-${currentPrice ? `- Clearly state if recommendations are valid given current price of ${currentPrice}` : ''}
-- If no clear setup exists, recommend waiting
+Trade must still be valid at current_price
+→ If price has moved too far (past TP or SL): Reject the setup
 
-${currentPrice ? '### 6. Current Price Analysis\n- Analyze the current price position relative to your identified levels\n- State if any setups are immediately actionable or if price has moved past key levels' : ''}
+Minimum Risk-Reward Ratio: 1:1.5 (ideally ≥ 1:2)
 
-**KEEP YOUR ANALYSIS CONCISE, PRACTICAL, AND ACTIONABLE.**`;
+Setup must be based on at least 2 technical confluences
+(e.g., break-retest + structure, or support + candle rejection)
+
+📌 Output Format:
+Pair & Timeframe Analyzed:
+
+Example: ${currencyPair} (${timeframeLabel})
+
+Market Summary:
+
+Trend direction (bullish, bearish, or range-bound)
+
+Structure overview (impulsive, corrective, consolidation)
+
+Buyer vs seller strength
+
+Key Support & Resistance Zones (based on historical price structure only):
+
+Price + time reference
+
+Description of how price reacted to that zone
+
+Valid Trade Setup (if any):
+
+Entry Zone: Price + explanation
+
+Stop Loss: Price + reason (beyond invalidation zone)
+
+Take Profit: Logical target
+
+R:R Ratio (minimum 1:1.5)
+
+Is current_price inside entry zone? → Yes / No
+
+Final Status:
+
+"✅ Setup is VALID for execution"
+
+or
+
+"❌ Setup is NO LONGER VALID because price has moved too far"
+
+Short-Term Forecast (based on timeframe):
+
+Expectation for next few candles (e.g. 4–6 H1 candles)
+
+Watch zones / caution levels
+
+⚠ If no high-quality setup:
+Return the following:
+
+"No high-probability trade setup detected on ${currencyPair} (${timeframeLabel}) based on current structure and price."
+
+📌 Rules:
+❌ Do not suggest a trade if price has already broken past the target
+
+✅ Use only candle structure, price action, and volume behavior
+
+❌ Do not use RSI, MACD, MA, or any other indicator
+
+✅ Output must reflect real-world trading logic and must be actionable at current_price`;
 
     const userPrompt = `Analyze this ${currencyPair} ${timeframeLabel} data (${dataPointCount} data points from ${fromDate} to ${toDate}):
 
+Current Price: ${currentPrice || 'Not available'}
+
+Historical Data:
 ${dataText}
 
-Provide your comprehensive technical analysis following the required structure.`;
+Provide your professional forex trading analysis following the required format.`;
 
     logStep("Sending request to OpenRouter AI", { 
       hasCurrentPrice: !!currentPrice,
@@ -510,7 +548,7 @@ Provide your comprehensive technical analysis following the required structure.`
     // Store the analysis result with proper pair name formatting and current price info
     const analysisData = {
       type: 'deep_historical',
-      analysis_type: 'comprehensive_technical',
+      analysis_type: 'professional_price_action',
       currency_pair: currencyPair,
       timeframe: mappedTimeframe,
       date_range: `${fromDate} to ${toDate}`,
@@ -523,7 +561,7 @@ Provide your comprehensive technical analysis following the required structure.`
       // Add these fields for proper display in history
       pairName: currencyPair,
       marketAnalysis: analysis,
-      overallSentiment: 'Deep Analysis',
+      overallSentiment: 'Price Action Analysis',
       trendDirection: 'analyzed',
       truncated: finishReason === 'length'
     };
