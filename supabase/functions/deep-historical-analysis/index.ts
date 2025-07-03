@@ -115,7 +115,10 @@ serve(async (req) => {
       // Use historical endpoint with tick timeframe to get latest price
       const todayDate = new Date().toISOString().split('T')[0];
       const tickUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${todayDate}&to=${todayDate}&timeframe=tick&format=json&limit=1`;
-      logStep("Fetching current tick price", { url: tickUrl });
+      logStep("🔍 FETCHING CURRENT PRICE (TICK DATA)", { 
+        url: tickUrl,
+        purpose: "Getting latest tick for current price reference"
+      });
 
       const tickController = new AbortController();
       const tickTimeoutId = setTimeout(() => tickController.abort(), 15000);
@@ -165,7 +168,7 @@ serve(async (req) => {
           currentPrice = latestTick.close || latestTick.price || latestTick.bid || latestTick.ask;
           currentPriceTimestamp = latestTick.timestamp || latestTick.time || new Date().toISOString();
           
-          logStep("Current price extracted from tick data", { 
+          logStep("✅ CURRENT PRICE EXTRACTED", { 
             currentPrice, 
             currentPriceTimestamp,
             tickDataLength: tickData.length
@@ -183,9 +186,13 @@ serve(async (req) => {
       logStep("Warning: Error fetching tick data", { error: tickError.message });
     }
 
-    // STEP 2: Fetch historical data based on selected timeframe
+    // STEP 2: Fetch historical BAR data based on selected timeframe
     const renderUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
-    logStep("Fetching historical data from Render", { url: renderUrl });
+    logStep("📊 FETCHING HISTORICAL BAR DATA", { 
+      url: renderUrl,
+      timeframe: mappedTimeframe,
+      purpose: "Getting historical bars/candles for analysis"
+    });
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
@@ -197,7 +204,7 @@ serve(async (req) => {
       renderResponse = await fetch(renderUrl, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'ForexRadar7-DeepAnalysis/1.0',
+          'User-Agent': 'ForexRadar7-HistoricalBars/1.0',
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
         }
@@ -213,7 +220,7 @@ serve(async (req) => {
       }
 
       const responseText = await renderResponse.text();
-      logStep("Historical data response received", { 
+      logStep("📈 HISTORICAL BAR DATA RECEIVED", { 
         length: responseText.length,
         firstChars: responseText.substring(0, 100)
       });
@@ -221,7 +228,7 @@ serve(async (req) => {
       // Try to parse as JSON first
       try {
         historicalData = JSON.parse(responseText);
-        logStep("Historical data parsed as JSON", { 
+        logStep("Historical bar data parsed as JSON", { 
           isArray: Array.isArray(historicalData),
           length: Array.isArray(historicalData) ? historicalData.length : 'not array'
         });
@@ -247,7 +254,7 @@ serve(async (req) => {
               return null;
             }).filter(item => item !== null);
             
-            logStep("Historical data parsed as CSV", { 
+            logStep("Historical bar data parsed as CSV", { 
               totalLines: lines.length,
               validCandles: historicalData.length
             });
@@ -275,10 +282,11 @@ serve(async (req) => {
     }
 
     const dataPointCount = Array.isArray(historicalData) ? historicalData.length : 1;
-    logStep("Data validation complete", { 
+    logStep("✅ DATA VALIDATION COMPLETE", { 
       historicalDataPoints: dataPointCount,
       hasCurrentPrice: !!currentPrice,
-      currentPrice: currentPrice
+      currentPrice: currentPrice,
+      dataType: `${dataPointCount} ${mappedTimeframe} bars/candles`
     });
 
     // Convert historical data to text format for AI analysis
@@ -302,10 +310,11 @@ serve(async (req) => {
       throw new Error("Insufficient historical data for analysis. Please try different parameters.");
     }
 
-    logStep("Data preparation complete", { 
+    logStep("🎯 SENDING TO AI FOR ANALYSIS", { 
       historicalDataPoints: dataPointCount, 
       historicalDataLength: dataText.length,
-      currentPrice: currentPrice
+      currentPrice: currentPrice,
+      analysisType: `${mappedTimeframe} bars with current price context`
     });
 
     // Get OpenRouter API key
@@ -445,7 +454,7 @@ Provide your comprehensive technical analysis following the required structure.`
       });
     }
 
-    logStep("AI analysis completed successfully", { 
+    logStep("🎉 AI ANALYSIS COMPLETED SUCCESSFULLY", { 
       analysisLength: analysis.length,
       finishReason: finishReason,
       currentPrice: currentPrice,
@@ -500,7 +509,7 @@ Provide your comprehensive technical analysis following the required structure.`
       logStep("Warning: Error storing analysis", storeError);
     }
 
-    logStep("Deep historical analysis completed successfully", { 
+    logStep("🏁 DEEP HISTORICAL ANALYSIS COMPLETED", { 
       historicalDataPoints: dataPointCount,
       hasCurrentPrice: !!currentPrice,
       currentPrice: currentPrice,
