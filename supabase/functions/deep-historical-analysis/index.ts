@@ -107,63 +107,16 @@ serve(async (req) => {
     const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
     logStep("Timeframe mapping", { original: timeframe, mapped: mappedTimeframe });
 
-    // Fetch historical data
-    const renderUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
-    logStep("Fetching historical data from Render", { url: renderUrl });
-
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-    let renderResponse;
-    try {
-      renderResponse = await fetch(renderUrl, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'ForexRadar7-DeepAnalysis/1.0',
-          'Accept': 'application/json'
-        }
-      });
-      clearTimeout(timeoutId);
-    } catch (fetchError) {
-      clearTimeout(timeoutId);
-      logStep("ERROR: Failed to fetch from Render", { 
-        error: fetchError.message,
-        url: renderUrl 
-      });
-      throw new Error(`Failed to fetch historical data: ${fetchError.message}`);
-    }
-
-    if (!renderResponse.ok) {
-      logStep("ERROR: Render response not OK", { 
-        status: renderResponse.status, 
-        statusText: renderResponse.statusText 
-      });
-      throw new Error(`Data service unavailable: ${renderResponse.status} - ${renderResponse.statusText}`);
-    }
-
-    const historicalData = await renderResponse.json();
-    logStep("Historical data fetched", { 
-      dataType: typeof historicalData,
-      dataLength: Array.isArray(historicalData) ? historicalData.length : 'not array'
-    });
-
-    // Validate that we have meaningful data
-    if (!historicalData || (Array.isArray(historicalData) && historicalData.length === 0)) {
-      logStep("ERROR: Empty data received");
-      throw new Error("No historical data available for the selected parameters.");
-    }
-
-    // Fetch current tick data for current price
+    // First, fetch current tick price
     let currentPrice = null;
     let currentPriceTimestamp = null;
     
     try {
-      const todayDate = new Date().toISOString().split('T')[0];
-      const tickUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair}&from=${todayDate}&to=${todayDate}&timeframe=tick&format=json`;
+      const tickUrl = `https://duka-qr9j.onrender.com/tick?instrument=${currencyPair.toLowerCase()}`;
       logStep("Fetching current tick data", { url: tickUrl });
 
       const tickController = new AbortController();
-      const tickTimeoutId = setTimeout(() => tickController.abort(), 15000); // 15 second timeout
+      const tickTimeoutId = setTimeout(() => tickController.abort(), 15000);
 
       const tickResponse = await fetch(tickUrl, {
         signal: tickController.signal,
@@ -178,20 +131,17 @@ serve(async (req) => {
         const tickData = await tickResponse.json();
         logStep("Tick data fetched", { 
           dataType: typeof tickData,
-          dataLength: Array.isArray(tickData) ? tickData.length : 'not array'
+          tickData: JSON.stringify(tickData).substring(0, 200)
         });
 
-        // Get the latest tick (last element in array)
-        if (Array.isArray(tickData) && tickData.length > 0) {
-          const latestTick = tickData[tickData.length - 1];
-          // Try different possible field names for price
-          currentPrice = latestTick.close || latestTick.bid || latestTick.price || latestTick.last;
-          currentPriceTimestamp = latestTick.date || latestTick.time || latestTick.timestamp;
+        if (tickData && typeof tickData === 'object') {
+          // Extract current price from various possible field names
+          currentPrice = tickData.price || tickData.bid || tickData.ask || tickData.close || tickData.last;
+          currentPriceTimestamp = tickData.timestamp || tickData.time || new Date().toISOString();
           
           logStep("Current price extracted", { 
             currentPrice, 
-            currentPriceTimestamp,
-            latestTick: JSON.stringify(latestTick).substring(0, 200)
+            currentPriceTimestamp
           });
         }
       } else {
@@ -202,23 +152,118 @@ serve(async (req) => {
       }
     } catch (tickError) {
       logStep("Warning: Error fetching tick data", { error: tickError.message });
-      // Continue without current price - not a critical failure
     }
 
-    // Convert JSON data to text format for AI analysis
+    // Fetch historical data with better error handling and retry logic
+    const renderUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
+    logStep("Fetching historical data from Render", { url: renderUrl });
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // Increased timeout
+
+    let renderResponse;
+    let historicalData;
+    
+    try {
+      renderResponse = await fetch(renderUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent': 'ForexRadar7-DeepAnalysis/1.0',
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        }
+      });
+      clearTimeout(timeoutId);
+
+      if (!renderResponse.ok) {
+        logStep("ERROR: Render response not OK", { 
+          status: renderResponse.status, 
+          statusText: renderResponse.statusText 
+        });
+        throw new Error(`Data service returned ${renderResponse.status}: ${renderResponse.statusText}`);
+      }
+
+      const responseText = await renderResponse.text();
+      logStep("Raw response received", { 
+        length: responseText.length,
+        firstChars: responseText.substring(0, 100)
+      });
+
+      try {
+        historicalData = JSON.parse(responseText);
+      } catch (parseError) {
+        logStep("JSON parse error, trying to handle as text", { parseError: parseError.message });
+        // If it's not JSON, maybe it's CSV or other format
+        if (responseText.includes(',') && responseText.includes('\n')) {
+          // Convert CSV-like data to JSON format
+          const lines = responseText.trim().split('\n');
+          historicalData = lines.slice(1).map((line, index) => {
+            const parts = line.split(',');
+            if (parts.length >= 5) {
+              return {
+                timestamp: parts[0],
+                open: parseFloat(parts[1]),
+                high: parseFloat(parts[2]),
+                low: parseFloat(parts[3]),
+                close: parseFloat(parts[4]),
+                volume: parts[5] ? parseFloat(parts[5]) : 0
+              };
+            }
+            return null;
+          }).filter(item => item !== null);
+        } else {
+          throw new Error('Unable to parse response data');
+        }
+      }
+
+    } catch (fetchError) {
+      clearTimeout(timeoutId);
+      logStep("ERROR: Failed to fetch from Render", { 
+        error: fetchError.message,
+        url: renderUrl 
+      });
+      throw new Error(`Failed to fetch historical data: ${fetchError.message}`);
+    }
+
+    logStep("Historical data processed", { 
+      dataType: typeof historicalData,
+      dataLength: Array.isArray(historicalData) ? historicalData.length : 'not array',
+      firstItem: Array.isArray(historicalData) && historicalData.length > 0 ? 
+        JSON.stringify(historicalData[0]).substring(0, 200) : 'no data'
+    });
+
+    // Validate that we have meaningful data
+    if (!historicalData || (Array.isArray(historicalData) && historicalData.length === 0)) {
+      logStep("ERROR: Empty data received");
+      throw new Error("No historical data available for the selected parameters. Please try different date range or timeframe.");
+    }
+
+    // Convert data to text format for AI analysis
     let dataText = '';
+    let dataPointCount = 0;
+    
     if (Array.isArray(historicalData)) {
-      dataText = historicalData.map(candle => 
-        `${candle.date || candle.time || ''} ${candle.open || ''} ${candle.high || ''} ${candle.low || ''} ${candle.close || ''} ${candle.volume || ''}`
-      ).join('\n');
-    } else {
+      dataPointCount = historicalData.length;
+      dataText = historicalData.map(candle => {
+        const timestamp = candle.timestamp || candle.date || candle.time || '';
+        const open = candle.open || '';
+        const high = candle.high || '';
+        const low = candle.low || '';
+        const close = candle.close || '';
+        const volume = candle.volume || '';
+        return `${timestamp},${open},${high},${low},${close},${volume}`;
+      }).join('\n');
+    } else if (typeof historicalData === 'object') {
+      dataPointCount = 1;
       dataText = JSON.stringify(historicalData);
     }
 
-    if (dataText.length < 10) {
-      logStep("ERROR: Insufficient data content", { dataText });
-      throw new Error("Insufficient historical data for analysis. Please try different parameters.");
+    if (dataText.length < 10 || dataPointCount === 0) {
+      logStep("ERROR: Insufficient data content", { dataText: dataText.substring(0, 100), dataPointCount });
+      throw new Error("Insufficient historical data for analysis. Please try different parameters or check data availability.");
     }
+
+    logStep("Data prepared for AI", { dataPointCount, textLength: dataText.length });
 
     // Get OpenRouter API key
     const openRouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
@@ -241,62 +286,65 @@ serve(async (req) => {
 
     // Create the enhanced trading analysis prompt with current price context
     const currentPriceContext = currentPrice ? 
-      `\n\nIMPORTANT: The current market price is ${currentPrice} as of ${currentPriceTimestamp || 'latest available time'}. Please consider this current price when analyzing the historical data and making recommendations. Specifically:
-      - If you identify potential setups or patterns, indicate whether they are still valid given the current price
-      - If a setup has already been triggered (price has moved past the suggested entry), clearly state this
-      - Provide context on how close the current price is to key support/resistance levels you identify
-      - Assess whether any identified opportunities are still actionable or have already played out` : 
-      '\n\nNote: Current price data is not available, so analysis is based solely on historical data.';
+      `\n\n🎯 **CRITICAL CURRENT MARKET CONTEXT:**
+      The LIVE current market price for ${currencyPair} is ${currentPrice} as of ${currentPriceTimestamp || 'latest available time'}.
+      
+      This current tick price is ESSENTIAL for your analysis. Please:
+      - Compare ALL historical patterns and levels against this current price of ${currentPrice}
+      - Determine if any identified setups are still valid or have already been triggered
+      - Assess how close the current price is to key support/resistance levels
+      - Provide actionable recommendations based on where price currently stands at ${currentPrice}
+      - If you identify potential entry points, state clearly whether they are above or below the current price of ${currentPrice}
+      - Evaluate if any patterns or setups have already played out given the current price position` : 
+      '\n\n⚠️ **NOTE:** Current live price data is not available, so analysis is based solely on historical data up to the latest candle.';
 
-    const systemPrompt = `You are a highly experienced financial market analyst, specializing in technical analysis for forex currency pairs. I will provide you with historical price data in candlestick format for the currency pair ${currencyPair}. This data is for the ${timeframeLabel} timeframe, covering the date range from ${fromDate} to ${toDate}.
+    const systemPrompt = `You are a highly experienced forex trader and technical analyst. You will analyze historical price data for ${currencyPair} on the ${timeframeLabel} timeframe from ${fromDate} to ${toDate}.
 
-The candlestick data will be provided chronologically, from the oldest to the most recent.${currentPriceContext}
+The data contains ${dataPointCount} data points in CSV format: timestamp,open,high,low,close,volume.${currentPriceContext}
 
-Your primary task is to comprehensively analyze this candlestick data and provide me with insightful market analysis and actionable trading recommendations.
+**ANALYSIS STRUCTURE REQUIRED:**
 
-Please focus on the following aspects in your analysis:
+### 1. Current Market Trend
+- Identify the prevailing trend (bullish/bearish/sideways)
+- Assess trend strength and likely duration
+- Provide clear justification
 
-1. Current Market Trend:
-   - Identify the overall current market trend – is it bullish (upward), bearish (downward), or ranging (sideways)?
-   - Estimate the duration of this trend (short-term or medium-term).
-   - Briefly justify your conclusion.
+### 2. Key Support and Resistance Levels
+- Identify 2-3 most significant support levels
+- Identify 2-3 most significant resistance levels
+${currentPrice ? `- Compare these levels to the current price of ${currentPrice}` : ''}
 
-2. Key Support and Resistance Levels:
-   - Identify 2 to 3 of the most significant price levels acting as support and resistance based on the price action.
-   ${currentPrice ? '- Compare these levels to the current price and indicate proximity.' : ''}
+### 3. Technical Chart Patterns
+- Identify any significant patterns (Head & Shoulders, Triangles, Flags, etc.)
+- If none found, state clearly "No significant patterns identified"
+- Explain implications of any patterns found
 
-3. Technical Chart Patterns:
-   - Check if any significant technical chart patterns have formed (e.g., Head and Shoulders, Double Top/Bottom, Triangles, Flags).
-   - If any are found, name the pattern and explain its implications.
-   - If none are found, clearly state that.
+### 4. Market Momentum and Volatility Assessment
+- Evaluate overbought/oversold conditions
+- Assess momentum strength (strong/moderate/weak)
+- Determine volatility level (high/normal/low)
 
-4. Market Momentum and Volatility:
-   - Assess whether the market is overbought or oversold.
-   - Determine the strength of momentum (strong, moderate, or weak).
-   - Assess the current volatility (high, low, or normal).
+### 5. Clear Trading Recommendation
+- State: BUY, SELL, or HOLD/WAIT
+- Provide specific rationale
+- Suggest realistic Take Profit and Stop Loss levels
+${currentPrice ? `- Clearly state if recommendations are valid given current price of ${currentPrice}` : ''}
+- If no clear setup exists, recommend waiting
 
-5. Clear Trading Recommendation:
-   - State the recommended action: BUY, SELL, or DO NOT TRADE (HOLD/WAIT).
-   - Provide a concise rationale based on the findings.
-   - If BUY or SELL is recommended, suggest reasonable Take Profit (TP) and Stop Loss (SL) levels.
-   ${currentPrice ? '- Clearly indicate if the suggested setup is still valid given the current price, or if it has already been triggered.' : ''}
-   - If TP and SL are not appropriate, state that clearly.
+${currentPrice ? '### 6. Current Price Analysis\n- Analyze the current price position relative to your identified levels\n- State if any setups are immediately actionable or if price has moved past key levels' : ''}
 
-6. Setup Validity Assessment:
-   ${currentPrice ? '- Given the current price context, explicitly state whether any identified trading opportunities are still actionable or have already played out.' : '- Note that without current price data, the timing of any suggested setups cannot be validated.'}
+**KEEP YOUR ANALYSIS CONCISE, PRACTICAL, AND ACTIONABLE.**`;
 
-Finally, present the analysis and recommendations in a concise, clear, easy-to-understand format. Avoid unnecessary introductory or concluding remarks. The goal is to deliver the most relevant and actionable information to the user.`;
-
-    const userPrompt = `Analyze the following ${currencyPair} ${timeframeLabel} historical forex data from ${fromDate} to ${toDate}:
+    const userPrompt = `Analyze this ${currencyPair} ${timeframeLabel} data (${dataPointCount} data points from ${fromDate} to ${toDate}):
 
 ${dataText}
 
-Please provide your comprehensive technical analysis and trading recommendations following the structure outlined above.`;
+Provide your comprehensive technical analysis following the required structure.`;
 
-    logStep("Sending request to OpenRouter");
+    logStep("Sending request to OpenRouter AI");
 
     const aiController = new AbortController();
-    const aiTimeoutId = setTimeout(() => aiController.abort(), 60000); // 60 second timeout
+    const aiTimeoutId = setTimeout(() => aiController.abort(), 60000);
 
     let aiResponse;
     try {
@@ -353,7 +401,8 @@ Please provide your comprehensive technical analysis and trading recommendations
       analysisLength: analysis.length,
       finishReason: finishReason,
       currentPrice: currentPrice,
-      hasPriceData: !!currentPrice
+      hasPriceData: !!currentPrice,
+      dataPointCount: dataPointCount
     });
 
     // Increment deep analysis usage
@@ -375,7 +424,7 @@ Please provide your comprehensive technical analysis and trading recommendations
       timeframe: mappedTimeframe,
       date_range: `${fromDate} to ${toDate}`,
       analysis: analysis,
-      data_points: Array.isArray(historicalData) ? historicalData.length : 1,
+      data_points: dataPointCount,
       current_price: currentPrice,
       current_price_timestamp: currentPriceTimestamp,
       has_current_price: !!currentPrice,
@@ -403,7 +452,10 @@ Please provide your comprehensive technical analysis and trading recommendations
       logStep("Warning: Error storing analysis", storeError);
     }
 
-    logStep("Deep historical analysis completed successfully");
+    logStep("Deep historical analysis completed successfully", { 
+      dataPoints: dataPointCount,
+      hasCurrentPrice: !!currentPrice 
+    });
 
     return new Response(JSON.stringify({
       success: true,
@@ -411,6 +463,7 @@ Please provide your comprehensive technical analysis and trading recommendations
       analysis_id: storedAnalysis?.id,
       has_current_price: !!currentPrice,
       current_price: currentPrice,
+      data_points: dataPointCount,
       warning: finishReason === 'length' ? 'Analysis may be incomplete due to length limits' : null
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
