@@ -40,8 +40,8 @@ serve(async (req) => {
       );
     }
 
-    // Fetch real data from your Replit API - always TXT format
-    const fileData = await fetchReplitData(currencyPair, timeframe, startDate, endDate);
+    // Fetch real data from your Render API - always TXT format
+    const fileData = await fetchRenderData(currencyPair, timeframe, startDate, endDate);
     
     return new Response(fileData, {
       headers: {
@@ -64,9 +64,9 @@ serve(async (req) => {
   }
 });
 
-async function fetchReplitData(pair: string, timeframe: string, startDate: Date, endDate: Date): Promise<string> {
+async function fetchRenderData(pair: string, timeframe: string, startDate: Date, endDate: Date): Promise<string> {
   try {
-    // Map our currency pairs to Replit API format (lowercase)
+    // Map our currency pairs to Render API format (lowercase)
     const pairMapping: Record<string, string> = {
       'EURUSD': 'eurusd',
       'USDJPY': 'usdjpy', 
@@ -99,7 +99,7 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
       'USDCHF': 'usdchf'
     };
 
-    // Map timeframes to Replit API format
+    // Map timeframes to Render API format
     const timeframeMapping: Record<string, string> = {
       'M1': 'm1',
       'M5': 'm5', 
@@ -110,20 +110,20 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
       'D1': 'd1'
     };
 
-    const replitPair = pairMapping[pair] || pair.toLowerCase();
-    const replitTimeframe = timeframeMapping[timeframe] || 'h1';
+    const renderPair = pairMapping[pair] || pair.toLowerCase();
+    const renderTimeframe = timeframeMapping[timeframe] || 'h1';
     
-    // Format dates for Replit API (YYYY-MM-DD format)
+    // Format dates for Render API (YYYY-MM-DD format)
     const fromDateStr = startDate.toISOString().split('T')[0];
     const toDateStr = endDate.toISOString().split('T')[0];
     
-    // Construct Replit API URL
-    const replitUrl = `https://dukas-megarootz181.replit.app/historical?instrument=${replitPair}&from=${fromDateStr}&to=${toDateStr}&timeframe=${replitTimeframe}&format=csv`;
+    // Construct Render API URL
+    const renderUrl = `https://duka-qr9j.onrender.com/historical?instrument=${renderPair}&from=${fromDateStr}&to=${toDateStr}&timeframe=${renderTimeframe}&format=csv`;
     
-    console.log('Fetching from Replit API:', replitUrl);
+    console.log('Fetching from Render API:', renderUrl);
     
-    // Fetch from your Replit API
-    const response = await fetch(replitUrl, {
+    // Fetch from your Render API
+    const response = await fetch(renderUrl, {
       method: 'GET',
       headers: {
         'Accept': 'text/csv,application/csv,text/plain,*/*',
@@ -131,26 +131,26 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
       }
     });
 
-    console.log('Replit API response status:', response.status);
+    console.log('Render API response status:', response.status);
 
     if (!response.ok) {
-      console.log('Replit API error, status:', response.status);
-      throw new Error(`Replit API returned ${response.status}`);
+      console.log('Render API error, status:', response.status);
+      throw new Error(`Render API returned ${response.status}`);
     }
 
     const data = await response.text();
-    console.log('Replit API response data (first 500 chars):', data.substring(0, 500));
+    console.log('Render API response data (first 500 chars):', data.substring(0, 500));
     
     // If we got data, process it to our format
     if (data && data.length > 10 && !data.includes('error') && !data.includes('Error')) {
-      return processReplitData(data, pair);
+      return processRenderData(data, pair);
     } else {
-      console.log('No valid data received from Replit API');
-      throw new Error('No valid data received from Replit API');
+      console.log('No valid data received from Render API');
+      throw new Error('No valid data received from Render API');
     }
     
   } catch (error) {
-    console.error('Error fetching from Replit API:', error);
+    console.error('Error fetching from Render API:', error);
     
     // Fallback: Generate realistic sample data
     console.log('Generating sample data as fallback');
@@ -158,15 +158,15 @@ async function fetchReplitData(pair: string, timeframe: string, startDate: Date,
   }
 }
 
-function processReplitData(data: string, pair: string): string {
-  // Process Replit data format and convert to TXT format
+function processRenderData(data: string, pair: string): string {
+  // Process Render data format and convert to TXT format
   const header = 'DATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
   let fileContent = header;
   
   try {
     const lines = data.trim().split('\n');
     
-    console.log('Processing Replit data, total lines:', lines.length);
+    console.log('Processing Render data, total lines:', lines.length);
     console.log('First few lines for analysis:', lines.slice(0, 5));
     
     // Skip header line if present
@@ -303,17 +303,17 @@ function processReplitData(data: string, pair: string): string {
       }
     }
     
-    console.log('Successfully processed Replit data, output lines:', fileContent.split('\n').length - 2);
+    console.log('Successfully processed Render data, output lines:', fileContent.split('\n').length - 2);
     return fileContent;
     
   } catch (error) {
-    console.error('Error processing Replit data:', error);
+    console.error('Error processing Render data:', error);
     throw error;
   }
 }
 
 function generateRealisticSampleData(pair: string, startDate: Date, endDate: Date, timeframe: string): string {
-  const header = '# NOTE: This is sample data - Replit API could not be accessed\nDATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
+  const header = '# NOTE: This is sample data - Render API could not be accessed\nDATE\t\tTIME\t\tOPEN\t\tHIGH\t\tLOW\t\tCLOSE\t\tTICKVOL\tVOL\tSPREAD\n';
   let fileContent = header;
   
   // Map timeframes to minutes

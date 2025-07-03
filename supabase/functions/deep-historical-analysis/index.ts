@@ -93,7 +93,7 @@ serve(async (req) => {
       throw new Error("Deep analysis limit reached. Please upgrade your plan or wait for the next reset period.");
     }
 
-    // Map timeframes to match Replit API expectations
+    // Map timeframes to match Render API expectations
     const timeframeMapping: Record<string, string> = {
       'M1': 'm1',
       'M15': 'm15',
@@ -108,15 +108,15 @@ serve(async (req) => {
     logStep("Timeframe mapping", { original: timeframe, mapped: mappedTimeframe });
 
     // Fetch historical data
-    const replitUrl = `https://dukas-megarootz181.replit.app/historical?instrument=${currencyPair}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
-    logStep("Fetching historical data from Replit", { url: replitUrl });
+    const renderUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
+    logStep("Fetching historical data from Render", { url: renderUrl });
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
 
-    let replitResponse;
+    let renderResponse;
     try {
-      replitResponse = await fetch(replitUrl, {
+      renderResponse = await fetch(renderUrl, {
         signal: controller.signal,
         headers: {
           'User-Agent': 'ForexRadar7-DeepAnalysis/1.0',
@@ -126,22 +126,22 @@ serve(async (req) => {
       clearTimeout(timeoutId);
     } catch (fetchError) {
       clearTimeout(timeoutId);
-      logStep("ERROR: Failed to fetch from Replit", { 
+      logStep("ERROR: Failed to fetch from Render", { 
         error: fetchError.message,
-        url: replitUrl 
+        url: renderUrl 
       });
       throw new Error(`Failed to fetch historical data: ${fetchError.message}`);
     }
 
-    if (!replitResponse.ok) {
-      logStep("ERROR: Replit response not OK", { 
-        status: replitResponse.status, 
-        statusText: replitResponse.statusText 
+    if (!renderResponse.ok) {
+      logStep("ERROR: Render response not OK", { 
+        status: renderResponse.status, 
+        statusText: renderResponse.statusText 
       });
-      throw new Error(`Data service unavailable: ${replitResponse.status} - ${replitResponse.statusText}`);
+      throw new Error(`Data service unavailable: ${renderResponse.status} - ${renderResponse.statusText}`);
     }
 
-    const historicalData = await replitResponse.json();
+    const historicalData = await renderResponse.json();
     logStep("Historical data fetched", { 
       dataType: typeof historicalData,
       dataLength: Array.isArray(historicalData) ? historicalData.length : 'not array'
@@ -159,7 +159,7 @@ serve(async (req) => {
     
     try {
       const todayDate = new Date().toISOString().split('T')[0];
-      const tickUrl = `https://dukas-megarootz181.replit.app/historical?instrument=${currencyPair}&from=${todayDate}&to=${todayDate}&timeframe=tick&format=json`;
+      const tickUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair}&from=${todayDate}&to=${todayDate}&timeframe=tick&format=json`;
       logStep("Fetching current tick data", { url: tickUrl });
 
       const tickController = new AbortController();
