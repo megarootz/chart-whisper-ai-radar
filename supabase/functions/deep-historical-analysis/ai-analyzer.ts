@@ -1,6 +1,5 @@
 
 import { logStep } from './utils.ts';
-import type { AnalysisRequest } from './types.ts';
 
 export const createAnalysisPrompt = (
   currencyPair: string,

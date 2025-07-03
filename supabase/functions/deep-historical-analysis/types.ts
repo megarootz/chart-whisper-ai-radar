@@ -38,11 +38,3 @@ export interface AnalysisData {
   trendDirection: string;
   truncated: boolean;
 }
-
-export interface TimeframeMappings {
-  [key: string]: string;
-}
-
-export interface TimeframeLabels {
-  [key: string]: string;
-}
