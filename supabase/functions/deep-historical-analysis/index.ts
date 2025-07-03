@@ -107,15 +107,13 @@ serve(async (req) => {
     const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
     logStep("Timeframe mapping", { original: timeframe, mapped: mappedTimeframe });
 
-    // STEP 1: Fetch current tick price (single latest tick for current price reference)
+    // STEP 1: Fetch current price using /latest-tick endpoint
     let currentPrice = null;
     let currentPriceTimestamp = null;
     
     try {
-      // Use historical endpoint with tick timeframe to get latest price
-      const todayDate = new Date().toISOString().split('T')[0];
-      const tickUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${todayDate}&to=${todayDate}&timeframe=tick&format=json&limit=1`;
-      logStep("🔍 FETCHING CURRENT PRICE (TICK DATA)", { 
+      const tickUrl = `https://duka-qr9j.onrender.com/latest-tick?instrument=${currencyPair.toLowerCase()}&format=json`;
+      logStep("🎯 FETCHING CURRENT PRICE", { 
         url: tickUrl,
         purpose: "Getting latest tick for current price reference"
       });
@@ -134,7 +132,7 @@ serve(async (req) => {
 
       if (tickResponse.ok) {
         const tickResponseText = await tickResponse.text();
-        logStep("Tick response received", { 
+        logStep("Current price response received", { 
           length: tickResponseText.length,
           firstChars: tickResponseText.substring(0, 200)
         });
@@ -186,7 +184,7 @@ serve(async (req) => {
       logStep("Warning: Error fetching tick data", { error: tickError.message });
     }
 
-    // STEP 2: Fetch historical BAR data based on selected timeframe
+    // STEP 2: Fetch historical BAR data using /historical endpoint
     const renderUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
     logStep("📊 FETCHING HISTORICAL BAR DATA", { 
       url: renderUrl,

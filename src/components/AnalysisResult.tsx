@@ -89,6 +89,13 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, isDeepAnalysi
     return 'bg-yellow-600';
   };
 
+  const formatPrice = (price: string, pairName: string) => {
+    const numPrice = parseFloat(price);
+    // Format based on pair type - JPY pairs typically have 3 decimal places, others have 5
+    const decimals = pairName.includes('JPY') ? 3 : 5;
+    return numPrice.toFixed(decimals);
+  };
+
   const analysisText = typeof analysis.analysis === 'string' 
     ? analysis.analysis 
     : analysis.marketAnalysis || analysis.content || 'No analysis content available';
@@ -103,8 +110,14 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, isDeepAnalysi
       <CardHeader>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <CardTitle className="text-white text-xl">
-              {pairName} Analysis
+            <CardTitle className="text-white text-xl flex items-center gap-2">
+              {pairName}
+              {analysis.has_current_price && analysis.current_price && (
+                <span className="text-green-400 font-mono text-lg">
+                  {formatPrice(analysis.current_price, pairName)}
+                </span>
+              )}
+              Analysis
             </CardTitle>
             {getTrendIcon(sentiment)}
           </div>
@@ -136,7 +149,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, isDeepAnalysi
           )}
         </div>
 
-        {/* Current Price Display */}
+        {/* Current Price Display - Secondary display with more details */}
         {analysis.has_current_price && analysis.current_price && (
           <div className="mt-3 p-3 bg-gray-700 rounded-lg border border-gray-600">
             <div className="flex items-center justify-between">
@@ -146,7 +159,7 @@ const AnalysisResult: React.FC<AnalysisResultProps> = ({ analysis, isDeepAnalysi
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-green-400">
-                  {parseFloat(analysis.current_price).toFixed(pairName.includes('JPY') ? 3 : 5)}
+                  {formatPrice(analysis.current_price, pairName)}
                 </div>
                 {analysis.current_price_timestamp && (
                   <div className="text-xs text-gray-400">
