@@ -187,7 +187,7 @@ const AnalysisDetailsPage = () => {
           
           {analysis && (
             <div>
-              <AnalysisResult data={analysis} />
+              <AnalysisResult analysis={analysis} />
             </div>
           )}
         </div>

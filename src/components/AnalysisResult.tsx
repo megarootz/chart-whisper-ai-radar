@@ -5,8 +5,32 @@ import { Badge } from '@/components/ui/badge';
 import { Clock, TrendingUp, TrendingDown, Activity, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 
+export interface AnalysisResultData {
+  pairName: string;
+  timeframe: string;
+  overallSentiment: string;
+  confidenceScore?: number;
+  marketAnalysis: string;
+  trendDirection?: string;
+  marketFactors?: string[];
+  chartPatterns?: string[];
+  priceLevels?: any[];
+  tradingInsight?: string;
+  created_at?: string;
+  current_price?: string;
+  current_price_timestamp?: string;
+  has_current_price?: boolean;
+  data_points?: number;
+  date_range?: string;
+  truncated?: boolean;
+  analysis?: string;
+  currency_pair?: string;
+  analysis_type?: string;
+  content?: string;
+}
+
 interface AnalysisResultProps {
-  analysis: any;
+  analysis: AnalysisResultData;
   isDeepAnalysis?: boolean;
 }
 

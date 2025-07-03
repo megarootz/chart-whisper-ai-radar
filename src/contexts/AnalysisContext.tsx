@@ -4,13 +4,13 @@ import { AnalysisResultData } from '@/components/AnalysisResult';
 
 interface AnalysisContextType {
   latestAnalysis: AnalysisResultData | null;
-  analysisHistory: HistoryAnalysisItem[];
+  analysisHistory: AnalysisResultData[];
   setLatestAnalysis: (analysis: AnalysisResultData | null) => void;
-  addToHistory: (item: HistoryAnalysisItem) => void;
+  addToHistory: (item: AnalysisResultData) => void;
   refreshHistory: () => Promise<void>;
 }
 
-// Update the interface to extend AnalysisResultData to include all required properties
+// Use AnalysisResultData directly as the history item type
 export interface HistoryAnalysisItem extends AnalysisResultData {
   id?: string;
   created_at?: string;
@@ -20,9 +20,9 @@ const AnalysisContext = createContext<AnalysisContextType | undefined>(undefined
 
 export const AnalysisProvider = ({ children }: { children: ReactNode }) => {
   const [latestAnalysis, setLatestAnalysis] = useState<AnalysisResultData | null>(null);
-  const [analysisHistory, setAnalysisHistory] = useState<HistoryAnalysisItem[]>([]);
+  const [analysisHistory, setAnalysisHistory] = useState<AnalysisResultData[]>([]);
 
-  const addToHistory = (item: HistoryAnalysisItem) => {
+  const addToHistory = (item: AnalysisResultData) => {
     setAnalysisHistory(prev => [item, ...prev]);
   };
 
@@ -40,7 +40,7 @@ export const AnalysisProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const processedData = data.map(item => {
+      const processedData: AnalysisResultData[] = data.map(item => {
         const analysisData = item.analysis_data as any;
         
         // Handle both regular analysis and deep analysis
@@ -56,7 +56,13 @@ export const AnalysisProvider = ({ children }: { children: ReactNode }) => {
           marketFactors: analysisData.marketFactors || [],
           chartPatterns: analysisData.chartPatterns || [],
           priceLevels: analysisData.priceLevels || [],
-          tradingInsight: analysisData.tradingInsight || analysisData.analysis || ''
+          tradingInsight: analysisData.tradingInsight || analysisData.analysis || '',
+          current_price: analysisData.current_price,
+          current_price_timestamp: analysisData.current_price_timestamp,
+          has_current_price: analysisData.has_current_price || false,
+          data_points: analysisData.data_points,
+          date_range: analysisData.date_range,
+          truncated: analysisData.truncated || false
         };
       });
       

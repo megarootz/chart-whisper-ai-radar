@@ -10,8 +10,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { useAnalysis, HistoryAnalysisItem } from '@/contexts/AnalysisContext';
+import { useAnalysis } from '@/contexts/AnalysisContext';
 import { formatTradingPair } from '@/utils/tradingPairUtils';
+import { AnalysisResultData } from '@/components/AnalysisResult';
 
 const HistoryPage = () => {
   const [dateFilter, setDateFilter] = useState('all');
@@ -102,7 +103,7 @@ const HistoryPage = () => {
   };
 
   // Helper function to get proper pair name for display
-  const getDisplayPairName = (analysis: HistoryAnalysisItem) => {
+  const getDisplayPairName = (analysis: AnalysisResultData) => {
     if (analysis.pairName && analysis.pairName !== 'Unknown Pair') {
       return formatTradingPair(analysis.pairName);
     }
@@ -174,7 +175,7 @@ const HistoryPage = () => {
               {filteredHistory.map((analysis, index) => {
                 const displayPairName = getDisplayPairName(analysis);
                 return (
-                  <div key={analysis.id || index} className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
+                  <div key={(analysis as any).id || index} className="bg-chart-card border border-gray-700 rounded-lg overflow-hidden">
                     <div className={`${isMobile ? 'p-3' : 'p-5'}`}>
                       <div className={`flex justify-between items-start ${isMobile ? 'mb-3' : 'mb-4'}`}>
                         <div>
@@ -206,7 +207,7 @@ const HistoryPage = () => {
                       </p>
                       
                       <div className="flex justify-start items-center">
-                        <Link to={`/analysis/${analysis.id}`} className={`text-primary hover:underline ${isMobile ? 'text-xs' : 'text-sm'}`}>
+                        <Link to={`/analysis/${(analysis as any).id}`} className={`text-primary hover:underline ${isMobile ? 'text-xs' : 'text-sm'}`}>
                           View Details
                         </Link>
                       </div>
