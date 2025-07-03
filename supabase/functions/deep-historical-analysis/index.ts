@@ -27,7 +27,8 @@ const formatTimestamp = (timestamp: any): string => {
       } else {
         // If it's a string number, parse it
         const num = parseInt(timestamp);
-        date = new Date(num);
+        // Handle both seconds and milliseconds timestamps
+        date = num > 1000000000000 ? new Date(num) : new Date(num * 1000);
       }
     } else if (typeof timestamp === 'number') {
       // Handle both seconds and milliseconds timestamps
@@ -326,13 +327,13 @@ serve(async (req) => {
     let dataText = '';
     if (Array.isArray(historicalData)) {
       dataText = historicalData.map(candle => {
-        const timestamp = formatTimestamp(candle.timestamp || candle.date || candle.time || '');
+        const formattedTimestamp = formatTimestamp(candle.timestamp || candle.date || candle.time || '');
         const open = candle.open || '';
         const high = candle.high || '';
         const low = candle.low || '';
         const close = candle.close || '';
         const volume = candle.volume || '';
-        return `${timestamp},${open},${high},${low},${close},${volume}`;
+        return `${formattedTimestamp},${open},${high},${low},${close},${volume}`;
       }).join('\n');
     } else if (typeof historicalData === 'object') {
       dataText = JSON.stringify(historicalData);
