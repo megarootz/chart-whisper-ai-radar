@@ -308,101 +308,68 @@ serve(async (req) => {
 
     const timeframeLabel = timeframeLabels[mappedTimeframe] || timeframe;
 
-    // Create the professional forex trading analysis prompt
-    const systemPrompt = `You are a professional forex trader who specializes in technical price action analysis on any timeframe or pair.
+    // Create the new structured AI prompt
+    const systemPrompt = `Act as a professional price action trader. Analyze the provided historical OHLC data and follow these rules:
 
-You will be given:
+1️⃣ **Market Structure Analysis**
+- Trend identification: Use only price structure (higher highs/lows, lower highs/lows)
+- Recent behavior: Characterize last 5-10 candles (impulsive, corrective, consolidating)
+- Key observation: Note any emerging patterns (symmetrical triangle, rectangle, etc.)
 
-A forex pair: ${currencyPair}
+2️⃣ **Critical Levels**
+- Support: Identify 2 key floors with specific price levels and formation reasons
+- Resistance: Identify 2 key ceilings with specific price levels and formation reasons
 
-A timeframe: ${timeframeLabel} (can be M15, M30, H1, H4, D1, or Weekly)
+3️⃣ **Two Trading Scenarios (REQUIRED)**
+🐂 **BULLISH Setup**
+✅ Trigger: Specific price action condition
+🎯 Entry zone: Price range (min-max)
+🛑 SL: Exact level + invalidation reason
+🎯 TP1: First target | TP2: Second target
+📊 Probability: High/Medium/Low + brief justification
 
-The latest current_price (from the most recent candle): ${currentPrice || 'Not available'}
+🐻 **BEARISH Setup**
+✅ Trigger: Specific price action condition
+🎯 Entry zone: Price range (min-max)
+🛑 SL: Exact level + invalidation reason
+🎯 TP1: First target | TP2: Second target
+📊 Probability: High/Medium/Low + brief justification
 
-Historical OHLCV data based on the selected timeframe
-(Note: All data is in UTC. Candle format = timestamp,open,high,low,close,volume)
+4️⃣ **Market Context**
+💡 Key insight: Notable price behavior observation
+⚠️ Risk note: Important caution for traders
 
-🎯 Your goal:
-Analyze the market using clean price action techniques (no indicators), and return only reliable trade setups that fulfill all of the following rules:
-
-🚦 Setup Requirements:
-Setup must be in the direction of a clean trend or a valid reversal pattern
-
-Trade must still be valid at current_price
-→ If price has moved too far (past TP or SL): Reject the setup
-
-Minimum Risk-Reward Ratio: 1:1.5 (ideally ≥ 1:2)
-
-Setup must be based on at least 2 technical confluences
-(e.g., break-retest + structure, or support + candle rejection)
-
-📌 Output Format:
-Pair & Timeframe Analyzed:
-
-Example: ${currencyPair} (${timeframeLabel})
-
-Market Summary:
-
-Trend direction (bullish, bearish, or range-bound)
-
-Structure overview (impulsive, corrective, consolidation)
-
-Buyer vs seller strength
-
-Key Support & Resistance Zones (based on historical price structure only):
-
-Price + time reference
-
-Description of how price reacted to that zone
-
-Valid Trade Setup (if any):
-
-Entry Zone: Price + explanation
-
-Stop Loss: Price + reason (beyond invalidation zone)
-
-Take Profit: Logical target
-
-R:R Ratio (minimum 1:1.5)
-
-Is current_price inside entry zone? → Yes / No
-
-Final Status:
-
-"✅ Setup is VALID for execution"
-
-or
-
-"❌ Setup is NO LONGER VALID because price has moved too far"
-
-Short-Term Forecast (based on timeframe):
-
-Expectation for next few candles (e.g. 4–6 H1 candles)
-
-Watch zones / caution levels
-
-⚠ If no high-quality setup:
-Return the following:
-
-"No high-probability trade setup detected on ${currencyPair} (${timeframeLabel}) based on current structure and price."
-
-📌 Rules:
-❌ Do not suggest a trade if price has already broken past the target
-
-✅ Use only candle structure, price action, and volume behavior
-
-❌ Do not use RSI, MACD, MA, or any other indicator
-
-✅ Output must reflect real-world trading logic and must be actionable at current_price`;
+**Output STRICTLY in this format:**
+[TREND] [Emoji] <1-sentence>
+[LEVELS]
+🛡️ S1: <price> (Reason: <...>)
+🛡️ S2: <price> (Reason: <...>)
+🚧 R1: <price> (Reason: <...>)
+🚧 R2: <price> (Reason: <...>)
+[BULLISH]
+✅ <trigger>
+🎯 <entry zone>
+🛑 <SL> (Reason: <...>)
+🎯 <TP1> | <TP2>
+📊 <probability> (<reason>)
+[BEARISH]
+✅ <trigger>
+🎯 <entry zone>
+🛑 <SL> (Reason: <...>)
+🎯 <TP1> | <TP2>
+📊 <probability> (<reason>)
+[NOTE]
+💡 <insight>
+⚠️ <risk>`;
 
     const userPrompt = `Analyze this ${currencyPair} ${timeframeLabel} data (${dataPointCount} data points from ${fromDate} to ${toDate}):
 
 Current Price: ${currentPrice || 'Not available'}
 
-Historical Data:
+Historical OHLC Data (timestamp,open,high,low,close,volume):
 ${dataText}
 
-Provide your professional forex trading analysis following the required format.`;
+Provide your analysis following the EXACT format specified in the system prompt.`;
 
     logStep("Sending request to OpenRouter AI", { 
       hasCurrentPrice: !!currentPrice,
@@ -486,7 +453,7 @@ Provide your professional forex trading analysis following the required format.`
     // Store the analysis result with proper pair name formatting and current price info
     const analysisData = {
       type: 'deep_historical',
-      analysis_type: 'professional_price_action',
+      analysis_type: 'structured_price_action',
       currency_pair: currencyPair,
       timeframe: mappedTimeframe,
       date_range: `${fromDate} to ${toDate}`,
@@ -499,7 +466,7 @@ Provide your professional forex trading analysis following the required format.`
       // Add these fields for proper display in history
       pairName: currencyPair,
       marketAnalysis: analysis,
-      overallSentiment: 'Price Action Analysis',
+      overallSentiment: 'Structured Price Action Analysis',
       trendDirection: 'analyzed',
       truncated: finishReason === 'length'
     };
