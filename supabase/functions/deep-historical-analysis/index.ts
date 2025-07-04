@@ -129,7 +129,7 @@ serve(async (req) => {
       throw new Error("Deep analysis limit reached. Please upgrade your plan or wait for the next reset period.");
     }
 
-    // Map timeframes to match Render API expectations
+    // Map timeframes to match new API expectations
     const timeframeMapping: Record<string, string> = {
       'M1': 'm1',
       'M15': 'm15',
@@ -143,87 +143,10 @@ serve(async (req) => {
     const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
     logStep("Timeframe mapping", { original: timeframe, mapped: mappedTimeframe });
 
-    // STEP 1: Fetch current price using /latest-tick endpoint
-    let currentPrice = null;
-    let currentPriceTimestamp = null;
-    
-    try {
-      const tickUrl = `https://duka-qr9j.onrender.com/latest-tick?instrument=${currencyPair.toLowerCase()}&format=json`;
-      logStep("🎯 FETCHING CURRENT PRICE", { 
-        url: tickUrl,
-        purpose: "Getting latest tick for current price reference"
-      });
-
-      const tickController = new AbortController();
-      const tickTimeoutId = setTimeout(() => tickController.abort(), 15000);
-
-      const tickResponse = await fetch(tickUrl, {
-        signal: tickController.signal,
-        headers: {
-          'User-Agent': 'ForexRadar7-CurrentPrice/1.0',
-          'Accept': 'application/json'
-        }
-      });
-      clearTimeout(tickTimeoutId);
-
-      if (tickResponse.ok) {
-        const tickResponseText = await tickResponse.text();
-        logStep("Current price response received", { 
-          length: tickResponseText.length,
-          firstChars: tickResponseText.substring(0, 200)
-        });
-
-        let tickData;
-        try {
-          tickData = JSON.parse(tickResponseText);
-        } catch (parseError) {
-          logStep("JSON parse failed for tick data, trying CSV", { parseError: parseError.message });
-          
-          // Try to parse as CSV if JSON fails
-          if (tickResponseText.includes(',') && tickResponseText.includes('\n')) {
-            const lines = tickResponseText.trim().split('\n');
-            if (lines.length > 1) {
-              const parts = lines[1].split(','); // Skip header line
-              if (parts.length >= 5) {
-                tickData = [{
-                  timestamp: parts[0],
-                  open: parseFloat(parts[1]),
-                  high: parseFloat(parts[2]),
-                  low: parseFloat(parts[3]),
-                  close: parseFloat(parts[4])
-                }];
-              }
-            }
-          }
-        }
-
-        if (tickData && Array.isArray(tickData) && tickData.length > 0) {
-          const latestTick = tickData[0];
-          currentPrice = latestTick.close || latestTick.price || latestTick.bid || latestTick.ask;
-          currentPriceTimestamp = latestTick.timestamp || latestTick.time || new Date().toISOString();
-          
-          logStep("✅ CURRENT PRICE EXTRACTED", { 
-            currentPrice, 
-            currentPriceTimestamp,
-            tickDataLength: tickData.length
-          });
-        } else {
-          logStep("No valid tick data received", { tickData });
-        }
-      } else {
-        logStep("Warning: Could not fetch tick data", { 
-          status: tickResponse.status, 
-          statusText: tickResponse.statusText 
-        });
-      }
-    } catch (tickError) {
-      logStep("Warning: Error fetching tick data", { error: tickError.message });
-    }
-
-    // STEP 2: Fetch historical BAR data using /historical endpoint
-    const renderUrl = `https://duka-qr9j.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
-    logStep("📊 FETCHING HISTORICAL BAR DATA", { 
-      url: renderUrl,
+    // Fetch historical data using the new Dukascopy API
+    const dukascopyUrl = `https://duka-aa28.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
+    logStep("📊 FETCHING HISTORICAL DATA", { 
+      url: dukascopyUrl,
       timeframe: mappedTimeframe,
       purpose: "Getting historical bars/candles for analysis"
     });
@@ -231,30 +154,30 @@ serve(async (req) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 45000);
 
-    let renderResponse;
+    let dukascopyResponse;
     let historicalData;
     
     try {
-      renderResponse = await fetch(renderUrl, {
+      dukascopyResponse = await fetch(dukascopyUrl, {
         signal: controller.signal,
         headers: {
-          'User-Agent': 'ForexRadar7-HistoricalBars/1.0',
+          'User-Agent': 'ForexRadar7-HistoricalData/1.0',
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
         }
       });
       clearTimeout(timeoutId);
 
-      if (!renderResponse.ok) {
-        logStep("ERROR: Render API response not OK", { 
-          status: renderResponse.status, 
-          statusText: renderResponse.statusText 
+      if (!dukascopyResponse.ok) {
+        logStep("ERROR: Dukascopy API response not OK", { 
+          status: dukascopyResponse.status, 
+          statusText: dukascopyResponse.statusText 
         });
-        throw new Error(`Historical data service error: ${renderResponse.status} - ${renderResponse.statusText}`);
+        throw new Error(`Historical data service error: ${dukascopyResponse.status} - ${dukascopyResponse.statusText}`);
       }
 
-      const responseText = await renderResponse.text();
-      logStep("📈 HISTORICAL BAR DATA RECEIVED", { 
+      const responseText = await dukascopyResponse.text();
+      logStep("📈 HISTORICAL DATA RECEIVED", { 
         length: responseText.length,
         firstChars: responseText.substring(0, 100)
       });
@@ -262,7 +185,7 @@ serve(async (req) => {
       // Try to parse as JSON first
       try {
         historicalData = JSON.parse(responseText);
-        logStep("Historical bar data parsed as JSON", { 
+        logStep("Historical data parsed as JSON", { 
           isArray: Array.isArray(historicalData),
           length: Array.isArray(historicalData) ? historicalData.length : 'not array'
         });
@@ -288,7 +211,7 @@ serve(async (req) => {
               return null;
             }).filter(item => item !== null);
             
-            logStep("Historical bar data parsed as CSV", { 
+            logStep("Historical data parsed as CSV", { 
               totalLines: lines.length,
               validCandles: historicalData.length
             });
@@ -304,7 +227,7 @@ serve(async (req) => {
       clearTimeout(timeoutId);
       logStep("ERROR: Failed to fetch historical data", { 
         error: fetchError.message,
-        url: renderUrl 
+        url: dukascopyUrl 
       });
       throw new Error(`Failed to fetch historical data: ${fetchError.message}`);
     }
@@ -318,8 +241,6 @@ serve(async (req) => {
     const dataPointCount = Array.isArray(historicalData) ? historicalData.length : 1;
     logStep("✅ DATA VALIDATION COMPLETE", { 
       historicalDataPoints: dataPointCount,
-      hasCurrentPrice: !!currentPrice,
-      currentPrice: currentPrice,
       dataType: `${dataPointCount} ${mappedTimeframe} bars/candles`
     });
 
@@ -344,11 +265,27 @@ serve(async (req) => {
       throw new Error("Insufficient historical data for analysis. Please try different parameters.");
     }
 
+    // Get current price from the latest data point
+    let currentPrice = null;
+    let currentPriceTimestamp = null;
+    
+    if (Array.isArray(historicalData) && historicalData.length > 0) {
+      const latestCandle = historicalData[historicalData.length - 1];
+      currentPrice = latestCandle.close || latestCandle.price;
+      currentPriceTimestamp = latestCandle.timestamp || latestCandle.time || new Date().toISOString();
+      
+      logStep("✅ CURRENT PRICE FROM LATEST DATA", { 
+        currentPrice, 
+        currentPriceTimestamp,
+        latestCandleIndex: historicalData.length - 1
+      });
+    }
+
     logStep("🎯 SENDING TO AI FOR ANALYSIS", { 
       historicalDataPoints: dataPointCount, 
       historicalDataLength: dataText.length,
       currentPrice: currentPrice,
-      analysisType: `${mappedTimeframe} bars with current price context and formatted timestamps`
+      analysisType: `${mappedTimeframe} bars with latest price context and formatted timestamps`
     });
 
     // Get OpenRouter API key
@@ -380,7 +317,7 @@ A forex pair: ${currencyPair}
 
 A timeframe: ${timeframeLabel} (can be M15, M30, H1, H4, D1, or Weekly)
 
-The latest current_price (the live tick price): ${currentPrice || 'Not available'}
+The latest current_price (from the most recent candle): ${currentPrice || 'Not available'}
 
 Historical OHLCV data based on the selected timeframe
 (Note: All data is in UTC. Candle format = timestamp,open,high,low,close,volume)
