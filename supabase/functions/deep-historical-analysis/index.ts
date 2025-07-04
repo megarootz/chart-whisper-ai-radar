@@ -32,21 +32,26 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const openRouterApiKey = Deno.env.get("OPENROUTER_API_KEY");
     
+    console.log("🔍 Environment check:", { 
+      hasSupabaseUrl: !!supabaseUrl, 
+      hasServiceKey: !!supabaseServiceKey, 
+      hasOpenRouterKey: !!openRouterApiKey 
+    });
+    
     if (!supabaseUrl || !supabaseServiceKey || !openRouterApiKey) {
-      console.error("❌ Missing environment variables:", { 
-        hasSupabaseUrl: !!supabaseUrl, 
-        hasServiceKey: !!supabaseServiceKey, 
-        hasOpenRouterKey: !!openRouterApiKey 
-      });
+      console.error("❌ Missing environment variables");
       return new Response(JSON.stringify({ 
-        error: "Server configuration error - missing environment variables" 
+        error: "Server configuration error - missing environment variables",
+        details: {
+          hasSupabaseUrl: !!supabaseUrl,
+          hasServiceKey: !!supabaseServiceKey,
+          hasOpenRouterKey: !!openRouterApiKey
+        }
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
-
-    console.log("✅ Environment variables loaded");
 
     // 2. Initialize Supabase Client
     const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
@@ -59,7 +64,7 @@ serve(async (req) => {
     if (!authHeader) {
       console.error("❌ No authorization header provided");
       return new Response(JSON.stringify({ 
-        error: "Authentication required" 
+        error: "Authentication required - no authorization header" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
@@ -67,12 +72,15 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
+    console.log("🔐 Attempting to authenticate user with token length:", token.length);
+    
     const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
     
     if (userError || !userData.user) {
       console.error("❌ Authentication failed:", userError?.message);
       return new Response(JSON.stringify({ 
-        error: "Authentication failed" 
+        error: "Authentication failed",
+        details: userError?.message
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
@@ -84,11 +92,14 @@ serve(async (req) => {
     // 4. Parse and Validate Request Body
     let requestBody;
     try {
-      requestBody = await req.json();
+      const requestText = await req.text();
+      console.log("📥 Request body received, length:", requestText.length);
+      requestBody = JSON.parse(requestText);
     } catch (error) {
       console.error("❌ Invalid JSON in request body:", error);
       return new Response(JSON.stringify({ 
-        error: "Invalid request format" 
+        error: "Invalid request format - could not parse JSON",
+        details: error.message
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
@@ -96,48 +107,64 @@ serve(async (req) => {
     }
 
     const { currencyPair, timeframe, fromDate, toDate } = requestBody;
+    console.log("📊 Request parameters:", { currencyPair, timeframe, fromDate, toDate });
 
     if (!currencyPair || !timeframe || !fromDate || !toDate) {
-      console.error("❌ Missing required parameters:", { currencyPair, timeframe, fromDate, toDate });
+      console.error("❌ Missing required parameters");
       return new Response(JSON.stringify({ 
-        error: "Missing required parameters: currencyPair, timeframe, fromDate, toDate" 
+        error: "Missing required parameters",
+        required: ["currencyPair", "timeframe", "fromDate", "toDate"],
+        received: { currencyPair, timeframe, fromDate, toDate }
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
       });
     }
 
-    console.log("✅ Request parameters validated:", { currencyPair, timeframe, fromDate, toDate });
-
     // 5. Check Usage Limits
-    console.log("🔍 Checking usage limits...");
-    const { data: usageData, error: usageError } = await supabaseClient
-      .rpc('check_usage_limits', { p_user_id: userData.user.id });
+    console.log("🔍 Checking usage limits for user:", userData.user.id);
+    try {
+      const { data: usageData, error: usageError } = await supabaseClient
+        .rpc('check_usage_limits', { p_user_id: userData.user.id });
 
-    if (usageError) {
-      console.error("❌ Usage check error:", usageError);
+      if (usageError) {
+        console.error("❌ Usage check error:", usageError);
+        return new Response(JSON.stringify({ 
+          error: "Failed to check usage limits",
+          details: usageError.message
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500,
+        });
+      }
+
+      console.log("📈 Usage data:", usageData);
+
+      if (!usageData?.can_deep_analyze) {
+        console.log("❌ Deep analysis limit reached for user:", userData.user.id);
+        return new Response(JSON.stringify({ 
+          error: "Deep analysis limit reached",
+          usage: usageData
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 429,
+        });
+      }
+
+      console.log("✅ Usage limits check passed");
+    } catch (error) {
+      console.error("❌ Error checking usage limits:", error);
       return new Response(JSON.stringify({ 
-        error: "Failed to check usage limits" 
+        error: "Failed to check usage limits",
+        details: error.message
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
       });
     }
 
-    if (!usageData?.can_deep_analyze) {
-      console.log("❌ Deep analysis limit reached for user:", userData.user.id);
-      return new Response(JSON.stringify({ 
-        error: "Deep analysis limit reached" 
-      }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 429,
-      });
-    }
-
-    console.log("✅ Usage limits check passed");
-
     // 6. Fetch Historical Data
-    console.log("📊 Fetching historical data...");
+    console.log("📊 Starting historical data fetch...");
     
     const timeframeMapping: Record<string, string> = {
       'M1': 'm1', 'M15': 'm15', 'M30': 'm30',
@@ -147,36 +174,53 @@ serve(async (req) => {
     const mappedTimeframe = timeframeMapping[timeframe] || timeframe.toLowerCase();
     const dataUrl = `https://duka-aa28.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
     
-    console.log("📊 Data URL:", dataUrl);
+    console.log("🌐 Data URL:", dataUrl);
 
     let historicalData: HistoricalDataPoint[] = [];
     
     try {
+      console.log("⏳ Fetching historical data...");
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         console.log("⏰ Data fetch timeout triggered");
         controller.abort();
-      }, 20000); // 20 second timeout
+      }, 30000); // 30 second timeout
 
       const dataResponse = await fetch(dataUrl, {
         signal: controller.signal,
         headers: {
           'User-Agent': 'ForexRadar7-HistoricalData/1.0',
-          'Accept': 'application/json'
+          'Accept': 'application/json, text/csv, text/plain',
+          'Cache-Control': 'no-cache'
         }
       });
       
       clearTimeout(timeoutId);
+      console.log("📥 Data response status:", dataResponse.status);
 
       if (!dataResponse.ok) {
-        throw new Error(`Data API returned ${dataResponse.status}: ${dataResponse.statusText}`);
+        console.error("❌ Data API error:", dataResponse.status, dataResponse.statusText);
+        return new Response(JSON.stringify({ 
+          error: "Failed to fetch historical data",
+          details: `Data API returned ${dataResponse.status}: ${dataResponse.statusText}`
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 502,
+        });
       }
 
       const responseText = await dataResponse.text();
-      console.log("📊 Raw response length:", responseText.length);
+      console.log("📊 Raw response received, length:", responseText.length);
+      console.log("📊 Response preview:", responseText.substring(0, 200));
 
       if (!responseText?.trim()) {
-        throw new Error("Empty response from data API");
+        console.error("❌ Empty response from data API");
+        return new Response(JSON.stringify({ 
+          error: "Empty response from data API"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 502,
+        });
       }
 
       // Try JSON parsing first
@@ -189,56 +233,76 @@ serve(async (req) => {
         const lines = responseText.trim().split('\n');
         if (lines.length > 1) {
           historicalData = lines.slice(1)
-            .map(line => {
-              const parts = line.split(',');
-              if (parts.length >= 5) {
-                return {
-                  timestamp: parts[0],
-                  open: parseFloat(parts[1]),
-                  high: parseFloat(parts[2]),
-                  low: parseFloat(parts[3]),
-                  close: parseFloat(parts[4]),
-                  volume: parts[5] ? parseFloat(parts[5]) : 0
-                };
+            .map((line, index) => {
+              try {
+                const parts = line.split(',');
+                if (parts.length >= 5) {
+                  return {
+                    timestamp: parts[0],
+                    open: parseFloat(parts[1]),
+                    high: parseFloat(parts[2]),
+                    low: parseFloat(parts[3]),
+                    close: parseFloat(parts[4]),
+                    volume: parts[5] ? parseFloat(parts[5]) : 0
+                  };
+                }
+                return null;
+              } catch (parseError) {
+                console.error(`❌ Error parsing line ${index}:`, parseError);
+                return null;
               }
-              return null;
             })
             .filter((item): item is HistoricalDataPoint => item !== null);
           
           console.log("✅ CSV parsing successful, data points:", historicalData.length);
         } else {
-          throw new Error("Unable to parse data as JSON or CSV");
+          console.error("❌ Unable to parse data as JSON or CSV");
+          return new Response(JSON.stringify({ 
+            error: "Unable to parse historical data",
+            details: "Data is neither valid JSON nor CSV format"
+          }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+            status: 502,
+          });
         }
       }
 
       if (!Array.isArray(historicalData) || historicalData.length === 0) {
-        throw new Error("No valid historical data available");
+        console.error("❌ No valid historical data available");
+        return new Response(JSON.stringify({ 
+          error: "No valid historical data available"
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 502,
+        });
       }
 
     } catch (fetchError) {
       console.error("❌ Historical data fetch failed:", fetchError);
       return new Response(JSON.stringify({ 
-        error: "Failed to fetch historical data: " + (fetchError as Error).message
+        error: "Failed to fetch historical data",
+        details: fetchError.message
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 502,
       });
     }
 
-    console.log("✅ Historical data fetched successfully:", historicalData.length, "data points");
+    console.log("✅ Historical data processed successfully:", historicalData.length, "data points");
 
     // 7. Process Data for AI Analysis
     const latestCandle = historicalData[historicalData.length - 1];
     const currentPrice = latestCandle?.close || latestCandle?.price || null;
     console.log("💰 Current price:", currentPrice);
 
-    // Limit data for AI analysis (last 100 candles for performance)
-    const dataToAnalyze = historicalData.slice(-100);
+    // Limit data for AI analysis (last 200 candles for better analysis)
+    const dataToAnalyze = historicalData.slice(-200);
     console.log("🤖 Data points for AI analysis:", dataToAnalyze.length);
 
-    const dataText = dataToAnalyze.map(candle => {
-      const timestamp = candle.timestamp || candle.date || candle.time || '';
-      return `${timestamp},${candle.open},${candle.high},${candle.low},${candle.close},${candle.volume || 0}`;
+    // Create a more concise data format for AI
+    const dataText = dataToAnalyze.map((candle, index) => {
+      const timestamp = candle.timestamp || candle.date || candle.time || `Point${index}`;
+      return `${timestamp}: O${candle.open} H${candle.high} L${candle.low} C${candle.close} V${candle.volume || 0}`;
     }).join('\n');
 
     // 8. AI Analysis
@@ -277,19 +341,20 @@ Keep analysis concise and professional. Current price: ${currentPrice || 'Latest
 
     const userPrompt = `Analyze ${currencyPair} ${timeframe} data (${dataToAnalyze.length} candles from ${fromDate} to ${toDate}):
 
-Historical Data (timestamp,open,high,low,close,volume):
-${dataText}
+Historical Data Format (timestamp/point: Open High Low Close Volume):
+${dataText.substring(0, 8000)}${dataText.length > 8000 ? '\n[Data truncated for analysis]' : ''}
 
 Provide professional trading analysis following the structured format.`;
 
     let analysisResult: string;
 
     try {
+      console.log("🔗 Making AI API request...");
       const aiController = new AbortController();
       const aiTimeoutId = setTimeout(() => {
         console.log("⏰ AI analysis timeout triggered");
         aiController.abort();
-      }, 25000); // 25 second timeout
+      }, 45000); // 45 second timeout
 
       const aiResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -312,18 +377,33 @@ Provide professional trading analysis following the structured format.`;
       });
 
       clearTimeout(aiTimeoutId);
+      console.log("🤖 AI response status:", aiResponse.status);
 
       if (!aiResponse.ok) {
         const errorText = await aiResponse.text();
         console.error("❌ AI API error:", aiResponse.status, errorText);
-        throw new Error(`AI API returned ${aiResponse.status}: ${aiResponse.statusText}`);
+        return new Response(JSON.stringify({ 
+          error: "AI analysis failed",
+          details: `AI API returned ${aiResponse.status}: ${aiResponse.statusText}`,
+          response: errorText
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 502,
+        });
       }
 
       const aiData = await aiResponse.json();
       analysisResult = aiData.choices?.[0]?.message?.content;
 
       if (!analysisResult) {
-        throw new Error("No analysis content received from AI");
+        console.error("❌ No analysis content received from AI");
+        return new Response(JSON.stringify({ 
+          error: "No analysis content received from AI",
+          response: aiData
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 502,
+        });
       }
 
       console.log("✅ AI analysis completed, length:", analysisResult.length);
@@ -331,7 +411,8 @@ Provide professional trading analysis following the structured format.`;
     } catch (aiError) {
       console.error("❌ AI analysis failed:", aiError);
       return new Response(JSON.stringify({ 
-        error: "AI analysis failed: " + (aiError as Error).message
+        error: "AI analysis failed",
+        details: aiError.message
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 502,
@@ -411,7 +492,9 @@ Provide professional trading analysis following the structured format.`;
     console.error("💥 CRITICAL ERROR in deep historical analysis:", error);
     
     return new Response(JSON.stringify({ 
-      error: "Internal server error: " + (error as Error).message,
+      error: "Internal server error",
+      details: error.message,
+      stack: error.stack,
       timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
