@@ -13,19 +13,31 @@ const logStep = (step: string, details?: any) => {
 };
 
 serve(async (req) => {
+  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    logStep("🚀 FUNCTION START");
+    logStep("🚀 Function started");
 
     // Initialize Supabase client
-    const supabaseClient = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-      { auth: { persistSession: false } }
-    );
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    
+    if (!supabaseUrl || !supabaseServiceKey) {
+      logStep("❌ Missing Supabase environment variables");
+      return new Response(JSON.stringify({ 
+        error: "Server configuration error" 
+      }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500,
+      });
+    }
+
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceKey, {
+      auth: { persistSession: false }
+    });
 
     logStep("✅ Supabase client initialized");
 
@@ -34,7 +46,7 @@ serve(async (req) => {
     if (!authHeader) {
       logStep("❌ No authorization header");
       return new Response(JSON.stringify({ 
-        error: "No authorization header provided" 
+        error: "Unauthorized" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
@@ -47,7 +59,7 @@ serve(async (req) => {
     if (userError || !userData.user) {
       logStep("❌ Authentication failed", userError);
       return new Response(JSON.stringify({ 
-        error: `Authentication failed: ${userError?.message || 'Unknown error'}` 
+        error: "Authentication failed" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 401,
@@ -61,7 +73,7 @@ serve(async (req) => {
     let requestBody;
     try {
       const bodyText = await req.text();
-      logStep("📨 Raw request body received", { length: bodyText.length });
+      logStep("📨 Request body received", { length: bodyText.length });
       
       if (!bodyText || bodyText.trim() === '') {
         throw new Error("Empty request body");
@@ -72,7 +84,7 @@ serve(async (req) => {
     } catch (parseError) {
       logStep("❌ Failed to parse request body", parseError);
       return new Response(JSON.stringify({ 
-        error: `Invalid request body: ${parseError.message}` 
+        error: "Invalid request body" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
@@ -85,7 +97,7 @@ serve(async (req) => {
     if (!currencyPair || !timeframe || !fromDate || !toDate) {
       logStep("❌ Missing required parameters", { currencyPair, timeframe, fromDate, toDate });
       return new Response(JSON.stringify({ 
-        error: "Missing required parameters: currencyPair, timeframe, fromDate, toDate" 
+        error: "Missing required parameters" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
@@ -102,7 +114,7 @@ serve(async (req) => {
       if (usageError) {
         logStep("❌ Usage check failed", usageError);
         return new Response(JSON.stringify({ 
-          error: `Usage check failed: ${usageError.message}` 
+          error: "Usage check failed" 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 500,
@@ -114,7 +126,7 @@ serve(async (req) => {
       if (!usageData?.can_deep_analyze) {
         logStep("❌ Deep analysis limit reached");
         return new Response(JSON.stringify({ 
-          error: "Deep analysis limit reached. Please upgrade your plan or wait for the next reset period." 
+          error: "Deep analysis limit reached" 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 429,
@@ -130,7 +142,7 @@ serve(async (req) => {
       });
     }
 
-    // Map timeframes for the Dukascopy API
+    // Map timeframes for the API
     const timeframeMapping: Record<string, string> = {
       'M1': 'm1',
       'M15': 'm15',
@@ -145,45 +157,44 @@ serve(async (req) => {
     logStep("✅ Timeframe mapped", { original: timeframe, mapped: mappedTimeframe });
 
     // Fetch historical data
-    const dukascopyUrl = `https://duka-aa28.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
-    logStep("📊 Fetching historical data", { url: dukascopyUrl });
+    const dataUrl = `https://duka-aa28.onrender.com/historical?instrument=${currencyPair.toLowerCase()}&from=${fromDate}&to=${toDate}&timeframe=${mappedTimeframe}&format=json`;
+    logStep("📊 Fetching historical data", { url: dataUrl });
 
     let historicalData;
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-      const dukascopyResponse = await fetch(dukascopyUrl, {
+      const dataResponse = await fetch(dataUrl, {
         signal: controller.signal,
         headers: {
           'User-Agent': 'ForexRadar7-HistoricalData/1.0',
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
+          'Accept': 'application/json'
         }
       });
       
       clearTimeout(timeoutId);
 
-      if (!dukascopyResponse.ok) {
-        logStep("❌ Dukascopy API error", { 
-          status: dukascopyResponse.status, 
-          statusText: dukascopyResponse.statusText 
+      if (!dataResponse.ok) {
+        logStep("❌ Data API error", { 
+          status: dataResponse.status, 
+          statusText: dataResponse.statusText 
         });
         return new Response(JSON.stringify({ 
-          error: `Historical data service error: ${dukascopyResponse.status}` 
+          error: "Failed to fetch historical data" 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 502,
         });
       }
 
-      const responseText = await dukascopyResponse.text();
+      const responseText = await dataResponse.text();
       logStep("📈 Historical data received", { length: responseText.length });
 
       if (!responseText?.trim()) {
-        logStep("❌ Empty response from Dukascopy");
+        logStep("❌ Empty response from data API");
         return new Response(JSON.stringify({ 
-          error: "No historical data available for the selected parameters" 
+          error: "No historical data available" 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 404,
@@ -193,7 +204,7 @@ serve(async (req) => {
       // Parse historical data
       try {
         historicalData = JSON.parse(responseText);
-        logStep("✅ Historical data parsed as JSON", { 
+        logStep("✅ Historical data parsed", { 
           isArray: Array.isArray(historicalData),
           length: Array.isArray(historicalData) ? historicalData.length : 'not array'
         });
@@ -237,7 +248,7 @@ serve(async (req) => {
     } catch (fetchError) {
       logStep("❌ Failed to fetch historical data", fetchError);
       return new Response(JSON.stringify({ 
-        error: `Failed to fetch historical data: ${fetchError.message}` 
+        error: "Failed to fetch historical data" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 502,
@@ -269,7 +280,7 @@ serve(async (req) => {
       }).join('\n');
     }
 
-    logStep("🎯 Sending to AI for analysis", { 
+    logStep("🎯 Preparing AI analysis", { 
       dataPoints: dataPointCount,
       dataLength: dataText.length 
     });
@@ -357,7 +368,7 @@ Provide your professional forex trading analysis following the required format e
           "X-Title": "ForexRadar7 Deep Historical Analysis"
         },
         body: JSON.stringify({
-          model: "x-ai/grok-3-mini",
+          model: "anthropic/claude-3.5-sonnet",
           messages: [
             { role: "system", content: systemPrompt },
             { role: "user", content: userPrompt }
@@ -374,7 +385,7 @@ Provide your professional forex trading analysis following the required format e
         const errorText = await aiResponse.text();
         logStep("❌ AI service error", { status: aiResponse.status, error: errorText });
         return new Response(JSON.stringify({ 
-          error: `AI analysis failed: ${aiResponse.status}` 
+          error: "AI analysis failed" 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 502,
@@ -387,7 +398,7 @@ Provide your professional forex trading analysis following the required format e
       if (!analysis) {
         logStep("❌ No analysis content received");
         return new Response(JSON.stringify({ 
-          error: "No analysis content received from AI" 
+          error: "No analysis content received" 
         }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
           status: 502,
@@ -458,7 +469,7 @@ Provide your professional forex trading analysis following the required format e
     } catch (aiError) {
       logStep("❌ AI request failed", aiError);
       return new Response(JSON.stringify({ 
-        error: `AI analysis failed: ${aiError.message}` 
+        error: "AI analysis failed" 
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 502,
@@ -470,7 +481,7 @@ Provide your professional forex trading analysis following the required format e
     logStep("❌ CRITICAL ERROR", { message: errorMessage, stack: error instanceof Error ? error.stack : undefined });
     
     return new Response(JSON.stringify({ 
-      error: `Internal server error: ${errorMessage}`,
+      error: "Internal server error",
       timestamp: new Date().toISOString()
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
