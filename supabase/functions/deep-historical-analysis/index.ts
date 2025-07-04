@@ -179,7 +179,7 @@ serve(async (req) => {
       const responseText = await dukascopyResponse.text();
       logStep("📈 HISTORICAL DATA RECEIVED", { 
         length: responseText.length,
-        firstChars: responseText.substring(0, 100)
+        firstChars: responseText.substring(0, 200)
       });
 
       // Try to parse as JSON first
