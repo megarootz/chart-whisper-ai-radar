@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format, subDays, subMonths } from 'date-fns';
+import { format, subDays, subMonths, subYears } from 'date-fns';
 import { CalendarIcon, Brain, Loader2, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -53,15 +53,6 @@ const TIMEFRAMES = [
   { value: 'W1', label: '1 Week' },
 ];
 
-const TIMEFRAME_LIMITS = {
-  'M15': 5,   // 5 days
-  'M30': 10,  // 10 days
-  'H1': 20,   // 20 days
-  'H4': 80,   // 2 months and 20 days (approximately 80 days)
-  'D1': 490,  // 1 year and 4 months (approximately 490 days)
-  'W1': 3650, // 10 years (approximately 3650 days)
-};
-
 const formSchema = z.object({
   currencyPair: z.string().min(1, 'Please select a currency pair'),
   timeframe: z.string().min(1, 'Please select a timeframe'),
@@ -79,55 +70,65 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
   const [showReasoningPopup, setShowReasoningPopup] = useState(false);
   const { toast } = useToast();
   const { usage, checkUsageLimits } = useSubscription();
-  const today = new Date();
+  const now = new Date();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       currencyPair: '',
       timeframe: '',
-      fromDate: today,
+      fromDate: now,
     },
   });
 
   const selectedTimeframe = form.watch('timeframe');
 
-  // Auto-set from date based on timeframe limits
+  // Auto-set from date based on new timeframe requirements
   useEffect(() => {
-    if (selectedTimeframe && TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS]) {
-      const daysBack = TIMEFRAME_LIMITS[selectedTimeframe as keyof typeof TIMEFRAME_LIMITS];
+    if (selectedTimeframe) {
       let fromDate;
       
-      // For larger timeframes, use months for more accurate calculation
-      if (selectedTimeframe === 'H4') {
-        // 2 months and 20 days
-        fromDate = subDays(subMonths(today, 2), 20);
-      } else if (selectedTimeframe === 'D1') {
-        // 1 year and 4 months
-        fromDate = subMonths(today, 16);
-      } else if (selectedTimeframe === 'W1') {
-        // 10 years
-        fromDate = subMonths(today, 120);
-      } else {
-        fromDate = subDays(today, daysBack);
+      switch (selectedTimeframe) {
+        case 'M15':
+        case 'M30':
+          // 1 month for M15 and M30
+          fromDate = subMonths(now, 1);
+          break;
+        case 'H1':
+          // 2 months for H1
+          fromDate = subMonths(now, 2);
+          break;
+        case 'H4':
+          // 10 months for H4
+          fromDate = subMonths(now, 10);
+          break;
+        case 'D1':
+          // 8 years for D1
+          fromDate = subYears(now, 8);
+          break;
+        case 'W1':
+          // Keep existing 10 years for W1
+          fromDate = subYears(now, 10);
+          break;
+        default:
+          fromDate = now;
       }
       
       form.setValue('fromDate', fromDate);
     }
-  }, [selectedTimeframe, form, today]);
+  }, [selectedTimeframe, form, now]);
 
   const getTimeframeLimitText = (timeframe: string) => {
     switch (timeframe) {
       case 'M15':
-        return '5 days';
       case 'M30':
-        return '10 days';
+        return '1 month';
       case 'H1':
-        return '20 days';
+        return '2 months';
       case 'H4':
-        return '2 months and 20 days';
+        return '10 months';
       case 'D1':
-        return '1 year and 4 months';
+        return '8 years';
       case 'W1':
         return '10 years';
       default:
@@ -167,7 +168,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
           currencyPair: values.currencyPair,
           timeframe: values.timeframe,
           fromDate: format(values.fromDate, 'yyyy-MM-dd'),
-          toDate: format(today, 'yyyy-MM-dd'),
+          toDate: format(now, 'yyyy-MM-dd'),
         },
       });
 
@@ -278,7 +279,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
                     {selectedTimeframe && (
                       <div className="flex items-center mt-2 text-sm text-blue-400">
                         <Info className="w-4 h-4 mr-1" />
-                        <span>Data range limited to {getTimeframeLimitText(selectedTimeframe)} for optimal performance</span>
+                        <span>Data range: {getTimeframeLimitText(selectedTimeframe)} up to current date and time</span>
                       </div>
                     )}
                     <FormMessage />
@@ -301,7 +302,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
                   {selectedTimeframe 
-                    ? `Automatically set based on ${getTimeframeLimitText(selectedTimeframe)} limit`
+                    ? `Automatically set to ${getTimeframeLimitText(selectedTimeframe)} ago`
                     : 'Will be set automatically when you select a timeframe'
                   }
                 </p>
@@ -311,11 +312,11 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
                 <FormLabel className="text-white mb-2">To Date</FormLabel>
                 <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
                   <div className="flex items-center justify-between">
-                    <span>{format(today, 'PPP')} (Latest)</span>
+                    <span>{format(now, 'PPP')} (Latest)</span>
                     <CalendarIcon className="h-4 w-4 opacity-30" />
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Automatically set to today's date</p>
+                <p className="text-xs text-gray-400 mt-1">Automatically set to current date and time</p>
               </div>
             </div>
 

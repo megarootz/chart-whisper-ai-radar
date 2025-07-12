@@ -308,7 +308,7 @@ serve(async (req) => {
 
     const timeframeLabel = timeframeLabels[mappedTimeframe] || timeframe;
 
-    // Create the new structured AI prompt
+    // Create the structured AI prompt
     const systemPrompt = `Act as a professional price action trader. Analyze the provided historical OHLC data and follow these rules:
 
 1️⃣ **Market Structure Analysis**
