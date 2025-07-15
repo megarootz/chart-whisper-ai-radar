@@ -9,6 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
+import { supabase } from '@/integrations/supabase/client';
 import MultiTimeframeResults from './MultiTimeframeResults';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
@@ -91,31 +92,125 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     }, 100);
   };
 
+  const getCurrentDateTime = () => {
+    const now = new Date();
+    return now.toISOString();
+  };
+
+  const getDateRange = (timeframe: string) => {
+    const now = new Date();
+    const to = getCurrentDateTime();
+    let from: Date;
+
+    switch (timeframe.toLowerCase()) {
+      case 'm15':
+      case 'm30':
+        // 1 month of data
+        from = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+        break;
+      case 'h1':
+        // 2 months of data
+        from = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
+        break;
+      case 'h4':
+        // 10 months of data
+        from = new Date(now.getTime() - (300 * 24 * 60 * 60 * 1000));
+        break;
+      case 'd1':
+        // 8 years of data
+        from = new Date(now.getTime() - (8 * 365 * 24 * 60 * 60 * 1000));
+        break;
+      case 'w1':
+        // 10 years of data
+        from = new Date(now.getTime() - (10 * 365 * 24 * 60 * 60 * 1000));
+        break;
+      default:
+        // Default to 1 year
+        from = new Date(now.getTime() - (365 * 24 * 60 * 60 * 1000));
+    }
+
+    return {
+      fromDate: from.toISOString().split('T')[0],
+      toDate: to.split('T')[0]
+    };
+  };
+
   const fetchTimeframeAnalysis = async (symbol: string, timeframe: string): Promise<TimeframeResult> => {
     try {
-      const response = await fetch('https://duka-aa28.onrender.com/analysis', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ symbol, timeframe }),
+      const { fromDate, toDate } = getDateRange(timeframe);
+      
+      console.log(`Fetching ${timeframe} analysis for ${symbol} from ${fromDate} to ${toDate}`);
+      
+      const { data, error } = await supabase.functions.invoke('deep-historical-analysis', {
+        body: {
+          currencyPair: symbol,
+          timeframe: timeframe,
+          fromDate: fromDate,
+          toDate: toDate
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
+      if (error) {
+        console.error(`Error fetching ${timeframe} analysis:`, error);
+        throw error;
       }
 
-      const data = await response.json();
+      if (!data || !data.analysis) {
+        throw new Error('No analysis data received');
+      }
+
+      // Parse the AI analysis response to extract structured data
+      const analysis = data.analysis.analysis || data.analysis;
+      
+      // This is a simplified parser - you might need to adjust based on the actual AI response format
+      const parseAnalysisResponse = (text: string) => {
+        const result: any = {
+          trend: 'Unknown',
+          signal: 'No Signal',
+          entryPrice: 0,
+          stopLoss: 0,
+          takeProfit: 0,
+          rsi: 0,
+          atr: 0
+        };
+
+        // Extract trend
+        if (text.includes('Uptrend') || text.includes('BULLISH')) {
+          result.trend = 'Uptrend';
+        } else if (text.includes('Downtrend') || text.includes('BEARISH')) {
+          result.trend = 'Downtrend';
+        }
+
+        // Extract signal
+        if (text.includes('BUY') || text.includes('Buy')) {
+          result.signal = 'BUY';
+        } else if (text.includes('SELL') || text.includes('Sell')) {
+          result.signal = 'SELL';
+        }
+
+        // Try to extract numerical values (this is basic parsing)
+        const priceRegex = /(\d+\.\d+)/g;
+        const prices = text.match(priceRegex);
+        if (prices && prices.length >= 3) {
+          result.entryPrice = parseFloat(prices[0]) || 0;
+          result.stopLoss = parseFloat(prices[1]) || 0;
+          result.takeProfit = parseFloat(prices[2]) || 0;
+        }
+
+        return result;
+      };
+
+      const parsedData = parseAnalysisResponse(analysis);
       
       return {
         timeframe,
-        trend: data.trend || 'Unknown',
-        signal: data.signal || 'No Signal',
-        entryPrice: data.entryPrice || 0,
-        stopLoss: data.stopLoss || 0,
-        takeProfit: data.takeProfit || 0,
-        rsi: data.rsi || 0,
-        atr: data.atr || 0,
+        trend: parsedData.trend,
+        signal: parsedData.signal,
+        entryPrice: parsedData.entryPrice,
+        stopLoss: parsedData.stopLoss,
+        takeProfit: parsedData.takeProfit,
+        rsi: parsedData.rsi,
+        atr: parsedData.atr,
       };
     } catch (error) {
       console.error(`Error fetching ${timeframe} analysis:`, error);
