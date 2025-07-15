@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +19,11 @@ interface TimeframeResult {
   error?: string;
 }
 
-const DeepHistoricalAnalysis = () => {
+interface DeepHistoricalAnalysisProps {
+  onAnalysisComplete: (analysis: any) => void;
+}
+
+const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnalysisComplete }) => {
   const [currencyPair, setCurrencyPair] = useState('XAUUSD');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<TimeframeResult[]>([]);
@@ -114,6 +117,14 @@ const DeepHistoricalAnalysis = () => {
 
       setResults(processedResults);
       setLoadingTimeframes([]);
+
+      // Call the callback with the processed results
+      onAnalysisComplete({
+        type: 'multi_timeframe',
+        symbol: currencyPair,
+        results: processedResults,
+        timestamp: new Date().toISOString()
+      });
 
       // Show success toast
       toast({
