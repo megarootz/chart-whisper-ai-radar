@@ -93,41 +93,56 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
 
   const fetchAnalysisFromRender = async (symbol: string): Promise<any> => {
     try {
-      console.log(`Fetching analysis for ${symbol} from Render API`);
+      console.log(`🚀 Starting analysis for ${symbol}`);
       
-      const response = await fetch('https://duka-aa28.onrender.com/analysis', {
+      // Add timestamp to ensure fresh data
+      const timestamp = Date.now();
+      const response = await fetch(`https://duka-aa28.onrender.com/analysis?t=${timestamp}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
-        body: JSON.stringify({ symbol }),
+        body: JSON.stringify({ 
+          symbol: symbol.toUpperCase(),
+          timestamp: timestamp
+        }),
       });
 
+      console.log(`📡 Response status: ${response.status}`);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorText = await response.text();
+        console.error('❌ API Error:', errorText);
+        throw new Error(`Analysis API returned ${response.status}: ${errorText}`);
       }
 
       const data = await response.json();
-      console.log('Received analysis data:', data);
+      console.log('📊 Analysis data received:', data);
 
       if (!data || !data.analysis) {
-        throw new Error('No analysis data received');
+        console.error('❌ No analysis data in response:', data);
+        throw new Error('No analysis data received from API');
       }
 
       return data.analysis;
     } catch (error) {
-      console.error('Error fetching analysis from Render:', error);
+      console.error('💥 Error fetching analysis:', error);
       throw error;
     }
   };
 
   const parseAnalysisResults = (analysisData: any): TimeframeResult[] => {
+    console.log('🔍 Parsing analysis data:', analysisData);
+    
     const timeframes = ['D1', 'H4', 'M15'];
     
     return timeframes.map(timeframe => {
       const tfData = analysisData[timeframe];
       
       if (!tfData) {
+        console.warn(`⚠️ No data for timeframe ${timeframe}`);
         return {
           timeframe,
           trend: 'Unknown',
@@ -137,11 +152,12 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
           takeProfit: 0,
           rsi: 0,
           atr: 0,
-          error: 'No data available for this timeframe',
+          error: `No data available for ${timeframe} timeframe`,
         };
       }
 
       if (tfData.error) {
+        console.error(`❌ Error in ${timeframe}:`, tfData.error);
         return {
           timeframe,
           trend: 'Error',
@@ -155,16 +171,25 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         };
       }
 
-      return {
+      // Parse numeric values safely
+      const parseFloat_safe = (value: any): number => {
+        const parsed = parseFloat(value);
+        return isNaN(parsed) ? 0 : parsed;
+      };
+
+      const result = {
         timeframe,
         trend: tfData.trend || 'Unknown',
         signal: tfData.signal || 'No Signal',
-        entryPrice: parseFloat(tfData.entry) || 0,
-        stopLoss: parseFloat(tfData.stop_loss) || 0,
-        takeProfit: parseFloat(tfData.take_profit) || 0,
-        rsi: parseFloat(tfData.rsi) || 0,
-        atr: parseFloat(tfData.atr) || 0,
+        entryPrice: parseFloat_safe(tfData.entry),
+        stopLoss: parseFloat_safe(tfData.stop_loss),
+        takeProfit: parseFloat_safe(tfData.take_profit),
+        rsi: parseFloat_safe(tfData.rsi),
+        atr: parseFloat_safe(tfData.atr),
       };
+
+      console.log(`✅ Parsed ${timeframe}:`, result);
+      return result;
     });
   };
 
@@ -178,6 +203,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       return;
     }
 
+    console.log('🔄 Refreshing analysis for:', lastAnalyzedPair);
     await startAnalysis(lastAnalyzedPair);
   };
 
@@ -191,6 +217,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       return;
     }
 
+    console.log(`🎯 Starting deep analysis for ${currencyPair}`);
     setIsAnalyzing(true);
     setResults([]);
     setLastAnalyzedPair(currencyPair);
@@ -203,14 +230,26 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       
       // Parse the results
       const parsedResults = parseAnalysisResults(analysisData);
+      console.log('📈 Final parsed results:', parsedResults);
       setResults(parsedResults);
 
-      toast({
-        title: 'Multi-Timeframe Analysis Complete',
-        description: `Deep analysis for 3 timeframes used 1 credit`,
-      });
+      // Check if all results have errors
+      const hasValidResults = parsedResults.some(result => !result.error);
+      
+      if (hasValidResults) {
+        toast({
+          title: 'Multi-Timeframe Analysis Complete',
+          description: `Analysis completed for ${currencyPair} across 3 timeframes`,
+        });
+      } else {
+        toast({
+          title: 'Analysis Completed with Issues',
+          description: 'Some timeframes may not have complete data. Check individual results.',
+          variant: 'destructive',
+        });
+      }
 
-      // Refresh usage data
+      // Update usage
       await checkUsageLimits();
 
       // Pass combined analysis to parent component
@@ -218,17 +257,34 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         type: 'multi_timeframe',
         symbol: currencyPair,
         timeframes: parsedResults,
-        analysis: `Multi-timeframe analysis completed for ${currencyPair}`,
+        analysis: `Multi-timeframe analysis for ${currencyPair}: ${parsedResults.map(r => `${r.timeframe}: ${r.trend}`).join(', ')}`,
+        timestamp: new Date().toISOString(),
       });
 
       // Auto-scroll to results
       scrollToAnalysisResults();
 
     } catch (error) {
-      console.error('Multi-timeframe analysis error:', error);
+      console.error('💥 Multi-timeframe analysis error:', error);
+      
+      // Set error state for all timeframes
+      const errorResults: TimeframeResult[] = ['D1', 'H4', 'M15'].map(tf => ({
+        timeframe: tf,
+        trend: 'Error',
+        signal: 'Error',
+        entryPrice: 0,
+        stopLoss: 0,
+        takeProfit: 0,
+        rsi: 0,
+        atr: 0,
+        error: error instanceof Error ? error.message : 'Analysis failed',
+      }));
+      
+      setResults(errorResults);
+      
       toast({
         title: 'Analysis Failed',
-        description: error instanceof Error ? error.message : 'Failed to analyze multi-timeframe data. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to analyze. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -238,6 +294,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('📝 Form submitted with:', values);
     await startAnalysis(values.currencyPair);
   };
 
@@ -322,7 +379,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
                     {isAnalyzing ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analyzing multiple timeframes (D1, H4, M15)...
+                        Analyzing multiple timeframes...
                       </>
                     ) : (
                       <>
