@@ -61,7 +61,7 @@ interface TimeframeResult {
   takeProfit: number;
   rsi: number;
   atr: number;
-  error?: string;  
+  error?: string;
 }
 
 const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnalysisComplete }) => {
@@ -94,6 +94,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
   const fetchAnalysisFromRender = async (symbol: string): Promise<any> => {
     try {
       console.log(`🚀 Starting analysis for ${symbol}`);
+      console.log('📡 Sending request to Render API...');
       
       const response = await fetch('https://duka-aa28.onrender.com/analysis', {
         method: 'POST',
@@ -105,39 +106,69 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         }),
       });
 
-      console.log(`📡 Response status: ${response.status}`);
+      console.log(`📊 Response status: ${response.status}`);
+      console.log(`📊 Response headers:`, Object.fromEntries(response.headers.entries()));
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('❌ API Error:', errorText);
+        console.error('❌ API Error Response:', errorText);
         throw new Error(`Analysis API returned ${response.status}: ${errorText}`);
       }
 
-      const data = await response.json();
-      console.log('📊 Analysis data received:', data);
+      const responseText = await response.text();
+      console.log('📋 Raw API Response:', responseText);
 
-      if (!data || !data.analysis) {
-        console.error('❌ No analysis data in response:', data);
-        throw new Error('No analysis data received from API');
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log('✅ Parsed API Response:', JSON.stringify(data, null, 2));
+      } catch (parseError) {
+        console.error('❌ JSON Parse Error:', parseError);
+        console.error('❌ Response text that failed to parse:', responseText);
+        throw new Error('Invalid JSON response from analysis API');
       }
 
-      return data.analysis;
+      if (!data) {
+        console.error('❌ No data in response');
+        throw new Error('No data received from analysis API');
+      }
+
+      return data;
     } catch (error) {
       console.error('💥 Error fetching analysis:', error);
       throw error;
     }
   };
 
-  const parseAnalysisResults = (analysisData: any): TimeframeResult[] => {
-    console.log('🔍 Parsing analysis data:', analysisData);
+  const parseAnalysisResults = (apiResponse: any): TimeframeResult[] => {
+    console.log('🔍 Parsing API response structure:', JSON.stringify(apiResponse, null, 2));
     
     const timeframes = ['D1', 'H4', 'M15'];
     
+    // Handle different possible response structures
+    let analysisData = apiResponse;
+    
+    // If the response has an 'analysis' property, use that
+    if (apiResponse.analysis) {
+      analysisData = apiResponse.analysis;
+      console.log('📊 Using analysis property:', JSON.stringify(analysisData, null, 2));
+    }
+    
+    // If the response has a 'data' property, use that
+    if (apiResponse.data) {
+      analysisData = apiResponse.data;
+      console.log('📊 Using data property:', JSON.stringify(analysisData, null, 2));
+    }
+    
     return timeframes.map(timeframe => {
-      const tfData = analysisData[timeframe];
+      console.log(`🔍 Processing timeframe: ${timeframe}`);
+      
+      // Try different possible property names for timeframe data
+      let tfData = analysisData[timeframe] || analysisData[timeframe.toLowerCase()] || analysisData[timeframe.replace('M', 'm').replace('H', 'h')];
       
       if (!tfData) {
-        console.warn(`⚠️ No data for timeframe ${timeframe}`);
+        console.warn(`⚠️ No data found for timeframe ${timeframe}`);
+        console.log(`Available keys:`, Object.keys(analysisData));
         return {
           timeframe,
           trend: 'Unknown',
@@ -150,6 +181,8 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
           error: `No data available for ${timeframe} timeframe`,
         };
       }
+
+      console.log(`📊 ${timeframe} data:`, JSON.stringify(tfData, null, 2));
 
       if (tfData.error) {
         console.error(`❌ Error in ${timeframe}:`, tfData.error);
@@ -166,24 +199,44 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         };
       }
 
-      // Parse numeric values safely
+      // Helper function to safely parse numeric values
       const parseFloat_safe = (value: any): number => {
-        const parsed = parseFloat(value);
+        if (value === null || value === undefined || value === '' || value === 'N/A') {
+          return 0;
+        }
+        const parsed = parseFloat(String(value));
         return isNaN(parsed) ? 0 : parsed;
       };
 
-      const result = {
-        timeframe,
-        trend: tfData.trend || 'Unknown',
-        signal: tfData.signal || 'No Signal',
-        entryPrice: parseFloat_safe(tfData.entry),
-        stopLoss: parseFloat_safe(tfData.stop_loss),
-        takeProfit: parseFloat_safe(tfData.take_profit),
-        rsi: parseFloat_safe(tfData.rsi),
-        atr: parseFloat_safe(tfData.atr),
+      // Helper function to extract string values
+      const getString = (value: any): string => {
+        if (value === null || value === undefined) {
+          return 'Unknown';
+        }
+        return String(value);
       };
 
-      console.log(`✅ Parsed ${timeframe}:`, result);
+      // Try different possible property names for each field
+      const trend = getString(tfData.trend || tfData.direction || tfData.market_trend || 'Unknown');
+      const signal = getString(tfData.signal || tfData.recommendation || tfData.action || 'No Signal');
+      const entryPrice = parseFloat_safe(tfData.entry || tfData.entry_price || tfData.entryPrice || tfData.price);
+      const stopLoss = parseFloat_safe(tfData.stop_loss || tfData.stopLoss || tfData.sl || tfData.stop);
+      const takeProfit = parseFloat_safe(tfData.take_profit || tfData.takeProfit || tfData.tp || tfData.target);
+      const rsi = parseFloat_safe(tfData.rsi || tfData.RSI);
+      const atr = parseFloat_safe(tfData.atr || tfData.ATR);
+
+      const result = {
+        timeframe,
+        trend,
+        signal,
+        entryPrice,
+        stopLoss,
+        takeProfit,
+        rsi,
+        atr,
+      };
+
+      console.log(`✅ Parsed ${timeframe} result:`, JSON.stringify(result, null, 2));
       return result;
     });
   };
@@ -221,11 +274,11 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     
     try {
       // Fetch analysis from Render API
-      const analysisData = await fetchAnalysisFromRender(currencyPair);
+      const apiResponse = await fetchAnalysisFromRender(currencyPair);
       
       // Parse the results
-      const parsedResults = parseAnalysisResults(analysisData);
-      console.log('📈 Final parsed results:', parsedResults);
+      const parsedResults = parseAnalysisResults(apiResponse);
+      console.log('📈 Final parsed results:', JSON.stringify(parsedResults, null, 2));
       setResults(parsedResults);
 
       // Check if all results have errors
