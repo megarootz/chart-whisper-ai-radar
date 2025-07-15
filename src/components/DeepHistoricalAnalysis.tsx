@@ -33,7 +33,8 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
   const { toast } = useToast();
 
   const currencyPairs = [
-    'XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD'
+    'XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD',
+    'EURJPY', 'GBPJPY', 'EURGBP', 'EURCHF', 'GBPCHF', 'AUDJPY', 'CADJPY', 'CHFJPY'
   ];
 
   // Updated to include all 4 timeframes: D1, H4, H1, M15
@@ -56,6 +57,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       setLoadingTimeframes([...timeframes]);
 
       console.log('🚀 Starting Multi-Timeframe Analysis for:', currencyPair);
+      console.log('📊 Requesting analysis for timeframes:', timeframes);
 
       // Call your Render API
       const renderApiUrl = 'https://duka-aa28.onrender.com/analysis';
@@ -69,7 +71,8 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
           'Accept': 'application/json',
         },
         body: JSON.stringify({
-          symbol: currencyPair
+          symbol: currencyPair,
+          timeframes: timeframes // Explicitly pass all timeframes including M15
         })
       });
 
@@ -89,7 +92,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         const analysisData = apiData?.analysis?.[tf];
         
         if (!analysisData) {
-          console.warn(`⚠️ No analysis data for ${tf}`);
+          console.warn(`⚠️ No analysis data for ${tf}. Available timeframes:`, Object.keys(apiData?.analysis || {}));
           return {
             timeframe: tf,
             trend: 'Unknown',
