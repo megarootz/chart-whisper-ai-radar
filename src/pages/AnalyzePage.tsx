@@ -14,7 +14,7 @@ const AnalyzePage = () => {
 
   const handleAnalysisComplete = (analysis: any, isDeep: boolean = false) => {
     setCurrentAnalysis(analysis);
-    setIsDeepAnalysis(isDeep);
+    setIsDeepAnalysis(isDeep || analysis?.type === 'multi_timeframe');
   };
 
   return (

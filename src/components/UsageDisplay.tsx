@@ -66,11 +66,11 @@ const UsageDisplay = () => {
         {getPlanBadge()}
       </div>
 
-      {/* Deep Historical Analysis Usage */}
+      {/* Deep Multi-Timeframe Analysis Usage */}
       <div className="space-y-3">
         <h4 className="text-white font-medium text-xs flex items-center">
           <Brain className="h-3 w-3 mr-1 text-purple-400" />
-          Deep Historical Analysis
+          Multi-Timeframe Analysis
         </h4>
         
         {/* Deep Daily Usage */}
@@ -124,9 +124,14 @@ const UsageDisplay = () => {
         <div className="flex items-center gap-2">
           <div className={`w-1.5 h-1.5 rounded-full ${usage.can_deep_analyze ? 'bg-purple-500' : 'bg-red-500'}`} />
           <span className={`text-xs ${usage.can_deep_analyze ? 'text-purple-400' : 'text-red-400'}`}>
-            {usage.can_deep_analyze ? 'Deep analysis available' : 'Deep analysis limits reached'}
+            {usage.can_deep_analyze ? 'Multi-timeframe analysis available' : 'Analysis limits reached'}
           </span>
         </div>
+        {usage.can_deep_analyze && (
+          <div className="text-xs text-gray-500 ml-3.5">
+            Each analysis covers 3 timeframes (D1, H4, M15) for 1 credit
+          </div>
+        )}
       </div>
     </div>
   );

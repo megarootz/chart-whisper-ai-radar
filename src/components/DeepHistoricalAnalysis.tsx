@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { format, subDays, subMonths, subYears } from 'date-fns';
-import { CalendarIcon, Brain, Loader2, Info } from 'lucide-react';
+import { Brain, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import ReasoningPopup from './ReasoningPopup';
+import MultiTimeframeResults from './MultiTimeframeResults';
 
 const CURRENCY_PAIRS = [
   { value: 'EURUSD', label: 'EUR/USD' },
@@ -44,100 +43,41 @@ const CURRENCY_PAIRS = [
   { value: 'USDCHF', label: 'USD/CHF' },
 ];
 
-const TIMEFRAMES = [
-  { value: 'M15', label: '15 Minutes' },
-  { value: 'M30', label: '30 Minutes' },
-  { value: 'H1', label: '1 Hour' },
-  { value: 'H4', label: '4 Hours' },
-  { value: 'D1', label: '1 Day' },
-  { value: 'W1', label: '1 Week' },
-];
-
 const formSchema = z.object({
   currencyPair: z.string().min(1, 'Please select a currency pair'),
-  timeframe: z.string().min(1, 'Please select a timeframe'),
-  fromDate: z.date({
-    required_error: 'From date is required',
-  }),
 });
 
 interface DeepHistoricalAnalysisProps {
   onAnalysisComplete: (analysis: any) => void;
 }
 
+interface TimeframeResult {
+  timeframe: string;
+  trend: string;
+  signal: string;
+  entryPrice: number;
+  stopLoss: number;
+  takeProfit: number;
+  rsi: number;
+  atr: number;
+  error?: string;
+}
+
 const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnalysisComplete }) => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [showReasoningPopup, setShowReasoningPopup] = useState(false);
+  const [results, setResults] = useState<TimeframeResult[]>([]);
+  const [loadingTimeframes, setLoadingTimeframes] = useState<string[]>([]);
   const { toast } = useToast();
   const { usage, checkUsageLimits } = useSubscription();
-  const now = new Date();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       currencyPair: '',
-      timeframe: '',
-      fromDate: now,
     },
   });
 
-  const selectedTimeframe = form.watch('timeframe');
-
-  // Auto-set from date based on new timeframe requirements
-  useEffect(() => {
-    if (selectedTimeframe) {
-      let fromDate;
-      
-      switch (selectedTimeframe) {
-        case 'M15':
-        case 'M30':
-          // 1 month for M15 and M30
-          fromDate = subMonths(now, 1);
-          break;
-        case 'H1':
-          // 2 months for H1
-          fromDate = subMonths(now, 2);
-          break;
-        case 'H4':
-          // 10 months for H4
-          fromDate = subMonths(now, 10);
-          break;
-        case 'D1':
-          // 8 years for D1
-          fromDate = subYears(now, 8);
-          break;
-        case 'W1':
-          // Keep existing 10 years for W1
-          fromDate = subYears(now, 10);
-          break;
-        default:
-          fromDate = now;
-      }
-      
-      form.setValue('fromDate', fromDate);
-    }
-  }, [selectedTimeframe, form, now]);
-
-  const getTimeframeLimitText = (timeframe: string) => {
-    switch (timeframe) {
-      case 'M15':
-      case 'M30':
-        return '1 month';
-      case 'H1':
-        return '2 months';
-      case 'H4':
-        return '10 months';
-      case 'D1':
-        return '8 years';
-      case 'W1':
-        return '10 years';
-      default:
-        return '';
-    }
-  };
-
   const scrollToAnalysisResults = () => {
-    // Wait a bit for the results to render, then scroll
     setTimeout(() => {
       const analysisSection = document.querySelector('[data-analysis-results]');
       if (analysisSection) {
@@ -147,6 +87,48 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         });
       }
     }, 100);
+  };
+
+  const fetchTimeframeAnalysis = async (symbol: string, timeframe: string): Promise<TimeframeResult> => {
+    try {
+      const response = await fetch('https://duka-aa28.onrender.com/analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ symbol, timeframe }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        timeframe,
+        trend: data.trend || 'Unknown',
+        signal: data.signal || 'No Signal',
+        entryPrice: data.entryPrice || 0,
+        stopLoss: data.stopLoss || 0,
+        takeProfit: data.takeProfit || 0,
+        rsi: data.rsi || 0,
+        atr: data.atr || 0,
+      };
+    } catch (error) {
+      console.error(`Error fetching ${timeframe} analysis:`, error);
+      return {
+        timeframe,
+        trend: 'Error',
+        signal: 'Error',
+        entryPrice: 0,
+        stopLoss: 0,
+        takeProfit: 0,
+        rsi: 0,
+        atr: 0,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
@@ -160,165 +142,115 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     }
 
     setIsAnalyzing(true);
-    setShowReasoningPopup(true);
+    setResults([]);
+    const timeframes = ['D1', 'H4', 'M15'];
+    setLoadingTimeframes(timeframes);
     
     try {
-      const { data, error } = await supabase.functions.invoke('deep-historical-analysis', {
-        body: {
-          currencyPair: values.currencyPair,
-          timeframe: values.timeframe,
-          fromDate: format(values.fromDate, 'yyyy-MM-dd'),
-          toDate: format(now, 'yyyy-MM-dd'),
-        },
+      // Make parallel requests for all timeframes
+      const analysisPromises = timeframes.map(async (timeframe) => {
+        const result = await fetchTimeframeAnalysis(values.currencyPair, timeframe);
+        
+        // Update results as soon as data is available
+        setResults(prev => {
+          const updated = [...prev];
+          const existingIndex = updated.findIndex(r => r.timeframe === timeframe);
+          if (existingIndex >= 0) {
+            updated[existingIndex] = result;
+          } else {
+            updated.push(result);
+          }
+          return updated.sort((a, b) => {
+            const order = ['D1', 'H4', 'M15'];
+            return order.indexOf(a.timeframe) - order.indexOf(b.timeframe);
+          });
+        });
+
+        // Remove from loading list
+        setLoadingTimeframes(prev => prev.filter(tf => tf !== timeframe));
+        
+        return result;
       });
 
-      if (error) {
-        throw error;
-      }
+      await Promise.all(analysisPromises);
 
       toast({
-        title: 'Deep Analysis Complete',
-        description: 'Historical data has been analyzed successfully.',
+        title: 'Multi-Timeframe Analysis Complete',
+        description: 'Deep analysis for 3 timeframes used 1 credit',
       });
 
       // Refresh usage data
       await checkUsageLimits();
 
-      // Pass the analysis to parent component
-      onAnalysisComplete(data.analysis);
+      // Pass combined analysis to parent component
+      onAnalysisComplete({
+        type: 'multi_timeframe',
+        symbol: values.currencyPair,
+        timeframes: results,
+        analysis: `Multi-timeframe analysis completed for ${values.currencyPair}`,
+      });
 
       // Auto-scroll to results
       scrollToAnalysisResults();
 
     } catch (error) {
-      console.error('Deep analysis error:', error);
+      console.error('Multi-timeframe analysis error:', error);
       toast({
         title: 'Analysis Failed',
-        description: error instanceof Error ? error.message : 'Failed to analyze historical data. Please try again.',
+        description: error instanceof Error ? error.message : 'Failed to analyze multi-timeframe data. Please try again.',
         variant: 'destructive',
       });
     } finally {
       setIsAnalyzing(false);
-      setShowReasoningPopup(false);
+      setLoadingTimeframes([]);
     }
   };
-
-  const currentFromDate = form.watch('fromDate');
 
   return (
     <>
       <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
-        <h3 className="text-xl font-bold text-white mb-4">Deep Historical Analysis</h3>
+        <h3 className="text-xl font-bold text-white mb-4">Deep Multi-Timeframe Analysis</h3>
         <p className="text-gray-400 mb-6">
-          Comprehensive technical analysis of historical forex data with trading recommendations
+          Comprehensive analysis across Daily, 4-Hour, and 15-Minute timeframes
         </p>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <FormField
-                control={form.control}
-                name="currencyPair"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Currency Pair</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                          <SelectValue placeholder="Select currency pair" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent 
-                        className="bg-gray-700 border-gray-600 max-h-60 overflow-y-auto"
-                        position="popper"
-                        side="bottom"
-                        align="start"
-                        onWheel={(e) => e.stopPropagation()}
-                        onPointerMove={(e) => e.preventDefault()}
-                      >
-                        {CURRENCY_PAIRS.map((pair) => (
-                          <SelectItem 
-                            key={pair.value} 
-                            value={pair.value}
-                            className="text-white hover:bg-gray-600 focus:bg-gray-600"
-                          >
-                            {pair.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="timeframe"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-white">Timeframe</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                          <SelectValue placeholder="Select timeframe" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent className="bg-gray-700 border-gray-600">
-                        {TIMEFRAMES.map((tf) => (
-                          <SelectItem 
-                            key={tf.value} 
-                            value={tf.value}
-                            className="text-white hover:bg-gray-600"
-                          >
-                            {tf.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {selectedTimeframe && (
-                      <div className="flex items-center mt-2 text-sm text-blue-400">
-                        <Info className="w-4 h-4 mr-1" />
-                        <span>Data range: {getTimeframeLimitText(selectedTimeframe)} up to current date and time</span>
-                      </div>
-                    )}
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="flex flex-col">
-                <FormLabel className="text-white mb-2">From Date</FormLabel>
-                <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
-                  <div className="flex items-center justify-between">
-                    <span>
-                      {currentFromDate ? format(currentFromDate, 'PPP') : 'Select timeframe first'}
-                      {selectedTimeframe && ' (Auto-set)'}
-                    </span>
-                    <CalendarIcon className="h-4 w-4 opacity-30" />
-                  </div>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">
-                  {selectedTimeframe 
-                    ? `Automatically set to ${getTimeframeLimitText(selectedTimeframe)} ago`
-                    : 'Will be set automatically when you select a timeframe'
-                  }
-                </p>
-              </div>
-
-              <div className="flex flex-col">
-                <FormLabel className="text-white mb-2">To Date</FormLabel>
-                <div className="w-full pl-3 pr-3 py-2 text-left font-normal bg-gray-600 border border-gray-500 text-gray-300 rounded-md cursor-not-allowed">
-                  <div className="flex items-center justify-between">
-                    <span>{format(now, 'PPP')} (Latest)</span>
-                    <CalendarIcon className="h-4 w-4 opacity-30" />
-                  </div>
-                </div>
-                <p className="text-xs text-gray-400 mt-1">Automatically set to current date and time</p>
-              </div>
-            </div>
+            <FormField
+              control={form.control}
+              name="currencyPair"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-white">Currency Pair</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                        <SelectValue placeholder="Select currency pair" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent 
+                      className="bg-gray-700 border-gray-600 max-h-60 overflow-y-auto"
+                      position="popper"
+                      side="bottom"
+                      align="start"
+                      onWheel={(e) => e.stopPropagation()}
+                      onPointerMove={(e) => e.preventDefault()}
+                    >
+                      {CURRENCY_PAIRS.map((pair) => (
+                        <SelectItem 
+                          key={pair.value} 
+                          value={pair.value}
+                          className="text-white hover:bg-gray-600 focus:bg-gray-600"
+                        >
+                          {pair.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
             <div className="flex flex-col space-y-2">
               {usage && (
@@ -335,7 +267,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
                 {isAnalyzing ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing Data...
+                    Analyzing multiple timeframes (D1, H4, M15)...
                   </>
                 ) : (
                   <>
@@ -348,8 +280,14 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
           </form>
         </Form>
       </div>
-      
-      <ReasoningPopup isOpen={showReasoningPopup} />
+
+      {(results.length > 0 || isAnalyzing) && (
+        <MultiTimeframeResults 
+          results={results}
+          loadingTimeframes={loadingTimeframes}
+          isAnalyzing={isAnalyzing}
+        />
+      )}
     </>
   );
 };
