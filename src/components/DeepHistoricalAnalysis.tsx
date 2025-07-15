@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -145,16 +144,13 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     
     const timeframes = ['D1', 'H4', 'M15'];
     
-    // Handle different possible response structures
     let analysisData = apiResponse;
     
-    // If the response has an 'analysis' property, use that
     if (apiResponse.analysis) {
       analysisData = apiResponse.analysis;
       console.log('📊 Using analysis property:', JSON.stringify(analysisData, null, 2));
     }
     
-    // If the response has a 'data' property, use that
     if (apiResponse.data) {
       analysisData = apiResponse.data;
       console.log('📊 Using data property:', JSON.stringify(analysisData, null, 2));
@@ -163,7 +159,6 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     return timeframes.map(timeframe => {
       console.log(`🔍 Processing timeframe: ${timeframe}`);
       
-      // Try different possible property names for timeframe data
       let tfData = analysisData[timeframe] || analysisData[timeframe.toLowerCase()] || analysisData[timeframe.replace('M', 'm').replace('H', 'h')];
       
       if (!tfData) {
@@ -199,7 +194,6 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         };
       }
 
-      // Helper function to safely parse numeric values
       const parseFloat_safe = (value: any): number => {
         if (value === null || value === undefined || value === '' || value === 'N/A') {
           return 0;
@@ -208,7 +202,6 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         return isNaN(parsed) ? 0 : parsed;
       };
 
-      // Helper function to extract string values
       const getString = (value: any): string => {
         if (value === null || value === undefined) {
           return 'Unknown';
@@ -216,7 +209,6 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         return String(value);
       };
 
-      // Try different possible property names for each field
       const trend = getString(tfData.trend || tfData.direction || tfData.market_trend || 'Unknown');
       const signal = getString(tfData.signal || tfData.recommendation || tfData.action || 'No Signal');
       const entryPrice = parseFloat_safe(tfData.entry || tfData.entry_price || tfData.entryPrice || tfData.price);
@@ -273,15 +265,12 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     setLoadingTimeframes(timeframes);
     
     try {
-      // Fetch analysis from Render API
       const apiResponse = await fetchAnalysisFromRender(currencyPair);
       
-      // Parse the results
       const parsedResults = parseAnalysisResults(apiResponse);
       console.log('📈 Final parsed results:', JSON.stringify(parsedResults, null, 2));
       setResults(parsedResults);
 
-      // Check if all results have errors
       const hasValidResults = parsedResults.some(result => !result.error);
       
       if (hasValidResults) {
@@ -297,10 +286,8 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         });
       }
 
-      // Update usage
       await checkUsageLimits();
 
-      // Pass combined analysis to parent component
       onAnalysisComplete({
         type: 'multi_timeframe',
         symbol: currencyPair,
@@ -309,13 +296,11 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
         timestamp: new Date().toISOString(),
       });
 
-      // Auto-scroll to results
       scrollToAnalysisResults();
 
     } catch (error) {
       console.error('💥 Multi-timeframe analysis error:', error);
       
-      // Set error state for all timeframes
       const errorResults: TimeframeResult[] = ['D1', 'H4', 'M15'].map(tf => ({
         timeframe: tf,
         trend: 'Error',
@@ -468,6 +453,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
               results={results}
               loadingTimeframes={loadingTimeframes}
               isAnalyzing={isAnalyzing}
+              currencyPair={lastAnalyzedPair}
             />
           </div>
         )}
