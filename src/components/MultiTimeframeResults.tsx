@@ -29,11 +29,11 @@ const MultiTimeframeResults: React.FC<MultiTimeframeResultsProps> = ({
   currencyPair = 'XAUUSD'
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState('D1');
-  const timeframes = ['D1', 'H4', 'M15'];
+  const timeframes = ['D1', 'H4', 'H1'];
   const timeframeLabels = {
     'D1': 'Daily',
     'H4': '4 Hours',
-    'M15': '15 Minutes'
+    'H1': '1 Hour'
   };
 
   const getTrendColor = (trend: string) => {
