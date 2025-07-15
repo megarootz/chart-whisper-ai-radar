@@ -1,4 +1,5 @@
 
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,8 +36,8 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     'XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD'
   ];
 
-  // Updated to match your Render API timeframes: H1, H4, D1
-  const timeframes = ['D1', 'H4', 'H1'];
+  // Updated to include all 4 timeframes: D1, H4, H1, M15
+  const timeframes = ['D1', 'H4', 'H1', 'M15'];
 
   const startAnalysis = async () => {
     try {
@@ -176,7 +177,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
             Deep Multi-Timeframe Analysis
           </CardTitle>
           <CardDescription className="text-gray-400">
-            Comprehensive analysis across Daily, 4-Hour, and 1-Hour timeframes
+            Comprehensive analysis across Daily, 4-Hour, 1-Hour, and 15-Minute timeframes
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

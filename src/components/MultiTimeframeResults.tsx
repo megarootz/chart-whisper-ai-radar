@@ -29,11 +29,12 @@ const MultiTimeframeResults: React.FC<MultiTimeframeResultsProps> = ({
   currencyPair = 'XAUUSD'
 }) => {
   const [selectedTimeframe, setSelectedTimeframe] = useState('D1');
-  const timeframes = ['D1', 'H4', 'H1'];
+  const timeframes = ['D1', 'H4', 'H1', 'M15'];
   const timeframeLabels = {
     'D1': 'Daily',
     'H4': '4 Hours',
-    'H1': '1 Hour'
+    'H1': '1 Hour',
+    'M15': '15 Minutes'
   };
 
   const getTrendColor = (trend: string) => {
@@ -89,7 +90,7 @@ const MultiTimeframeResults: React.FC<MultiTimeframeResultsProps> = ({
             Multi-Timeframe Analysis Results
           </h3>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {timeframes.map((timeframe) => {
               const result = results.find(r => r.timeframe === timeframe);
               const isLoading = loadingTimeframes.includes(timeframe);
