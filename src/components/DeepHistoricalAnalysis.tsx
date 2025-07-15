@@ -61,7 +61,7 @@ interface TimeframeResult {
   takeProfit: number;
   rsi: number;
   atr: number;
-  error?: string;
+  error?: string;  
 }
 
 const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnalysisComplete }) => {
@@ -95,18 +95,13 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     try {
       console.log(`🚀 Starting analysis for ${symbol}`);
       
-      // Add timestamp to ensure fresh data
-      const timestamp = Date.now();
-      const response = await fetch(`https://duka-aa28.onrender.com/analysis?t=${timestamp}`, {
+      const response = await fetch('https://duka-aa28.onrender.com/analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cache-Control': 'no-cache',
-          'Pragma': 'no-cache'
         },
         body: JSON.stringify({ 
-          symbol: symbol.toUpperCase(),
-          timestamp: timestamp
+          symbol: symbol.toUpperCase()
         }),
       });
 
