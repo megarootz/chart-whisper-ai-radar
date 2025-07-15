@@ -3,13 +3,14 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Brain, Loader2 } from 'lucide-react';
+import { Brain, Loader2, RefreshCw, Info } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import MultiTimeframeResults from './MultiTimeframeResults';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const CURRENCY_PAIRS = [
   { value: 'EURUSD', label: 'EUR/USD' },
@@ -67,6 +68,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [results, setResults] = useState<TimeframeResult[]>([]);
   const [loadingTimeframes, setLoadingTimeframes] = useState<string[]>([]);
+  const [lastAnalyzedPair, setLastAnalyzedPair] = useState<string>('');
   const { toast } = useToast();
   const { usage, checkUsageLimits } = useSubscription();
 
@@ -131,7 +133,20 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     }
   };
 
-  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+  const refreshAnalysis = async () => {
+    if (!lastAnalyzedPair) {
+      toast({
+        title: 'No Previous Analysis',
+        description: 'Please select a currency pair and run analysis first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await startAnalysis(lastAnalyzedPair);
+  };
+
+  const startAnalysis = async (currencyPair: string) => {
     if (!usage?.can_deep_analyze) {
       toast({
         title: 'Deep Analysis Limit Reached',
@@ -143,13 +158,14 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
 
     setIsAnalyzing(true);
     setResults([]);
+    setLastAnalyzedPair(currencyPair);
     const timeframes = ['D1', 'H4', 'M15'];
     setLoadingTimeframes(timeframes);
     
     try {
       // Make parallel requests for all timeframes
       const analysisPromises = timeframes.map(async (timeframe) => {
-        const result = await fetchTimeframeAnalysis(values.currencyPair, timeframe);
+        const result = await fetchTimeframeAnalysis(currencyPair, timeframe);
         
         // Update results as soon as data is available
         setResults(prev => {
@@ -176,7 +192,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
 
       toast({
         title: 'Multi-Timeframe Analysis Complete',
-        description: 'Deep analysis for 3 timeframes used 1 credit',
+        description: `Deep analysis for 3 timeframes used 1 credit`,
       });
 
       // Refresh usage data
@@ -185,9 +201,9 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       // Pass combined analysis to parent component
       onAnalysisComplete({
         type: 'multi_timeframe',
-        symbol: values.currencyPair,
+        symbol: currencyPair,
         timeframes: results,
-        analysis: `Multi-timeframe analysis completed for ${values.currencyPair}`,
+        analysis: `Multi-timeframe analysis completed for ${currencyPair}`,
       });
 
       // Auto-scroll to results
@@ -206,89 +222,137 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
     }
   };
 
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    await startAnalysis(values.currencyPair);
+  };
+
   return (
-    <>
-      <div className="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-6">
-        <h3 className="text-xl font-bold text-white mb-4">Deep Multi-Timeframe Analysis</h3>
-        <p className="text-gray-400 mb-6">
-          Comprehensive analysis across Daily, 4-Hour, and 15-Minute timeframes
-        </p>
-
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="currencyPair"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-white">Currency Pair</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl>
-                      <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                        <SelectValue placeholder="Select currency pair" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent 
-                      className="bg-gray-700 border-gray-600 max-h-60 overflow-y-auto"
-                      position="popper"
-                      side="bottom"
-                      align="start"
-                      onWheel={(e) => e.stopPropagation()}
-                      onPointerMove={(e) => e.preventDefault()}
-                    >
-                      {CURRENCY_PAIRS.map((pair) => (
-                        <SelectItem 
-                          key={pair.value} 
-                          value={pair.value}
-                          className="text-white hover:bg-gray-600 focus:bg-gray-600"
-                        >
-                          {pair.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="flex flex-col space-y-2">
-              {usage && (
-                <div className="text-sm text-gray-400">
-                  Deep Analysis Usage: {usage.deep_analysis_daily_count || 0} / {usage.deep_analysis_daily_limit || 1} today
-                </div>
-              )}
-              
-              <Button 
-                type="submit" 
-                disabled={isAnalyzing || !usage?.can_deep_analyze}
-                className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
-              >
-                {isAnalyzing ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyzing multiple timeframes (D1, H4, M15)...
-                  </>
-                ) : (
-                  <>
-                    <Brain className="mr-2 h-4 w-4" />
-                    Start Deep Analysis
-                  </>
-                )}
-              </Button>
+    <TooltipProvider>
+      <div className="space-y-6">
+        {/* Analysis Form */}
+        <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="bg-purple-600/20 p-2 rounded-full">
+              <Brain className="h-5 w-5 text-purple-400" />
             </div>
-          </form>
-        </Form>
-      </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Deep Multi-Timeframe Analysis</h3>
+              <p className="text-gray-400 text-sm">
+                Comprehensive analysis across Daily, 4-Hour, and 15-Minute timeframes
+              </p>
+            </div>
+          </div>
 
-      {(results.length > 0 || isAnalyzing) && (
-        <MultiTimeframeResults 
-          results={results}
-          loadingTimeframes={loadingTimeframes}
-          isAnalyzing={isAnalyzing}
-        />
-      )}
-    </>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="currencyPair"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-white">Currency Pair</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
+                          <SelectValue placeholder="Select currency pair" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent 
+                        className="bg-gray-700 border-gray-600 max-h-60 overflow-y-auto"
+                        position="popper"
+                        side="bottom"
+                        align="start"
+                        onWheel={(e) => e.stopPropagation()}
+                        onPointerMove={(e) => e.preventDefault()}
+                      >
+                        {CURRENCY_PAIRS.map((pair) => (
+                          <SelectItem 
+                            key={pair.value} 
+                            value={pair.value}
+                            className="text-white hover:bg-gray-600 focus:bg-gray-600"
+                          >
+                            {pair.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex flex-col space-y-4">
+                {usage && (
+                  <div className="text-sm text-gray-400">
+                    <div className="flex items-center gap-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-4 w-4 cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Each analysis covers 3 timeframes (D1, H4, M15) for 1 credit</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      Deep Analysis Usage: {usage.deep_analysis_daily_count || 0} / {usage.deep_analysis_daily_limit || 1} today
+                    </div>
+                  </div>
+                )}
+                
+                <div className="flex gap-3">
+                  <Button 
+                    type="submit" 
+                    disabled={isAnalyzing || !usage?.can_deep_analyze}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50 transition-all duration-200 hover:scale-105"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analyzing multiple timeframes (D1, H4, M15)...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="mr-2 h-4 w-4" />
+                        Start Deep Analysis
+                      </>
+                    )}
+                  </Button>
+
+                  {lastAnalyzedPair && !isAnalyzing && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          onClick={refreshAnalysis}
+                          className="border-gray-600 hover:bg-gray-700"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Refresh analysis for {lastAnalyzedPair}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
+              </div>
+            </form>
+          </Form>
+        </div>
+
+        {/* Results Display */}
+        {(results.length > 0 || isAnalyzing) && (
+          <div className="animate-fade-in">
+            <MultiTimeframeResults 
+              results={results}
+              loadingTimeframes={loadingTimeframes}
+              isAnalyzing={isAnalyzing}
+            />
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 };
 
