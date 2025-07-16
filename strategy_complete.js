@@ -28,9 +28,36 @@ function findSignificantLevels(highs, lows, closingPrices, period = 50) {
   return [...new Set(significantLevels)]; // Hapus duplikat
 }
 
-function analyzeStrategy(candles) {
-  // Validasi data
-  if (!candles || candles.length < 50) {
+function analyzeStrategy(candles, timeframe = 'UNKNOWN') {
+  console.log(`🔍 Starting analysis for ${timeframe} with ${candles?.length || 0} candles`);
+  
+  // Enhanced validation for M15 and other timeframes
+  if (!candles || !Array.isArray(candles)) {
+    console.error(`❌ ${timeframe}: Invalid candles data`, candles);
+    return {
+      trend: 'Error',
+      signal: 'Error',
+      entry: 0,
+      sl: 0,
+      tp: 0,
+      rsi: 0,
+      atr: 0,
+      error: `Invalid candles data for ${timeframe}`
+    };
+  }
+
+  // Different minimum requirements for different timeframes
+  let minCandles = 50;
+  if (timeframe === 'M15') {
+    minCandles = 30; // Lower requirement for M15 due to more frequent data
+  } else if (timeframe === 'H1') {
+    minCandles = 40;
+  } else if (timeframe === 'H4') {
+    minCandles = 45;
+  }
+
+  if (candles.length < minCandles) {
+    console.warn(`⚠️ ${timeframe}: Insufficient data - got ${candles.length}, need ${minCandles}`);
     return {
       trend: 'Insufficient Data',
       signal: 'No Signal',
@@ -39,7 +66,27 @@ function analyzeStrategy(candles) {
       tp: 0,
       rsi: 0,
       atr: 0,
-      error: 'Insufficient historical data for analysis'
+      error: `Insufficient historical data for ${timeframe} analysis (${candles.length}/${minCandles} candles)`
+    };
+  }
+
+  // Validate candle structure
+  const invalidCandles = candles.filter(c => 
+    !c || typeof c.close !== 'number' || typeof c.high !== 'number' || 
+    typeof c.low !== 'number' || c.high < c.low || c.close <= 0
+  );
+
+  if (invalidCandles.length > 0) {
+    console.error(`❌ ${timeframe}: Found ${invalidCandles.length} invalid candles`);
+    return {
+      trend: 'Error',
+      signal: 'Error',
+      entry: 0,
+      sl: 0,
+      tp: 0,
+      rsi: 0,
+      atr: 0,
+      error: `Invalid candle data structure for ${timeframe}`
     };
   }
 
@@ -48,36 +95,56 @@ function analyzeStrategy(candles) {
   const lows = candles.map(c => c.low);
   const volumes = candles.map(c => c.volume || 0);
 
+  console.log(`📊 ${timeframe}: Processing data - Close range: ${Math.min(...closes).toFixed(5)} to ${Math.max(...closes).toFixed(5)}`);
+
   try {
     const currentClose = closes[closes.length - 1];
     
-    // Calculate technical indicators
-    const rsi = technicalindicators.RSI.calculate({
-      period: 14,
-      values: closes
-    });
-    const currentRsi = rsi[rsi.length - 1] || 50;
+    // Calculate technical indicators with error handling
+    let currentRsi = 50;
+    let currentAtr = 0;
+    let currentSma20 = currentClose;
+    let currentSma50 = currentClose;
 
-    const atr = technicalindicators.ATR.calculate({
-      period: 14,
-      high: highs,
-      low: lows,
-      close: closes
-    });
-    const currentAtr = atr[atr.length - 1] || 0;
+    try {
+      const rsi = technicalindicators.RSI.calculate({
+        period: Math.min(14, Math.floor(closes.length / 3)),
+        values: closes
+      });
+      currentRsi = rsi.length > 0 ? rsi[rsi.length - 1] : 50;
+    } catch (rsiError) {
+      console.warn(`⚠️ ${timeframe}: RSI calculation failed`, rsiError.message);
+    }
+
+    try {
+      const atr = technicalindicators.ATR.calculate({
+        period: Math.min(14, Math.floor(closes.length / 3)),
+        high: highs,
+        low: lows,
+        close: closes
+      });
+      currentAtr = atr.length > 0 ? atr[atr.length - 1] : (Math.max(...highs) - Math.min(...lows)) * 0.01;
+    } catch (atrError) {
+      console.warn(`⚠️ ${timeframe}: ATR calculation failed`, atrError.message);
+      currentAtr = (Math.max(...highs) - Math.min(...lows)) * 0.01;
+    }
 
     // Calculate moving averages for trend
-    const sma20 = technicalindicators.SMA.calculate({
-      period: 20,
-      values: closes
-    });
-    const sma50 = technicalindicators.SMA.calculate({
-      period: 50,
-      values: closes
-    });
+    try {
+      const sma20 = technicalindicators.SMA.calculate({
+        period: Math.min(20, Math.floor(closes.length / 2)),
+        values: closes
+      });
+      currentSma20 = sma20.length > 0 ? sma20[sma20.length - 1] : currentClose;
 
-    const currentSma20 = sma20[sma20.length - 1] || currentClose;
-    const currentSma50 = sma50[sma50.length - 1] || currentClose;
+      const sma50 = technicalindicators.SMA.calculate({
+        period: Math.min(50, Math.floor(closes.length * 0.8)),
+        values: closes
+      });
+      currentSma50 = sma50.length > 0 ? sma50[sma50.length - 1] : currentClose;
+    } catch (smaError) {
+      console.warn(`⚠️ ${timeframe}: SMA calculation failed`, smaError.message);
+    }
 
     // Determine trend
     let trend = 'Sideways';
@@ -91,8 +158,13 @@ function analyzeStrategy(candles) {
     let signal = 'Hold';
     let entry = 0, sl = 0, tp = 0;
 
+    // Ensure we have a reasonable ATR value
+    if (currentAtr === 0 || isNaN(currentAtr)) {
+      currentAtr = Math.abs(currentClose * 0.001); // 0.1% of price as fallback
+    }
+
     // 1. Tentukan level support/resistance signifikan
-    const significantLevels = findSignificantLevels(highs, lows, closes, 20);
+    const significantLevels = findSignificantLevels(highs, lows, closes, Math.min(20, Math.floor(closes.length / 4)));
     
     // 2. Identifikasi level breakout terdekat
     const resistanceLevels = significantLevels.filter(l => l > currentClose);
@@ -119,7 +191,7 @@ function analyzeStrategy(candles) {
     if (breakoutLevel) {
       // Cek retest (harga kembali mendekati level breakout)
       const retestThreshold = breakoutLevel * 0.995; // 0.5% tolerance
-      const recentPrices = closes.slice(-5);
+      const recentPrices = closes.slice(-Math.min(5, Math.floor(closes.length / 10)));
       
       const hasRetest = breakoutDirection === "UP" 
         ? recentPrices.some(p => p <= breakoutLevel * 1.005 && p >= retestThreshold)
@@ -128,17 +200,15 @@ function analyzeStrategy(candles) {
       // Cek candle konfirmasi (candle besar atau volume tinggi)
       const currentCandle = candles[candles.length - 1];
       const candleSize = currentCandle.high - currentCandle.low;
-      const avgCandleSize = technicalindicators.SMA.calculate({
-        period: 10,
-        values: highs.map((h, i) => h - lows[i])
-      }).at(-1) || 0;
+      
+      const recentCandles = Math.min(10, Math.floor(candles.length / 5));
+      const avgCandleSize = highs.slice(-recentCandles)
+        .map((h, i) => h - lows.slice(-recentCandles)[i])
+        .reduce((a, b) => a + b, 0) / recentCandles;
       
       const isLargeCandle = candleSize > avgCandleSize * 1.5;
-      const isHighVolume = volumes.length > 0 && volumes.slice(-10).length > 0
-        ? currentCandle.volume > technicalindicators.SMA.calculate({
-            period: 10,
-            values: volumes.slice(-10)
-          }).at(-1) * 1.5
+      const isHighVolume = volumes.length > 0 && volumes.slice(-Math.min(10, volumes.length)).length > 0
+        ? currentCandle.volume > volumes.slice(-Math.min(10, volumes.length)).reduce((a, b) => a + b, 0) / Math.min(10, volumes.length) * 1.5
         : false;
       
       confirmedBreakout = hasRetest && (isLargeCandle || isHighVolume);
@@ -172,7 +242,7 @@ function analyzeStrategy(candles) {
       }
     }
 
-    return {
+    const result = {
       trend: trend,
       signal: signal,
       entry: Number(entry.toFixed(5)),
@@ -185,8 +255,11 @@ function analyzeStrategy(candles) {
       breakout_confirmed: confirmedBreakout
     };
 
+    console.log(`✅ ${timeframe}: Analysis completed successfully`, result);
+    return result;
+
   } catch (error) {
-    console.error('Strategy analysis error:', error);
+    console.error(`❌ ${timeframe}: Strategy analysis error:`, error);
     return {
       trend: 'Error',
       signal: 'Error',
@@ -195,7 +268,7 @@ function analyzeStrategy(candles) {
       tp: 0,
       rsi: 0,
       atr: 0,
-      error: error.message
+      error: `${timeframe} analysis failed: ${error.message}`
     };
   }
 }
