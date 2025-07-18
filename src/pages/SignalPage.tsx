@@ -90,17 +90,17 @@ const SignalPage = () => {
     : "0";
 
   const SignalCard = ({ signal, showBookmark = true }: { signal: Signal; showBookmark?: boolean }) => (
-    <Card className="border-border/50 hover:border-primary/30 transition-colors">
+    <Card className="bg-chart-card border-border/20 hover:border-primary/30 transition-colors">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="font-mono">{signal.pair}</Badge>
-            <Badge variant="secondary">{signal.timeframe}</Badge>
+            <Badge variant="outline" className="font-mono border-border/50 text-foreground">{signal.pair}</Badge>
+            <Badge variant="secondary" className="bg-muted/50 text-foreground">{signal.timeframe}</Badge>
             <Badge 
               variant={signal.type === "BUY" ? "default" : "destructive"}
               className={cn(
                 "flex items-center gap-1",
-                signal.type === "BUY" ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+                signal.type === "BUY" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"
               )}
             >
               {signal.type === "BUY" ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
@@ -113,8 +113,8 @@ const SignalPage = () => {
               size="sm"
               onClick={() => toggleBookmark(signal.id)}
               className={cn(
-                "h-8 w-8 p-0",
-                bookmarkedSignals.has(signal.id) && "text-yellow-500"
+                "h-8 w-8 p-0 hover:bg-muted/50",
+                bookmarkedSignals.has(signal.id) && "text-yellow-400"
               )}
             >
               <BookmarkIcon className="h-4 w-4" />
@@ -129,30 +129,30 @@ const SignalPage = () => {
               <div className="w-2 h-2 bg-primary rounded-full" />
               Entry
             </div>
-            <div className="font-mono font-medium">{signal.entry}</div>
+            <div className="font-mono font-medium text-foreground">{signal.entry}</div>
           </div>
           <div className="space-y-1">
             <div className="text-muted-foreground flex items-center gap-1">
-              <Target className="h-3 w-3 text-emerald-500" />
+              <Target className="h-3 w-3 text-emerald-400" />
               Take Profit
             </div>
-            <div className="font-mono font-medium text-emerald-600">{signal.takeProfit}</div>
+            <div className="font-mono font-medium text-emerald-400">{signal.takeProfit}</div>
           </div>
           <div className="space-y-1">
             <div className="text-muted-foreground flex items-center gap-1">
-              <StopCircle className="h-3 w-3 text-red-500" />
+              <StopCircle className="h-3 w-3 text-red-400" />
               Stop Loss
             </div>
-            <div className="font-mono font-medium text-red-600">{signal.stopLoss}</div>
+            <div className="font-mono font-medium text-red-400">{signal.stopLoss}</div>
           </div>
         </div>
         
-        <div className="flex items-center justify-between pt-2 border-t border-border/50">
+        <div className="flex items-center justify-between pt-2 border-t border-border/30">
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Clock className="h-3 w-3" />
             {signal.timestamp.toLocaleTimeString()}
           </div>
-          <Badge variant="outline" className="text-xs">
+          <Badge variant="outline" className="text-xs border-border/50 text-muted-foreground">
             {signal.confidence}% confidence
           </Badge>
         </div>
@@ -162,7 +162,7 @@ const SignalPage = () => {
             variant={signal.status === "TP_HIT" ? "default" : "destructive"}
             className={cn(
               "w-full justify-center",
-              signal.status === "TP_HIT" ? "bg-emerald-500 text-white" : "bg-red-500 text-white"
+              signal.status === "TP_HIT" ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-red-600 hover:bg-red-700 text-white"
             )}
           >
             {signal.status === "TP_HIT" ? "Take Profit Hit ✓" : "Stop Loss Hit ✗"}
@@ -173,14 +173,14 @@ const SignalPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-black">
       <Header />
       
       <main className="container mx-auto px-4 py-6 pb-20 lg:pb-6">
         <div className="space-y-6">
           {/* Header Section */}
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-500 to-pink-500 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Trading Signals
             </h1>
             <p className="text-muted-foreground">Neural network powered forex signals</p>
@@ -188,43 +188,43 @@ const SignalPage = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
+            <Card className="bg-chart-card border-border/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Active Signals</p>
                     <p className="text-2xl font-bold text-primary">{activeSignals.length}</p>
                   </div>
-                  <div className="h-8 w-8 bg-primary/10 rounded-full flex items-center justify-center">
+                  <div className="h-8 w-8 bg-primary/20 rounded-full flex items-center justify-center">
                     <Radio className="h-4 w-4 text-primary" />
                   </div>
                 </div>
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="bg-chart-card border-border/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Win Rate</p>
-                    <p className="text-2xl font-bold text-emerald-500">{winRate}%</p>
+                    <p className="text-2xl font-bold text-emerald-400">{winRate}%</p>
                   </div>
-                  <div className="h-8 w-8 bg-emerald-500/10 rounded-full flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-emerald-500" />
+                  <div className="h-8 w-8 bg-emerald-400/20 rounded-full flex items-center justify-center">
+                    <TrendingUp className="h-4 w-4 text-emerald-400" />
                   </div>
                 </div>
               </CardContent>
             </Card>
             
-            <Card>
+            <Card className="bg-chart-card border-border/20">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Bookmarked</p>
-                    <p className="text-2xl font-bold text-yellow-500">{bookmarkedSignals.size}</p>
+                    <p className="text-2xl font-bold text-yellow-400">{bookmarkedSignals.size}</p>
                   </div>
-                  <div className="h-8 w-8 bg-yellow-500/10 rounded-full flex items-center justify-center">
-                    <BookmarkIcon className="h-4 w-4 text-yellow-500" />
+                  <div className="h-8 w-8 bg-yellow-400/20 rounded-full flex items-center justify-center">
+                    <BookmarkIcon className="h-4 w-4 text-yellow-400" />
                   </div>
                 </div>
               </CardContent>
@@ -232,17 +232,17 @@ const SignalPage = () => {
           </div>
 
           {/* Filter Section */}
-          <Card>
+          <Card className="bg-chart-card border-border/20">
             <CardContent className="p-4">
               <div className="flex items-center gap-4">
-                <span className="text-sm font-medium">Filter by pair:</span>
+                <span className="text-sm font-medium text-foreground">Filter by pair:</span>
                 <Select value={selectedPair} onValueChange={setSelectedPair}>
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className="w-40 bg-muted/50 border-border/50">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-chart-card border-border/50">
                     {pairs.map((pair) => (
-                      <SelectItem key={pair} value={pair}>
+                      <SelectItem key={pair} value={pair} className="text-foreground hover:bg-muted/50">
                         {pair}
                       </SelectItem>
                     ))}
@@ -254,9 +254,9 @@ const SignalPage = () => {
 
           {/* Signals Tabs */}
           <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="active">Active Signals</TabsTrigger>
-              <TabsTrigger value="history">Signal History</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 bg-chart-card border-border/20">
+              <TabsTrigger value="active" className="data-[state=active]:bg-primary data-[state=active]:text-white">Active Signals</TabsTrigger>
+              <TabsTrigger value="history" className="data-[state=active]:bg-primary data-[state=active]:text-white">Signal History</TabsTrigger>
             </TabsList>
             
             <TabsContent value="active" className="space-y-4">
@@ -267,10 +267,10 @@ const SignalPage = () => {
                   ))}
                 </div>
               ) : (
-                <Card>
+                <Card className="bg-chart-card border-border/20">
                   <CardContent className="p-8 text-center">
                     <Radio className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Active Signals</h3>
+                    <h3 className="text-lg font-medium mb-2 text-foreground">No Active Signals</h3>
                     <p className="text-muted-foreground">
                       {selectedPair === "ALL" 
                         ? "No signals are currently active. New signals will appear here when detected."
@@ -290,10 +290,10 @@ const SignalPage = () => {
                   ))}
                 </div>
               ) : (
-                <Card>
+                <Card className="bg-chart-card border-border/20">
                   <CardContent className="p-8 text-center">
                     <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium mb-2">No Signal History</h3>
+                    <h3 className="text-lg font-medium mb-2 text-foreground">No Signal History</h3>
                     <p className="text-muted-foreground">
                       Completed signals will appear here once they hit their take profit or stop loss levels.
                     </p>
