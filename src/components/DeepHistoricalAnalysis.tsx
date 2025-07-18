@@ -58,8 +58,8 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       console.log('🚀 Starting Multi-Timeframe Analysis for:', currencyPair);
       console.log('📊 Requesting analysis for timeframes:', timeframes);
 
-      // Call your Render API with explicit timeframes
-      const renderApiUrl = 'https://duka-aa28.onrender.com/analysis';
+      // Updated to use your new Render API endpoint
+      const renderApiUrl = 'https://poly-ajtt.onrender.com/analysis';
       
       console.log('📡 Calling Render API:', renderApiUrl);
       console.log('📋 Request payload:', { symbol: currencyPair, timeframes: timeframes });
