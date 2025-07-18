@@ -1,73 +1,104 @@
-# Welcome to your Lovable project
 
-## Project info
+# Polygon.io Trading API
 
-**URL**: https://lovable.dev/projects/835a0089-ae8f-4162-9b89-83259cc48439
+A Node.js trading API that uses Polygon.io for real-time forex data and technical analysis.
 
-## How can I edit this code?
+## Features
 
-There are several ways of editing your application.
+- ✅ Real-time forex price data from Polygon.io
+- ✅ Multi-timeframe technical analysis (M15, H1, H4, D1)
+- ✅ Advanced breakout detection strategy
+- ✅ Support/resistance level identification
+- ✅ RSI, ATR, and moving average indicators
+- ✅ Risk management with stop-loss and take-profit levels
 
-**Use Lovable**
+## Setup
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/835a0089-ae8f-4162-9b89-83259cc48439) and start prompting.
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-Changes made via Lovable will be committed automatically to this repo.
+2. **Set Environment Variables**
+   ```bash
+   export POLYGON_API_KEY=your_polygon_api_key_here
+   export PORT=10000
+   ```
 
-**Use your preferred IDE**
+3. **Start the Server**
+   ```bash
+   npm start
+   ```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+   For development with auto-restart:
+   ```bash
+   npm run dev
+   ```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## API Endpoints
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+### Health Check
+```
+GET /
 ```
 
-**Edit a file directly in GitHub**
+### Market Analysis
+```
+POST /analysis
+Content-Type: application/json
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+{
+  "symbol": "XAUUSD"
+}
+```
 
-**Use GitHub Codespaces**
+Response includes analysis for M15, H1, H4, and D1 timeframes with:
+- Trend direction
+- Trading signals (BUY/SELL/HOLD)
+- Entry, stop-loss, and take-profit levels
+- Technical indicators (RSI, ATR)
+- Breakout detection
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+### Current Price
+```
+GET /price/:symbol
+```
 
-## What technologies are used for this project?
+Example: `GET /price/XAUUSD`
 
-This project is built with:
+## Supported Symbols
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- XAUUSD (Gold)
+- EURUSD, GBPUSD, USDJPY, USDCHF
+- AUDUSD, USDCAD, NZDUSD
+- EURJPY, GBPJPY, EURGBP, EURCHF
+- And more major forex pairs
 
-## How can I deploy this project?
+## Deployment
 
-Simply open [Lovable](https://lovable.dev/projects/835a0089-ae8f-4162-9b89-83259cc48439) and click on Share -> Publish.
+### Render.com
+1. Connect your GitHub repository
+2. Set environment variable: `POLYGON_API_KEY`
+3. Deploy with Node.js runtime
 
-## Can I connect a custom domain to my Lovable project?
+### Railway
+1. Connect repository
+2. Add `POLYGON_API_KEY` environment variable
+3. Deploy
 
-Yes, you can!
+## Environment Variables
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+- `POLYGON_API_KEY` - Your Polygon.io API key (required)
+- `PORT` - Server port (default: 10000)
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+## Technical Analysis Strategy
+
+The API uses an advanced breakout strategy that:
+1. Identifies significant support/resistance levels
+2. Detects breakout patterns with confirmation
+3. Validates retests and volume confirmation
+4. Provides risk-managed entry/exit levels
+
+## License
+
+MIT License
