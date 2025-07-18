@@ -24,6 +24,7 @@ const Header = () => {
     { label: 'Pricing', href: '/pricing' },
     { label: 'Analyze', href: '/analyze' },
     { label: 'History', href: '/history' },
+    { label: 'Signals', href: '/signals' },
   ];
 
   const handleSignOut = async () => {
