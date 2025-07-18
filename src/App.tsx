@@ -13,6 +13,7 @@ import PricingPage from "./pages/PricingPage";
 import AuthPage from "./pages/AuthPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
+import SignalPage from "./pages/SignalPage";
 import NotFound from "./pages/NotFound";
 import BottomNav from "./components/BottomNav";
 import { useIsMobile } from "./hooks/use-mobile";
@@ -88,6 +89,14 @@ const AppRoutes = () => {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/signals" 
+          element={
+            <ProtectedRoute>
+              <SignalPage />
             </ProtectedRoute>
           } 
         />
