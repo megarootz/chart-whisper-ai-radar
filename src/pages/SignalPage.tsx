@@ -179,11 +179,11 @@ const SignalPage = () => {
       <main className="container mx-auto px-4 py-6 pb-20 lg:pb-6">
         <div className="space-y-6">
           {/* Header Section */}
-          <div className="text-center space-y-2">
+          <div className="text-center space-y-3">
             <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-purple-400 to-pink-400 bg-clip-text text-transparent">
               Trading Signals
             </h1>
-            <p className="text-muted-foreground">Neural network powered forex signals</p>
+            <h2 className="text-xl font-semibold text-white">Neural Network Forex Signals</h2>
           </div>
 
           {/* Stats Cards */}
