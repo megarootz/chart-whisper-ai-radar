@@ -134,23 +134,20 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       {/* Trading Pair Selection */}
       <div className="space-y-6">
         <div className="flex items-center space-x-4">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-75"></div>
-            <div className="relative bg-gradient-to-r from-primary/30 to-accent/30 p-3 rounded-lg border border-primary/50 backdrop-blur-sm">
-              <Brain className="h-6 w-6 text-primary" />
-            </div>
+          <div className="bg-primary/10 p-3 rounded-lg">
+            <Brain className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h3 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <h3 className="text-xl font-bold text-foreground">
               Multi-Timeframe Analysis
             </h3>
             <p className="text-muted-foreground">
-              Advanced AI analysis powered by Polygon.io & Gemini
+              Advanced AI market analysis
             </p>
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg border border-primary/20">
+        <div className="bg-muted/30 p-4 rounded-lg border border-border">
           <TradingPairSelector
             value={`OANDA:${currencyPair}`}
             onChange={(value) => setCurrencyPair(value.replace('OANDA:', ''))}
@@ -162,7 +159,7 @@ const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnaly
       <Button
         onClick={startAnalysis}
         disabled={!currencyPair || isAnalyzing}
-        className="w-full h-14 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-bold text-lg rounded-xl transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+        className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-lg rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
       >
         {isAnalyzing ? (
           <div className="flex items-center space-x-3">
