@@ -1,16 +1,25 @@
 
-# Polygon.io Trading API
+# Chart Whisper AI Radar
 
-A Node.js trading API that uses Polygon.io for real-time forex data and technical analysis.
+A React-based forex trading analysis application with AI-powered technical analysis and multi-timeframe insights.
 
 ## Features
 
-- ✅ Real-time forex price data from Polygon.io
+- ✅ Real-time forex chart analysis using AI
 - ✅ Multi-timeframe technical analysis (M15, H1, H4, D1)
-- ✅ Advanced breakout detection strategy
-- ✅ Support/resistance level identification
-- ✅ RSI, ATR, and moving average indicators
-- ✅ Risk management with stop-loss and take-profit levels
+- ✅ Interactive trading pair selection
+- ✅ Historical data analysis and insights
+- ✅ Responsive design for desktop and mobile
+- ✅ Modern UI with Tailwind CSS
+- ✅ Integration with external trading data APIs
+
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Vite
+- **UI Library**: Tailwind CSS, Radix UI components
+- **State Management**: React Query (@tanstack/react-query)
+- **Backend**: Supabase (authentication, database, edge functions)
+- **Hosting**: Netlify
 
 ## Setup
 
@@ -19,85 +28,65 @@ A Node.js trading API that uses Polygon.io for real-time forex data and technica
    npm install
    ```
 
-2. **Set Environment Variables**
+2. **Environment Variables**
+   Create a `.env.local` file in the root directory:
    ```bash
-   export POLYGON_API_KEY=your_polygon_api_key_here
-   export PORT=10000
+   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-3. **Start the Server**
-   ```bash
-   npm start
-   ```
-
-   For development with auto-restart:
+3. **Start Development Server**
    ```bash
    npm run dev
    ```
 
-## API Endpoints
+4. **Build for Production**
+   ```bash
+   npm run build
+   ```
 
-### Health Check
-```
-GET /
-```
+## Project Structure
 
-### Market Analysis
 ```
-POST /analysis
-Content-Type: application/json
-
-{
-  "symbol": "XAUUSD"
-}
-```
-
-Response includes analysis for M15, H1, H4, and D1 timeframes with:
-- Trend direction
-- Trading signals (BUY/SELL/HOLD)
-- Entry, stop-loss, and take-profit levels
-- Technical indicators (RSI, ATR)
-- Breakout detection
-
-### Current Price
-```
-GET /price/:symbol
+src/
+├── components/          # React components
+├── pages/              # Page components
+├── hooks/              # Custom React hooks
+├── contexts/           # React contexts
+├── integrations/       # External service integrations
+├── lib/                # Utility functions
+├── types/              # TypeScript type definitions
+└── utils/              # Helper utilities
 ```
 
-Example: `GET /price/XAUUSD`
+## Key Components
 
-## Supported Symbols
+- **DeepHistoricalAnalysis**: Advanced AI-powered market analysis
+- **TradingViewWidget**: Embedded TradingView charts
+- **MultiTimeframeResults**: Analysis results across timeframes
+- **RiskManagementCalculator**: Trading risk calculation tools
 
-- XAUUSD (Gold)
-- EURUSD, GBPUSD, USDJPY, USDCHF
-- AUDUSD, USDCAD, NZDUSD
-- EURJPY, GBPJPY, EURGBP, EURCHF
-- And more major forex pairs
+## External Services
+
+- **Supabase**: Backend services, authentication, and database
+- **External Trading API**: Hosted separately on Render for data processing
+- **TradingView**: Chart widgets and market data
 
 ## Deployment
 
-### Render.com
-1. Connect your GitHub repository
-2. Set environment variable: `POLYGON_API_KEY`
-3. Deploy with Node.js runtime
+### Netlify Deployment
+1. Connect your GitHub repository to Netlify
+2. Set build command: `npm run build`
+3. Set publish directory: `dist`
+4. Add environment variables in Netlify dashboard
 
-### Railway
-1. Connect repository
-2. Add `POLYGON_API_KEY` environment variable
-3. Deploy
+### Environment Variables for Production
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
 
-## Environment Variables
+## Development
 
-- `POLYGON_API_KEY` - Your Polygon.io API key (required)
-- `PORT` - Server port (default: 10000)
-
-## Technical Analysis Strategy
-
-The API uses an advanced breakout strategy that:
-1. Identifies significant support/resistance levels
-2. Detects breakout patterns with confirmation
-3. Validates retests and volume confirmation
-4. Provides risk-managed entry/exit levels
+This is a frontend-only repository. The backend API for trading data and technical analysis is hosted separately and consumed via HTTP requests.
 
 ## License
 
