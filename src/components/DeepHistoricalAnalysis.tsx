@@ -1,12 +1,11 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Loader2, TrendingUp, AlertCircle, Activity } from 'lucide-react';
+import { Brain } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import SpinningRadar from './SpinningRadar';
 import MultiTimeframeResults from './MultiTimeframeResults';
+import TradingPairSelector from './TradingPairSelector';
 
 interface TimeframeResult {
   timeframe: string;
@@ -17,6 +16,7 @@ interface TimeframeResult {
   takeProfit: number;
   rsi: number;
   atr: number;
+  analysis: string;
   error?: string;
 }
 
@@ -27,229 +27,166 @@ interface DeepHistoricalAnalysisProps {
 const DeepHistoricalAnalysis: React.FC<DeepHistoricalAnalysisProps> = ({ onAnalysisComplete }) => {
   const [currencyPair, setCurrencyPair] = useState('XAUUSD');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [results, setResults] = useState<TimeframeResult[]>([]);
+  const [results, setResults] = useState<Record<string, TimeframeResult> | null>(null);
   const [loadingTimeframes, setLoadingTimeframes] = useState<string[]>([]);
   const { toast } = useToast();
 
-  const currencyPairs = [
-    'XAUUSD', 'EURUSD', 'GBPUSD', 'USDJPY', 'USDCHF', 'AUDUSD', 'USDCAD', 'NZDUSD',
-    'EURJPY', 'GBPJPY', 'EURGBP', 'EURCHF', 'GBPCHF', 'AUDJPY', 'CADJPY', 'CHFJPY'
-  ];
-
-  // All 4 timeframes that should be analyzed
-  const timeframes = ['D1', 'H4', 'H1', 'M15'];
+  const timeframes = ['M15', 'H1', 'H4', 'D1'];
 
   const startAnalysis = async () => {
+    if (!currencyPair) {
+      toast({
+        title: "Please select a trading pair",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    setResults(null);
+    setLoadingTimeframes(['M15', 'H1', 'H4', 'D1']);
+
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
         toast({
-          title: "Authentication Required",
-          description: "Please sign in to use the analysis feature.",
+          title: "Please log in to access deep analysis",
           variant: "destructive",
         });
+        setIsAnalyzing(false);
         return;
       }
-
-      setIsAnalyzing(true);
-      setResults([]);
-      setLoadingTimeframes([...timeframes]);
 
       console.log('🚀 Starting Multi-Timeframe Analysis for:', currencyPair);
       console.log('📊 Requesting analysis for timeframes:', timeframes);
 
-      // Updated to use your new Render API endpoint
-      const renderApiUrl = 'https://poly-ajtt.onrender.com/analysis';
-      
-      console.log('📡 Calling Render API:', renderApiUrl);
-      console.log('📋 Request payload:', { symbol: currencyPair, timeframes: timeframes });
-      
-      const response = await fetch(renderApiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
+      // Use the new Supabase Edge Function
+      const { data, error } = await supabase.functions.invoke('polygon-analysis', {
+        body: {
           symbol: currencyPair,
-          timeframes: timeframes // Explicitly send all 4 timeframes
-        })
+          timeframes: timeframes
+        }
       });
 
-      console.log('📊 Render API Response Status:', response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('❌ Render API Error Response:', errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+      if (error) {
+        console.error('❌ Supabase Function Error:', error);
+        throw new Error(error.message || 'Analysis failed');
       }
 
-      const apiData = await response.json();
-      console.log('✅ Render API Data Received:', apiData);
+      console.log('✅ Received analysis data:', data);
 
-      // Process the analysis data from your Render API
-      const processedResults: TimeframeResult[] = timeframes.map(tf => {
-        const analysisData = apiData?.analysis?.[tf];
-        
-        if (!analysisData) {
-          console.warn(`⚠️ No analysis data for ${tf}. Available timeframes:`, Object.keys(apiData?.analysis || {}));
-          console.warn(`🔍 Full API response for debugging:`, apiData);
-          return {
-            timeframe: tf,
-            trend: 'Unknown',
-            signal: 'No Signal',
-            entryPrice: 0,
-            stopLoss: 0,
-            takeProfit: 0,
-            rsi: 0,
-            atr: 0,
-            error: `No analysis data available for ${tf}`
-          };
-        }
+      if (!data.analysis) {
+        throw new Error('Invalid response format: missing analysis data');
+      }
 
-        console.log(`📈 Processing ${tf} data:`, analysisData);
-
-        // Map your API response to the expected format
-        return {
-          timeframe: tf,
-          trend: analysisData.trend || 'Unknown',
-          signal: analysisData.signal || 'No Signal',
-          entryPrice: Number(analysisData.entry) || 0,
-          stopLoss: Number(analysisData.sl) || 0,
-          takeProfit: Number(analysisData.tp) || 0,
-          rsi: Number(analysisData.rsi) || 0,
-          atr: Number(analysisData.atr) || 0
+      // Transform the data to match our interface
+      const transformedResults = Object.entries(data.analysis).reduce((acc, [timeframe, analysis]: [string, any]) => {
+        acc[timeframe] = {
+          timeframe,
+          trend: analysis.trend || 'Unknown',
+          signal: analysis.signal || 'Hold',
+          entryPrice: analysis.entryPrice || 0,
+          stopLoss: analysis.stopLoss || 0,
+          takeProfit: analysis.takeProfit || 0,
+          rsi: analysis.rsi || 50,
+          atr: analysis.atr || 0,
+          analysis: analysis.analysis || 'No analysis available',
+          error: analysis.error
         };
-      });
+        return acc;
+      }, {} as Record<string, TimeframeResult>);
 
-      setResults(processedResults);
-      setLoadingTimeframes([]);
-
-      // Call the callback with the processed results
+      console.log('🔄 Transformed results:', transformedResults);
+      setResults(transformedResults);
+      
+      // Call the callback with the complete analysis
       onAnalysisComplete({
-        type: 'multi_timeframe',
         symbol: currencyPair,
-        results: processedResults,
-        timestamp: new Date().toISOString()
+        analysis: transformedResults,
+        timestamp: new Date().toISOString(),
+        type: 'multi_timeframe'
       });
 
-      // Show success toast
       toast({
-        title: "Analysis Complete",
-        description: `Multi-timeframe analysis completed for ${currencyPair}`,
+        title: "Multi-Timeframe Analysis Complete",
+        description: `Analysis completed for ${currencyPair} across ${Object.keys(transformedResults).length} timeframes`,
       });
-
-      console.log('🎉 Analysis completed successfully:', processedResults);
 
     } catch (error) {
-      console.error('❌ Analysis Error:', error);
-      
-      // Set error results for all timeframes
-      const errorResults: TimeframeResult[] = timeframes.map(tf => ({
-        timeframe: tf,
-        trend: 'Error',
-        signal: 'Error',
-        entryPrice: 0,
-        stopLoss: 0,
-        takeProfit: 0,
-        rsi: 0,
-        atr: 0,
-        error: error instanceof Error ? error.message : 'Analysis failed'
-      }));
-
-      setResults(errorResults);
-      setLoadingTimeframes([]);
-
+      console.error('❌ Multi-timeframe analysis error:', error);
       toast({
         title: "Analysis Failed",
-        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        description: error instanceof Error ? error.message : "Please try again later",
         variant: "destructive",
       });
     } finally {
       setIsAnalyzing(false);
+      setLoadingTimeframes([]);
     }
   };
 
+  // Convert results object to array for the component
+  const resultsArray = results ? Object.values(results) : [];
+
   return (
-    <div className="space-y-6">
-      <Card className="bg-gray-800 border-gray-700">
-        <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
-            <div className="bg-purple-600/20 p-2 rounded-full">
-              <Activity className="h-5 w-5 text-purple-400" />
+    <div className="w-full space-y-8">
+      {/* Trading Pair Selection */}
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-primary to-accent rounded-lg blur opacity-75"></div>
+            <div className="relative bg-gradient-to-r from-primary/30 to-accent/30 p-3 rounded-lg border border-primary/50 backdrop-blur-sm">
+              <Brain className="h-6 w-6 text-primary" />
             </div>
-            Deep Multi-Timeframe Analysis
-          </CardTitle>
-          <CardDescription className="text-gray-400">
-            Comprehensive analysis across Daily, 4-Hour, 1-Hour, and 15-Minute timeframes
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+          </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Currency Pair
-            </label>
-            <Select value={currencyPair} onValueChange={setCurrencyPair}>
-              <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                <SelectValue placeholder="Select currency pair" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-700 border-gray-600">
-                {currencyPairs.map((pair) => (
-                  <SelectItem 
-                    key={pair} 
-                    value={pair}
-                    className="text-white hover:bg-gray-600"
-                  >
-                    {pair}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <h3 className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Multi-Timeframe Analysis
+            </h3>
+            <p className="text-muted-foreground">
+              Advanced AI analysis powered by Polygon.io & Gemini
+            </p>
           </div>
+        </div>
+        
+        <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg border border-primary/20">
+          <TradingPairSelector
+            value={`OANDA:${currencyPair}`}
+            onChange={(value) => setCurrencyPair(value.replace('OANDA:', ''))}
+          />
+        </div>
+      </div>
 
-          <div className="flex items-center gap-4 text-sm text-gray-400">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span>Deep Analysis Usage: 1 / 15 today</span>
-            </div>
+      {/* Analysis Button */}
+      <Button
+        onClick={startAnalysis}
+        disabled={!currencyPair || isAnalyzing}
+        className="w-full h-14 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-bold text-lg rounded-xl transition-all duration-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+      >
+        {isAnalyzing ? (
+          <div className="flex items-center space-x-3">
+            <SpinningRadar />
+            <span>Analyzing Market Data...</span>
           </div>
-
-          <div className="flex gap-2">
-            <Button
-              onClick={startAnalysis}
-              disabled={isAnalyzing}
-              className="bg-purple-600 hover:bg-purple-700 text-white flex-1"
-            >
-              {isAnalyzing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Activity className="w-4 h-4 mr-2" />
-                  Start Deep Analysis
-                </>
-              )}
-            </Button>
-            
-            <Button
-              variant="outline"
-              className="bg-gray-700 border-gray-600 text-gray-300 hover:bg-gray-600"
-            >
-              <TrendingUp className="w-4 h-4" />
-            </Button>
+        ) : (
+          <div className="flex items-center space-x-3">
+            <Brain className="h-6 w-6" />
+            <span>Start Deep Analysis</span>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </Button>
 
-      {(results.length > 0 || isAnalyzing) && (
-        <MultiTimeframeResults
-          results={results}
-          loadingTimeframes={loadingTimeframes}
-          isAnalyzing={isAnalyzing}
-          currencyPair={currencyPair}
-        />
+      {/* Results */}
+      {resultsArray.length > 0 && (
+        <div className="animate-fade-in">
+          <MultiTimeframeResults 
+            results={resultsArray}
+            loadingTimeframes={loadingTimeframes}
+            isAnalyzing={isAnalyzing}
+            currencyPair={currencyPair}
+          />
+        </div>
       )}
     </div>
   );

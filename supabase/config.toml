@@ -1,8 +1,17 @@
 
 project_id = "npougftucphdtujkyyfz"
 
-[functions.analyze-chart]
+[functions.polygon-analysis]
 verify_jwt = true
 
-[functions.download-historical-data]
+[functions.check-subscription]
 verify_jwt = true
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.customer-portal]
+verify_jwt = true
+
+[functions.get-server-time]
+verify_jwt = false

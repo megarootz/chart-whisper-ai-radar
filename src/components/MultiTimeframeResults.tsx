@@ -12,6 +12,7 @@ interface TimeframeResult {
   takeProfit: number;
   rsi: number;
   atr: number;
+  analysis: string;
   error?: string;
 }
 
