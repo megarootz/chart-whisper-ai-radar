@@ -5,7 +5,7 @@ const Legal = () => {
   return (
     <div className="legal-page">
       <div className="container">
-        <div className="legal-content">
+        <div className="legal-page-content">
           <h1>Privacy Policy & Terms of Service</h1>
           <p className="last-updated">Last Updated: November 2024</p>
 

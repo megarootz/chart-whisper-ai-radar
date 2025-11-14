@@ -5,13 +5,13 @@
   color: #e2e8f0;
 }
 
-.legal-content {
+.legal-page-content {
   max-width: 900px;
   margin: 0 auto;
   padding: 0 2rem;
 }
 
-.legal-content h1 {
+.legal-page-content h1 {
   font-size: 2.5rem;
   color: #ffffff;
   margin-bottom: 0.5rem;
@@ -68,11 +68,11 @@
     padding: 2rem 0;
   }
 
-  .legal-content {
+  .legal-page-content {
     padding: 0 1.5rem;
   }
 
-  .legal-content h1 {
+  .legal-page-content h1 {
     font-size: 2rem;
   }
 
@@ -86,7 +86,7 @@
 }
 
 @media (max-width: 480px) {
-  .legal-content h1 {
+  .legal-page-content h1 {
     font-size: 1.7rem;
   }
 
