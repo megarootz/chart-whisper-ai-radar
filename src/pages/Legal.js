@@ -5,20 +5,10 @@ const Legal = () => {
   return (
     <div className="legal-page">
       <div className="container">
-        <div className="legal-header">
+        <div className="legal-content">
           <h1>Privacy Policy & Terms of Service</h1>
           <p className="last-updated">Last Updated: November 2024</p>
-        </div>
 
-        <div className="warning-box">
-          <h2>⚠️ Important Trading Disclaimer</h2>
-          <p>
-            Trading forex involves substantial risk of loss and is not suitable for all investors. 
-            Past performance does not guarantee future results.
-          </p>
-        </div>
-
-        <div className="legal-content">
           <div className="legal-section">
             <h2>Privacy Policy</h2>
             <h3>No Data Collection</h3>
@@ -138,8 +128,8 @@ const Legal = () => {
           <div className="legal-section">
             <h2>Limitation of Liability</h2>
             <p>
-              To the maximum extent permitted by law, the developers and operators of ForexRadar7 shall not be 
-              liable for any direct, indirect, incidental, special, consequential, or punitive damages, including 
+              To the maximum extent permitted by law, the developers and operators of ForexRadar7 shall not be
+              liable for any direct, indirect, incidental, special, consequential, or punitive damages, including
               but not limited to:
             </p>
             <ul>
@@ -153,10 +143,10 @@ const Legal = () => {
             </p>
           </div>
 
-          <div className="final-warning">
-            <h3>🚨 Final Warning</h3>
+          <div className="legal-section">
+            <h2>Final Warning</h2>
             <p>
-              You acknowledge that you are using ForexRadar7 at your own risk. The app is provided "as is" 
+              You acknowledge that you are using ForexRadar7 at your own risk. The app is provided "as is"
               without any warranties. You are solely responsible for any trading decisions and their consequences.
             </p>
           </div>
