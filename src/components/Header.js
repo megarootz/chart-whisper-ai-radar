@@ -39,6 +39,14 @@ const Header = () => {
                 Broker
               </button>
             </div>
+            <div className="nav-item">
+              <button
+                className="nav-link"
+                onClick={() => handleNavClick('/privacy')}
+              >
+                Privacy & Terms
+              </button>
+            </div>
           </div>
 
           <button

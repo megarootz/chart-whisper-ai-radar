@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Footer from './components/Footer';
 import Home from './pages/Home';
 import Broker from './pages/Broker';
+import Legal from './pages/Legal';
 import './App.css';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/broker" element={<Broker />} />
+            <Route path="/privacy" element={<Legal />} />
           </Routes>
         </main>
         <Footer />
