@@ -29,8 +29,9 @@ const Legal = () => {
 
             <h3>App Functionality</h3>
             <p>
-              The app works completely offline regarding personal information. All settings and preferences 
-              are stored locally on your device only. Your account balance and risk settings never leave your device.
+              While the app requires internet connection to receive trading signals and notifications, all your
+              personal settings and preferences are stored locally on your device only. Your account balance and
+              risk settings never leave your device.
             </p>
 
             <h3>Telegram Integration</h3>

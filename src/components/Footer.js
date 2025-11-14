@@ -25,7 +25,7 @@ const Footer = () => {
               <h4>Privacy & Terms</h4>
               <div className="legal-content">
                 <h5>Privacy Policy</h5>
-                <p>ForexRadar7 does not collect, store, or process any personal data. The app works completely offline regarding personal information and does not require user registration or account creation.</p>
+                <p>ForexRadar7 does not collect, store, or process any personal data. While the app requires internet for signals, all your personal settings are stored locally on your device and never transmitted.</p>
 
                 <h5>Terms of Service</h5>
                 <p>By using ForexRadar7, you agree that:</p>
